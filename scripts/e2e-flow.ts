@@ -8,22 +8,100 @@
  */
 import { chromium, type Page } from 'playwright';
 import { chooseMove } from '../src/engine/ai';
-import { CHARMS } from '../src/engine/charms';
-import { applyMove } from '../src/engine/okiya';
-import { newRun, pickCharm, startGame, type RunState } from '../src/game/run';
+import { applyMove, mulberry32 } from '../src/engine/okiya';
+import { continueRun, finishGame, newRun, pickCharm, startGame, validateRun, type RunState } from '../src/game/run';
 import { STATIONS } from '../src/game/stations';
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:5173/';
 const KEY = 'hanamichi.run.v1';
 
-function playToEnd(run: RunState): RunState {
+/** Finish the current game: the human searches `humanDepth` plies, the rival uses its station settings. */
+function playToEnd(run: RunState, humanDepth = 1, salt = 0): RunState {
+  const rng = mulberry32((run.seed + salt) >>> 0);
+  const st = STATIONS[run.station];
   let g = run.game!;
-  let i = 0;
-  while (!g.win) g = applyMove(g, chooseMove(g, { depth: 1, rng: () => (i++ % 5) / 5 }).index);
+  while (!g.win) g = applyMove(g, chooseMove(g, g.current === 1 ? { depth: humanDepth, rng } : { ...st.ai, rng }).index);
   return { ...run, game: g };
 }
 
+/**
+ * A legitimate run (built only through the state machine) paused in 'playing' with a finished
+ * game that, once tallied, clears station 1. Searched over seeds.
+ */
+function aboutToClearStation(): RunState {
+  for (let seed = 1; seed < 500; seed++) {
+    let run = newRun(seed);
+    run = pickCharm(run, run.offers[0]);
+    run = startGame(run);
+    for (let g = 0; g < 3; g++) {
+      run = playToEnd(run, 4, g);
+      const tallied = finishGame(run);
+      if (tallied.stationPetals >= STATIONS[0].target) return run;
+      const next = continueRun(tallied);
+      if (next.phase !== 'playing') break;
+      run = next;
+    }
+  }
+  throw new Error('no seed clears station 1 within 3 games');
+}
+
+/**
+ * A legitimate run drafting at station 5 with a full hand of 4 charms: the first pick plus one
+ * per cleared station, so four stations must be cleared. Searched over seeds.
+ */
+function fullHandDraft(): RunState {
+  for (let seed = 1; seed < 3000; seed++) {
+    let run = newRun(seed);
+    run = pickCharm(run, run.offers[0]);
+    let ok = true;
+    for (let station = 0; station < 4 && ok; station++) {
+      run = startGame(run);
+      for (let g = 0; g < 3; g++) {
+        run = playToEnd(run, 4, station * 10 + g);
+        const next = continueRun(finishGame(run));
+        if (next.phase === 'draft') { run = next; break; }
+        if (next.phase !== 'playing') { ok = false; break; }
+        run = next;
+      }
+      if (!ok || run.phase !== 'draft') { ok = false; break; }
+      if (station < 3) run = pickCharm(run, run.offers[0]);
+    }
+    if (ok && run.phase === 'draft' && run.station === 4 && run.held.length === 4) return run;
+  }
+  throw new Error('no seed clears four stations');
+}
+
+/** A legitimate run paused in 'playing' with the third game finished and lost (station not cleared). */
+function aboutToLose(): RunState {
+  for (let seed = 1; seed < 500; seed++) {
+    let run = newRun(seed);
+    run = pickCharm(run, run.offers[0]);
+    run = startGame(run);
+    let ok = true;
+    for (let g = 0; g < 3; g++) {
+      const rng = mulberry32(seed * 7 + g);
+      let game = run.game!;
+      // The human plays randomly, the rival plays its station settings.
+      while (!game.win) {
+        const legal = chooseMove(game, { depth: 1, rng }).moves;
+        game = applyMove(game, game.current === 1 ? legal[Math.floor(rng() * legal.length)] : chooseMove(game, { ...STATIONS[0].ai, rng }).index);
+      }
+      run = { ...run, game };
+      if (g === 2) break;
+      const next = continueRun(finishGame(run));
+      if (next.phase !== 'playing') { ok = false; break; }
+      run = next;
+    }
+    if (!ok) continue;
+    const tallied = finishGame(run);
+    if (tallied.stationPetals < STATIONS[0].target) return run;
+  }
+  throw new Error('no seed loses station 1');
+}
+
 async function seed(page: Page, run: RunState) {
+  // Every seeded state must be one the app itself could have saved.
+  if (!validateRun(JSON.parse(JSON.stringify(run)))) throw new Error('e2e seed is not a legitimate run state');
   await page.evaluate(([k, v]) => localStorage.setItem(k, v), [KEY, JSON.stringify(run)] as const);
   await page.reload();
   await page.waitForSelector('.title-screen');
@@ -44,12 +122,7 @@ async function main() {
 
   // A. Cleared station → draft → pick → intro of station 2.
   {
-    let run = newRun(123);
-    run = pickCharm(run, run.offers[0]);
-    run = startGame(run);
-    run = playToEnd(run);
-    // Pretend the station is already cleared: finishGame requires a finished game in 'playing'.
-    run = { ...run, stationPetals: STATIONS[0].target };
+    const run = aboutToClearStation();
     await seed(page, run);
     await page.waitForSelector('.sheet.result:visible', { timeout: 5000 });
     ok('A1 finished game on resume is tallied');
@@ -67,8 +140,7 @@ async function main() {
 
   // B. Full hand: picking a 5th charm asks to release one.
   {
-    let run = newRun(321);
-    run = { ...run, phase: 'draft', station: 2, held: CHARMS.slice(0, 4).map((c) => c.id), offers: CHARMS.slice(4, 7).map((c) => c.id) };
+    const run = fullHandDraft();
     await seed(page, run);
     await page.waitForSelector('.draft-screen');
     await page.click('.charm-grid .charm-card[data-action="pick"]');
@@ -83,11 +155,7 @@ async function main() {
 
   // C. Lanterns spent without the target → lost screen → walk again → start draft.
   {
-    let run = newRun(555);
-    run = pickCharm(run, run.offers[0]);
-    run = startGame(run);
-    run = playToEnd(run);
-    run = { ...run, gamesPlayed: 2, stationPetals: 0 };
+    const run = aboutToLose();
     await seed(page, run);
     await page.waitForSelector('.sheet.result:visible');
     await page.click('.sheet.result:visible [data-action="continue"]');
@@ -100,9 +168,10 @@ async function main() {
 
   // D. Resume with the AI to move: it moves by itself.
   {
+    // Pick a seed whose coin toss makes the rival open (newRun chooses at random from the seed).
     let run = newRun(777);
+    for (let seed = 777; run.nextFirst !== 2; seed++) run = newRun(seed);
     run = pickCharm(run, run.offers[0]);
-    run = { ...run, nextFirst: 2 };
     run = startGame(run);
     await seed(page, run);
     await page.waitForSelector('.play-screen');

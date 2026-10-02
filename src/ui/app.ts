@@ -40,6 +40,21 @@ interface Meta {
 const RUN_KEY = 'hanamichi.run.v1';
 const META_KEY = 'hanamichi.meta.v1';
 
+/** Coerce whatever is in storage into a well-formed Meta; anything odd falls back to zero. */
+function sanitizeMeta(raw: unknown): Meta {
+  const m = (raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}) as Record<string, unknown>;
+  const count = (x: unknown) => (typeof x === 'number' && Number.isInteger(x) && x >= 0 && x < 1e9 ? x : 0);
+  const ids = new Set<string>(Object.keys(CHARM_BY_ID));
+  const discovered = Array.isArray(m.discovered) ? (m.discovered.filter((id): id is CharmId => typeof id === 'string' && ids.has(id)) as CharmId[]) : [];
+  return {
+    runsStarted: count(m.runsStarted),
+    runsWon: count(m.runsWon),
+    bestStation: Math.min(count(m.bestStation), STATIONS.length),
+    bestPetals: count(m.bestPetals),
+    discovered: [...new Set(discovered)],
+  };
+}
+
 type View = 'title' | 'run';
 
 interface UiState {
@@ -68,7 +83,7 @@ export class App {
     this.s = {
       view: 'title',
       run: run && run.phase !== 'won' && run.phase !== 'lost' ? run : null,
-      meta: loadJson<Meta>(META_KEY, { runsStarted: 0, runsWon: 0, bestStation: 0, bestPetals: 0, discovered: [] }),
+      meta: sanitizeMeta(loadJson<unknown>(META_KEY, null)),
       showRules: false,
       showCharm: null,
       fireflyLit: false,
@@ -621,8 +636,12 @@ export class App {
       rows.push(`<li><span>Victory by ${run.game?.win?.fullGarden ? 'emptying the garden' : last.reason === 'blocked' ? 'blocking' : `a ${escapeHtml(last.reason)}`}</span><span>+${r.base}</span></li>`);
       rows.push(`<li><span>${r.tilesRemaining} tile${r.tilesRemaining === 1 ? '' : 's'} left in the garden</span><span>+${r.tilesRemaining}</span></li>`);
       for (const e of r.effects) {
-        const fired = e.effect.add || e.effect.mult;
-        rows.push(`<li class="${fired ? 'fired' : 'quiet'}"><span>${charmGlyph(e.charm)} ${escapeHtml(e.charm.name)}${fired ? ` <small>${escapeHtml(e.effect.note)}</small>` : ' <small>did not bloom</small>'}</span><span>${e.effect.mult ? `×${1 + e.effect.mult}` : e.effect.add ? `+${e.effect.add}` : '—'}</span></li>`);
+        // Saved tallies carry a copy of the charm; render from the catalogue by id.
+        const charm = CHARM_BY_ID[e.charm.id] ?? e.charm;
+        const add = Number(e.effect.add) || 0;
+        const mult = Number(e.effect.mult) || 0;
+        const fired = add || mult;
+        rows.push(`<li class="${fired ? 'fired' : 'quiet'}"><span>${charmGlyph(charm)} ${escapeHtml(String(charm.name))}${fired ? ` <small>${escapeHtml(String(e.effect.note))}</small>` : ' <small>did not bloom</small>'}</span><span>${mult ? `×${1 + mult}` : add ? `+${add}` : '—'}</span></li>`);
       }
     } else {
       const how = run.game?.win?.fullGarden ? 'an empty garden: you had no tile left to take' : last.reason === 'blocked' ? 'blocking you' : `a ${escapeHtml(last.reason)}`;
@@ -640,7 +659,7 @@ export class App {
         <p class="eyebrow">${cleared ? 'Station cleared' : left > 0 ? `Game ${run.gamesPlayed} of ${st.lanterns}` : 'All three games played'}</p>
         <h2>${r.won ? 'The garden blooms' : 'The garden fades'}</h2>
         <ul class="tally">${rows.join('')}</ul>
-        <p class="tally-total"><span>Petals this game</span><span class="count-up" data-count="${r.total}">${r.total}</span></p>
+        <p class="tally-total"><span>Petals this game</span><span class="count-up" data-count="${Number(r.total) || 0}">${Number(r.total) || 0}</span></p>
         <p class="tally-station">${math ? escapeHtml(math) : `Station: <strong>${run.stationPetals}</strong> / ${st.target}`} ${math ? '' : petal()}</p>
         <button class="btn btn-primary" data-action="continue">${cta}</button>
       </section>`;

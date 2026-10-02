@@ -4,7 +4,7 @@
  * this module only sequences games and scores finished ones with charms.
  */
 import { CHARMS, scoreGame, type CharmId, type PetalBreakdown } from '../engine/charms';
-import { applyMove, mulberry32, newGame, newGameFromTiles, opponent, type GameState, type Player } from '../engine/okiya';
+import { applyMove, isPlayer, isTile, isWinReason, mulberry32, newGame, newGameFromTiles, opponent, type GameState, type Player } from '../engine/okiya';
 import { reconstructLayout } from '../engine/charms';
 import { DRAFT_SIZE, MAX_HELD, STATIONS } from './stations';
 
@@ -171,34 +171,152 @@ export function useFirefly(run: RunState): RunState {
   return { ...run, fireflyUsed: true };
 }
 
+/** Largest count accepted from a save (petals, seeds, indices); the app never gets near it. */
+const MAX_COUNT = 1_000_000_000;
+
 /**
- * Validate a run loaded from storage. The game, if any, is rebuilt by replaying its
- * history through the engine from the reconstructed layout; the saved state must match
- * exactly. Returns null when anything disagrees, so a corrupted save is discarded.
+ * Validate a run loaded from storage. Returns the run when every field is one the state
+ * machine in this module can produce, otherwise null, so a corrupted or hand-edited save is
+ * discarded instead of being played. In order:
+ *  1. field types and ranges (official tile set, charm catalogue, station table);
+ *  2. per-phase invariants: which phases carry a game, how many games/offers, who moves first;
+ *  3. the game is rebuilt by replaying its history through the engine and must match exactly;
+ *  4. the log must explain the petal counters (sums per station and in total, games played,
+ *     earlier stations cleared) and, in the result phase, the saved tally must equal the one
+ *     the charm layer recomputes from the finished game.
  */
 export function validateRun(raw: unknown): RunState | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const r = raw as Partial<RunState>;
-  const phases: Phase[] = ['start-draft', 'intro', 'playing', 'result', 'draft', 'won', 'lost'];
-  if (typeof r.seed !== 'number' || !r.phase || !phases.includes(r.phase)) return null;
-  if (typeof r.station !== 'number' || r.station < 0 || r.station >= STATIONS.length) return null;
-  if (!Array.isArray(r.held) || r.held.length > MAX_HELD) return null;
-  const ids = new Set(CHARMS.map((c) => c.id));
-  if (!r.held.every((id) => ids.has(id)) || !Array.isArray(r.offers) || !r.offers.every((id) => ids.has(id))) return null;
-  if (r.nextFirst !== 1 && r.nextFirst !== 2) return null;
-  if (r.game) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const r = raw as Record<string, unknown>;
+  const isCount = (x: unknown): x is number => typeof x === 'number' && Number.isSafeInteger(x) && x >= 0 && x <= MAX_COUNT && !Object.is(x, -0);
+  const isRecord = (x: unknown): x is Record<string, unknown> => x !== null && typeof x === 'object' && !Array.isArray(x);
+  const phases: readonly Phase[] = ['start-draft', 'intro', 'playing', 'result', 'draft', 'won', 'lost'];
+  const ids = new Set<string>(CHARMS.map((c) => c.id));
+  const isCharmList = (x: unknown, max: number): x is CharmId[] =>
+    Array.isArray(x) && x.length <= max && x.every((id) => typeof id === 'string' && ids.has(id)) && new Set(x).size === x.length;
+
+  /* ---- 1. fields ---- */
+  if (typeof r.seed !== 'number' || !Number.isSafeInteger(r.seed) || r.seed < 0 || r.seed > 0xffffffff) return null;
+  if (typeof r.phase !== 'string' || !phases.includes(r.phase as Phase)) return null;
+  const phase = r.phase as Phase;
+  if (!isCount(r.station) || r.station >= STATIONS.length) return null;
+  const station = STATIONS[r.station];
+  if (!isCount(r.gamesPlayed) || !isCount(r.stationPetals) || !isCount(r.totalPetals)) return null;
+  if (!isCharmList(r.held, MAX_HELD) || !isCharmList(r.offers, DRAFT_SIZE)) return null;
+  const held = r.held as CharmId[];
+  if (typeof r.fireflyUsed !== 'boolean' || !isPlayer(r.nextFirst)) return null;
+  if (!Array.isArray(r.log)) return null;
+  for (const entry of r.log as unknown[]) {
+    if (!isRecord(entry)) return null;
+    if (!isCount(entry.station) || entry.station >= STATIONS.length) return null;
+    if (!isCount(entry.game) || entry.game >= STATIONS[entry.station].lanterns) return null;
+    if (typeof entry.won !== 'boolean' || !isCount(entry.petals) || !isWinReason(entry.reason)) return null;
+    if (!isCount(entry.moves) || entry.moves < 1 || entry.moves > 16) return null;
+  }
+  const log = r.log as GameRecord[];
+  if (r.lastResult !== null && !isRecord(r.lastResult)) return null;
+
+  /* ---- 2. per-phase invariants ---- */
+  const drafting = phase === 'start-draft' || phase === 'draft';
+  const expectedOffers = drafting ? draftOffers(r.seed, phase === 'start-draft' ? 0 : r.station, held) : [];
+  if (JSON.stringify(r.offers) !== JSON.stringify(expectedOffers)) return null;
+  if (phase === 'start-draft' && (held.length !== 0 || r.station !== 0 || log.length !== 0)) return null;
+  const maxGames = phase === 'result' || phase === 'won' || phase === 'lost' ? station.lanterns : phase === 'playing' ? station.lanterns - 1 : 0;
+  const minGames = phase === 'result' || phase === 'won' ? 1 : phase === 'lost' ? station.lanterns : 0;
+  if (r.gamesPlayed < minGames || r.gamesPlayed > maxGames) return null;
+  const game = r.game === undefined ? null : r.game;
+  const hasGame = phase === 'playing' || phase === 'result';
+  if (hasGame ? game === null : game !== null) return null;
+  if (phase === 'start-draft' && r.lastResult !== null) return null;
+
+  /* ---- 3. the game, replayed through the engine ---- */
+  let replay: GameState | null = null;
+  if (game !== null) {
+    if (!isRecord(game)) return null;
+    const g = game;
+    if (!Array.isArray(g.board) || g.board.length !== 16 || !Array.isArray(g.history) || g.history.length > 16) return null;
+    if (!isPlayer(g.current)) return null;
+    if (g.lastTile !== null && !isTile(g.lastTile)) return null;
+    for (const cell of g.board as unknown[]) {
+      if (!isRecord(cell)) return null;
+      if (cell.kind === 'tile' ? !isTile(cell.tile) : cell.kind === 'token' ? !isPlayer(cell.player) : true) return null;
+    }
+    for (const move of g.history as unknown[]) {
+      if (!isRecord(move)) return null;
+      if (!isPlayer(move.player) || !isCount(move.index) || move.index >= 16 || !isTile(move.tile)) return null;
+    }
+    const history = g.history as GameState['history'];
+    const first = history[0]?.player ?? (g.current as Player);
     try {
-      const g = r.game;
-      if (!Array.isArray(g.board) || g.board.length !== 16 || !Array.isArray(g.history)) return null;
-      const first = g.history[0]?.player ?? g.current;
-      let replay = newGameFromTiles(reconstructLayout(g), first);
-      for (const m of g.history) replay = applyMove(replay, m.index);
-      if (JSON.stringify(replay) !== JSON.stringify(g)) return null;
+      // The engine itself rejects any layout that is not the official 16 tiles.
+      let state = newGameFromTiles(reconstructLayout(game as unknown as GameState), first);
+      for (const m of history) state = applyMove(state, m.index);
+      if (JSON.stringify(state) !== JSON.stringify(game)) return null;
+      replay = state;
     } catch {
       return null;
     }
-  } else if (r.phase === 'playing' || r.phase === 'result') {
-    return null;
+    // Who opened this game must be who the run said would open it (the loser of the previous game).
+    if (phase === 'playing' && first !== r.nextFirst) return null;
+    if (phase === 'result' && (!replay.win || r.nextFirst !== opponent(replay.win.winner))) return null;
   }
-  return r as RunState;
+
+  /* ---- 4. the log explains the counters ---- */
+  let total = 0;
+  const perStation = new Map<number, { count: number; petals: number }>();
+  let prevStation = -1;
+  for (const e of log) {
+    if (e.station < prevStation || e.station > r.station) return null;
+    const agg = perStation.get(e.station) ?? { count: 0, petals: 0 };
+    if (e.game !== agg.count) return null; // games at a station are numbered 0, 1, 2 in order
+    agg.count++;
+    agg.petals += e.petals;
+    perStation.set(e.station, agg);
+    total += e.petals;
+    prevStation = e.station;
+  }
+  if (total !== r.totalPetals) return null;
+  const here = perStation.get(r.station) ?? { count: 0, petals: 0 };
+  if (here.count !== r.gamesPlayed || here.petals !== r.stationPetals) return null;
+  for (let st = 0; st < r.station; st++) {
+    const agg = perStation.get(st);
+    if (!agg || agg.petals < STATIONS[st].target) return null; // every earlier station was cleared
+  }
+  if (phase === 'won' && here.petals < station.target) return null;
+  if (phase === 'lost' && here.petals >= station.target) return null;
+  if (phase === 'result') {
+    if (!replay || !replay.win) return null;
+    const expected = scoreGame(replay, HUMAN, held);
+    if (JSON.stringify(r.lastResult) !== JSON.stringify(expected)) return null;
+    const last = log[log.length - 1];
+    if (!last || last.station !== r.station || last.game !== r.gamesPlayed - 1 || last.won !== expected.won) return null;
+    if (last.petals !== expected.total || last.reason !== replay.win.reason || last.moves !== replay.history.length) return null;
+  } else if (r.lastResult !== null) {
+    // A previous game's tally rides along into draft/intro/won/lost: check its shape.
+    const lr = r.lastResult as Record<string, unknown>;
+    if (typeof lr.won !== 'boolean' || !isCount(lr.base) || !isCount(lr.tilesRemaining) || !isCount(lr.add) || !isCount(lr.mult) || !isCount(lr.total)) return null;
+    if (!Array.isArray(lr.effects)) return null;
+    for (const eff of lr.effects as unknown[]) {
+      if (!isRecord(eff) || !isRecord(eff.charm) || !isRecord(eff.effect)) return null;
+      if (typeof eff.charm.id !== 'string' || !ids.has(eff.charm.id)) return null;
+      if (!isCount(eff.effect.add) || !isCount(eff.effect.mult) || typeof eff.effect.note !== 'string') return null;
+    }
+  }
+
+  // Return a fresh object built from the validated fields, so unknown keys do not ride along.
+  return {
+    seed: r.seed,
+    phase,
+    station: r.station,
+    gamesPlayed: r.gamesPlayed,
+    stationPetals: r.stationPetals,
+    held,
+    offers: r.offers as CharmId[],
+    fireflyUsed: r.fireflyUsed,
+    nextFirst: r.nextFirst,
+    game: (game as GameState | null),
+    lastResult: r.lastResult as PetalBreakdown | null,
+    totalPetals: r.totalPetals,
+    log,
+  };
 }

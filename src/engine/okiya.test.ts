@@ -10,6 +10,9 @@ import {
   boardToString,
   findWin,
   isLegalMove,
+  isSymbol,
+  isTile,
+  isVegetation,
   legalMoves,
   newGame,
   newGameFromTiles,
@@ -93,6 +96,44 @@ describe('setup', () => {
     const dup = parseLayout(CANON);
     dup[15] = dup[0];
     expect(() => newGameFromTiles(dup)).toThrow(/duplicate/);
+  });
+
+  it('rejects tiles outside the official set (vegetation, symbol, shape), as a restored save might carry', () => {
+    const bamboo = parseLayout(CANON);
+    bamboo[3] = { veg: 'bamboo', sym: 'sun' } as unknown as Tile; // unofficial vegetation, still 16 "distinct" tiles
+    expect(() => newGameFromTiles(bamboo)).toThrow(/invalid tile at index 3/);
+    const moon = parseLayout(CANON);
+    moon[0] = { veg: 'maple', sym: 'moon' } as unknown as Tile; // unofficial symbol
+    expect(() => newGameFromTiles(moon)).toThrow(/invalid tile at index 0/);
+    const extra = parseLayout(CANON);
+    extra[5] = { veg: 'cherry', sym: 'poem', bonus: 99 } as unknown as Tile; // extra field
+    expect(() => newGameFromTiles(extra)).toThrow(/invalid tile at index 5/);
+    const hole = parseLayout(CANON);
+    (hole as unknown[])[9] = null; // missing cell
+    expect(() => newGameFromTiles(hole)).toThrow(/invalid tile at index 9/);
+    const str = parseLayout(CANON);
+    (str as unknown[])[12] = 'Is'; // a code string instead of a tile object
+    expect(() => newGameFromTiles(str)).toThrow(/invalid tile at index 12/);
+    const sparse = parseLayout(CANON);
+    delete (sparse as unknown[])[9]; // a hole, as a save with a token but no history entry produces
+    expect(() => newGameFromTiles(sparse)).toThrow(/invalid tile at index 9/);
+    expect(() => newGameFromTiles(new Array(16) as Tile[])).toThrow(/invalid tile at index 0/);
+    expect(() => newGameFromTiles('not an array' as unknown as Tile[])).toThrow(/expected an array/);
+    expect(() => newGameFromTiles(parseLayout(CANON), 3 as unknown as 1)).toThrow(/invalid first player/);
+  });
+
+  it('isTile / isVegetation / isSymbol accept exactly the official values', () => {
+    for (const t of allTiles()) expect(isTile(t)).toBe(true);
+    expect(isTile({ veg: 'bamboo', sym: 'sun' })).toBe(false);
+    expect(isTile({ veg: 'maple', sym: 'Sun' })).toBe(false); // case matters
+    expect(isTile({ veg: 'maple' })).toBe(false);
+    expect(isTile({ veg: 'maple', sym: 'sun', extra: 1 })).toBe(false);
+    expect(isTile(['maple', 'sun'])).toBe(false);
+    expect(isTile(null)).toBe(false);
+    expect(isVegetation('iris')).toBe(true);
+    expect(isVegetation('Iris')).toBe(false);
+    expect(isSymbol('rain')).toBe(true);
+    expect(isSymbol('cloud')).toBe(false);
   });
 
   it('each player starts with 8 tokens in hand', () => {

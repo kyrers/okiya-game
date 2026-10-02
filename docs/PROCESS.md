@@ -130,6 +130,25 @@ These round-2 fixes were verified by the orchestrating session from the regenera
 | 7 | Info: 32-bit seed cannot reach every layout | Noted; no change. |
 | Test gaps | No property test, column/diagonal only via `findWin`, danger hint untested, no mutation checks | Added: a random-game property test against an independent reference (legal sets, illegal indices throw, one winner, no draws), column and diagonal wins through `applyMove`, two-formation precedence, `newGame(seed, 2)`, a danger-hint test, a hint immutability test, `validateRun` tests, and "next game starts with the recorded loser". The auditor's own invariant suite is kept as `npm run audit`. |
 
+### Follow-up: save validation against the official tile set (2026-10-03)
+
+An independent review after the session found that restored saves were not checked against the
+official tile set: `newGameFromTiles` verified 16 distinct tiles but not that each vegetation and
+symbol was one of the official four, so a save edited consistently to use "bamboo" passed
+`validateRun`. Fix: `isTile`/`isVegetation`/`isSymbol`/`isPlayer` guards in the engine, used by
+`newGameFromTiles` (which now also visits holes in a sparse layout), and a rewritten `validateRun`
+that checks every field, the per-phase invariants of the state machine (which phases carry a
+game, how many games and offers, who opens), replays the game through the engine, and requires
+the log to explain the petal counters and the saved tally to equal the recomputed one.
+A verification workflow (3 attackers with different lenses, 1 diff reviewer, 15 skeptics
+re-checking each claim; 609,437 arbitrary inputs and 15,400 legitimate states fuzzed) confirmed
+further gaps that the rewrite closes: a 'result' save with a malformed tally or an empty log used
+to crash every render on resume; counters and offers were not bounded by phase (a soft-lock on the
+intro screen); huge "integers" passed. Result rendering now looks charms up by id and coerces
+numbers. Tests: 87 (engine membership and sparse-layout tests; run-validation tests for tiles,
+counters, offers, phase, tally and a legitimately reached multi-station run). The end-to-end seeds
+are now built only through the state machine.
+
 ## Unfinished / known limitations
 
 - **Full-garden ruling.** The engine rules an emptied garden as a block win for the last mover

@@ -43,7 +43,12 @@ export type Player = 1 | 2;
 /** A board cell is either a garden tile still in place, or a player's token. */
 export type Cell = { kind: 'tile'; tile: Tile } | { kind: 'token'; player: Player };
 
-export type WinReason = 'row' | 'column' | 'diagonal' | 'square' | 'blocked';
+export const WIN_REASONS = ['row', 'column', 'diagonal', 'square', 'blocked'] as const;
+export type WinReason = (typeof WIN_REASONS)[number];
+
+export function isWinReason(x: unknown): x is WinReason {
+  return typeof x === 'string' && (WIN_REASONS as readonly string[]).includes(x);
+}
 
 export interface WinInfo {
   readonly winner: Player;
@@ -96,6 +101,25 @@ export function allTiles(): Tile[] {
   const tiles: Tile[] = [];
   for (const veg of VEGETATIONS) for (const sym of SYMBOLS) tiles.push({ veg, sym });
   return tiles;
+}
+
+export function isVegetation(x: unknown): x is Vegetation {
+  return typeof x === 'string' && (VEGETATIONS as readonly string[]).includes(x);
+}
+
+export function isSymbol(x: unknown): x is Symbol {
+  return typeof x === 'string' && (SYMBOLS as readonly string[]).includes(x);
+}
+
+/** True only for a plain object with exactly the official `veg` and `sym` fields. */
+export function isTile(x: unknown): x is Tile {
+  if (x === null || typeof x !== 'object' || Array.isArray(x)) return false;
+  const t = x as Record<string, unknown>;
+  return Object.keys(t).length === 2 && isVegetation(t.veg) && isSymbol(t.sym);
+}
+
+export function isPlayer(x: unknown): x is Player {
+  return x === 1 || x === 2;
 }
 
 export function sameTile(a: Tile, b: Tile): boolean {
@@ -166,17 +190,28 @@ export function shuffle<T>(items: readonly T[], rng: () => number): T[] {
   return arr;
 }
 
-/** Build a fresh game from an explicit tile layout (16 distinct tiles). */
+/**
+ * Build a fresh game from an explicit tile layout: exactly 16 distinct tiles, each one of
+ * the official 4 vegetations × 4 symbols. Anything else (including data restored from a
+ * save) is rejected with an Error.
+ */
 export function newGameFromTiles(tiles: readonly Tile[], first: Player = 1): GameState {
+  if (!Array.isArray(tiles)) throw new Error('expected an array of tiles');
   if (tiles.length !== CELL_COUNT) throw new Error(`expected ${CELL_COUNT} tiles, got ${tiles.length}`);
+  if (!isPlayer(first)) throw new Error(`invalid first player ${String(first)}`);
   const seen = new Set<string>();
-  for (const t of tiles) {
+  const board: Cell[] = [];
+  // Indexed loop (not forEach/map) so that holes in a sparse array are visited and rejected too.
+  for (let i = 0; i < CELL_COUNT; i++) {
+    const t: unknown = tiles[i];
+    if (!isTile(t)) throw new Error(`invalid tile at index ${i}: ${JSON.stringify(t)}`);
     const key = `${t.veg}/${t.sym}`;
     if (seen.has(key)) throw new Error(`duplicate tile ${key}`);
     seen.add(key);
+    board.push({ kind: 'tile', tile: t });
   }
   return {
-    board: tiles.map((tile) => ({ kind: 'tile', tile }) as Cell),
+    board,
     current: first,
     lastTile: null,
     history: [],
