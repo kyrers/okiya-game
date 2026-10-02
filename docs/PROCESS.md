@@ -149,6 +149,18 @@ numbers. Tests: 87 (engine membership and sparse-layout tests; run-validation te
 counters, offers, phase, tally and a legitimately reached multi-station run). The end-to-end seeds
 are now built only through the state machine.
 
+### Follow-up: rival strength (2026-10-03)
+
+The author found the rivals too easy to beat with a line. Measured against an independent greedy
+player, the old rivals handed the player an immediate win 193 and 195 times in 400 games at stations
+1 and 2, and even the final rival won only 73%. Fix: a tactical guard in the AI (`careless: false`
+by default) so that from station 2 on a rival always takes an immediate win and never hands one
+over when a safe move exists; a strength ladder picked from a depth × blunder sweep; petal targets
+recalibrated for the stronger rivals. Before/after numbers and the method are in `docs/DESIGN.md`
+§8 and `docs/sim/stations-*.txt`. A verification workflow (independent checkers for the guarantee,
+for regressions in the AI change and for the difficulty curve, each claim re-checked by a skeptic)
+ran before the commit; its outcome is recorded below the table in §8 of DESIGN.md.
+
 ## Unfinished / known limitations
 
 - **Full-garden ruling.** The engine rules an emptied garden as a block win for the last mover
@@ -160,7 +172,8 @@ are now built only through the state machine.
 - **Classic match formats** (single game, first to 3 sets, 10/15/20 victory points) exist in the
   engine with tests but are not playable in the app; Hanamichi uses its station structure.
 - **Balance is simulated, not human-tested.** Station targets come from an "EV-2" player model;
-  real players may find station 6 (depth 4 rival) too hard or stations 1–2 too easy.
+  after the 2026-10-03 retune the modelled full-run completion is about 8%, so real players may find
+  the late stations hard.
 - **Not built:** idea A's Daily Road album, Winter Road unlock, charm album; sound; a coach mark on
   the first game.
 - **No third visual review.** The fixes made after visual review 2 were checked by the orchestrating

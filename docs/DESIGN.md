@@ -163,14 +163,18 @@ A run is a walk along six stations. At each station you face a named rival and h
 lanterns (three full Okiya games) to gather the station's petal target. Clear it and you draft
 one of three charms (hold up to four); fail and the run ends with a summary.
 
-| Station | Season | Rival | Depth / random-move rate | Target petals (3 games) |
-|---|---|---|---|---|
-| 1 | Spring | Haru, the Eager | 1 / 0.35 | 30 |
-| 2 | Spring | Ume, the Gentle | 1 / 0.15 | 33 |
-| 3 | Summer | Natsu, the Mirror | 2 / 0.15 | 16 |
-| 4 | Summer | Kaede, the Patient | 2 / 0.05 | 12 |
-| 5 | Autumn | Aki, the Wall | 3 / 0.05 | 12 |
-| 6 | Winter | Okasan, the Matron | 4 / 0.03 | 8 |
+| Station | Season | Rival | Depth / random-move rate | Tactics | Target petals (3 games) |
+|---|---|---|---|---|---|
+| 1 | Spring | Haru, the Eager | 1 / 0.35 | careless | 30 |
+| 2 | Spring | Ume, the Gentle | 1 / 0.15 | careful | 30 |
+| 3 | Summer | Natsu, the Mirror | 2 / 0.02 | careful | 14 |
+| 4 | Summer | Kaede, the Patient | 3 / 0.02 | careful | 12 |
+| 5 | Autumn | Aki, the Wall | 5 / 0.02 | careful | 8 |
+| 6 | Winter | Okasan, the Matron | 8 / 0 (900 ms cap) | careful | 3 (one win) |
+
+"Careful" rivals always take an immediate win and never play a move that hands the player an
+immediate line, square or block when a safer move exists; their random moves are drawn from the
+safe moves only. Only Haru is careless. See §8 for how this ladder was measured.
 
 - **Petals for a won game** = `(3 + tiles left in the garden + Σ charm adds) × (1 + Σ charm mults)`.
   A lost game scores 0. The "tiles left" term is the official victory-points rule; the +3 is ours.
@@ -190,3 +194,48 @@ one of three charms (hold up to four); fail and the run ends with a summary.
 - **Solo**: the rival is the negamax AI with the depth and random-move rate above. Everything is
   client-side; the run autosaves to localStorage after every game; a run can be seeded so the same
   road can be replayed.
+
+
+## 8. Rival strength retune (2026-10-03)
+
+Playing by hand, the author won with four in a line far too easily. Measured against a simple
+**greedy player** written from the rules (win now; else never hand the rival an immediate win;
+else maximise own open formations; `scripts/sim-stations.ts`), the original rivals were weaker than
+intended and, because their random "blunder" moves ignored threats, they handed the player an
+immediate win hundreds of times:
+
+| Station | Rival | Before: rival win % (400 games) | Before: handed the player an immediate win | After: rival win % (1,000 games) | After, when the player opens / when the rival opens | After: handed wins | After vs a 2nd opponent (depth-2 careless searcher) |
+|---|---|---|---|---|---|---|---|
+| 1 | Haru (careless, unchanged) | 17.8% | 193 | 20.0% | 22% / 18% | 495 (kept easy on purpose) | 22.9% |
+| 2 | Ume | 28.8% | 195 | **46.5%** | 56% / 37% | **0** | 45.0% |
+| 3 | Natsu | 42.0% | 37 | **56.8%** | 67% / 47% | **0** | 53.8% |
+| 4 | Kaede | 49.8% | 13 | **68.0%** | 72% / 64% | **0** | 71.4% |
+| 5 | Aki | 62.8% | 14 | **81.5%** | 83% / 80% | **0** | 80.3% |
+| 6 | Okasan | 72.8% | 6 | **90.4%** | 97% / 83% | **0** | 87.1% |
+
+Raw outputs: `docs/sim/stations-before.txt`, `docs/sim/stations-after.txt`. The second player has a
+large advantage in Okiya at these strengths, and the official loser-opens rule means a player who
+is losing at a station opens more often; the per-opener split shows what that feels like.
+
+Changes:
+- **Tactical guard in the AI** (`careless` option, default off): an immediate win is always taken;
+  a move after which the opponent can win at once (formation or block) is never played when a safe
+  alternative exists; blunders are drawn from safe moves only. Unit tests cover this on 1,000
+  random positions with the blunder rate forced to 100%. Station 1 keeps `careless: true`.
+- **Ladder** chosen from a depth × blunder sweep of careful rivals against the greedy player
+  (table in `docs/sim/stations-before.txt`), then widened at the top after an independent check
+  found the depth 3 → depth 4 step small and inverted against a different opponent: depth 1/0.15,
+  2/0.02, 3/0.02, 5/0.02, 8/0 (the last under a 900 ms cap; 23 ms per move on average on the test
+  machine). Steps of 10–13 points against the greedy player; monotone against the second opponent too.
+- **Targets recalibrated** with the same EV-2 player model as §6 against the new rivals
+  (`LADDER=1 npx tsx scripts/sim-hanamichi.ts 300`): clear rates per station 88 / 67 / 71 / 66 /
+  62% with targets 30 / 30 / 14 / 12 / 8; at the last station the model wins a game only 16% of the
+  time, so its target is 3 petals, i.e. **win one game against Okasan** (about 41% of model runs).
+  The modelled full-run completion is about 7%, under the 10–25% band of §6; the author preferred
+  clearly harder rivals, and a real player who drafts charms deliberately scores above this model.
+- **Verification**: a workflow of independent agents re-derived the guarantee from the rules
+  (about 210,000 careful rival moves across stations 2–6 against random, searching and greedy
+  opponents, with the blunder rate forced to 0 and to 1: zero missed wins, zero handed wins, every
+  forced position still answered with a legal move; the detector fires 79/173 times on careless
+  Haru), confirmed `careless: true` reproduces the previous AI exactly on 4,000 comparisons, found
+  no measurable performance cost, and flagged the station 4 → 5 plateau that the final ladder fixes.

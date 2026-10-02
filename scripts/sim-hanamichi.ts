@@ -12,6 +12,7 @@
 import { chooseMove, Searcher, WIN } from '../src/engine/ai';
 import { CHARMS, scoreGame, type CharmId } from '../src/engine/charms';
 import { applyMove, legalMoves, mulberry32, newGame, FORMATIONS, CENTRE_CELLS, type GameState, type Player } from '../src/engine/okiya';
+import { STATIONS } from '../src/game/stations';
 
 const TOL = Number(process.env.TOL ?? '2');
 /** Who moves first: decoupled from who the player is (seed bit 1). */
@@ -363,12 +364,11 @@ if (process.env.LADDER === '1') {
   const TOL_EV = 6;
   const allIds = CHARMS.map((c) => c.id);
   const zero = () => 0;
-  const levels: { depth: number; eps: number }[] = [
-    { depth: 1, eps: 0.35 }, { depth: 1, eps: 0.15 }, { depth: 2, eps: 0.15 }, { depth: 2, eps: 0.05 }, { depth: 3, eps: 0.05 }, { depth: 4, eps: 0.03 },
-  ];
+  // The rivals exactly as configured in src/game/stations.ts.
+  const levels = STATIONS.map((st) => ({ ...st.ai, name: st.rival.name, target: st.target }));
   const SETS = Math.max(40, Math.floor(GAMES / 3));
   console.log(`\n[6] Ladder calibration: EV-${PD} player, 3 random charms, ${SETS} three-game sets per level`);
-  console.log(`  level(depth/eps)   win%   petals/game   set quantiles p25 p40 p50 p60 p75`);
+  console.log(`  station rival (depth/blunder/careless)  win%   petals/game   set quantiles p25 p40 p50 p60 p75   target  clear%`);
   for (const lv of levels) {
     const sets: number[] = [];
     let wins = 0, games = 0, petalsTotal = 0;
@@ -380,7 +380,7 @@ if (process.env.LADDER === '1') {
       let setPetals = 0;
       let first: Player = ((sIdx & 1) + 1) as Player;
       for (let gi = 0; gi < 3; gi++) {
-        const seed = 30000 + sIdx * 10 + gi + lv.depth * 1000;
+        const seed = 30000 + sIdx * 10 + gi + levels.indexOf(lv) * 1000;
         const me: Player = 1;
         let g = newGame(seed, first);
         const r = mulberry32(seed);
@@ -407,7 +407,7 @@ if (process.env.LADDER === '1') {
             }
             g = applyMove(g, idx);
           } else {
-            g = applyMove(g, chooseMove(g, { depth: lv.depth, blunder: lv.eps, rng: r }, searcher).index);
+            g = applyMove(g, chooseMove(g, { ...lv, rng: r }, searcher).index);
           }
         }
         const sc = scoreGame(g, me, held);
@@ -419,8 +419,9 @@ if (process.env.LADDER === '1') {
       }
       sets.push(setPetals);
     }
+    const cleared = sets.filter((p) => p >= lv.target).length;
     sets.sort((a, b) => a - b);
     const q = (p: number) => sets[Math.min(sets.length - 1, Math.floor(p * sets.length))];
-    console.log(`  d${lv.depth}/e${lv.eps.toFixed(2)}        ${pct(wins, games).padStart(6)}   ${(petalsTotal / games).toFixed(2).padStart(6)}        ${[0.25, 0.4, 0.5, 0.6, 0.75].map((p) => String(q(p)).padStart(3)).join(' ')}`);
+    console.log(`  ${lv.name.padEnd(7)} d${lv.depth}/b${(lv.blunder ?? 0).toFixed(2)}/${lv.careless ? 'careless' : 'careful '}  ${pct(wins, games).padStart(6)}   ${(petalsTotal / games).toFixed(2).padStart(6)}        ${[0.25, 0.4, 0.5, 0.6, 0.75].map((p) => String(q(p)).padStart(3)).join(' ')}   ${String(lv.target).padStart(6)}  ${pct(cleared, SETS)}`);
   }
 }

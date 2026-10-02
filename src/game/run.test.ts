@@ -58,11 +58,19 @@ function playOut(run: RunState): RunState {
 }
 
 describe('stations', () => {
-  it('six stations with rising rival depth and three lanterns each', () => {
+  it('six stations with rising rival strength and three lanterns each', () => {
     expect(STATIONS).toHaveLength(6);
-    expect(STATIONS.map((s) => s.ai.depth)).toEqual([1, 1, 2, 2, 3, 4]);
-    expect(STATIONS.map((s) => s.target)).toEqual([30, 33, 16, 12, 12, 8]);
+    expect(STATIONS.map((s) => s.ai.depth)).toEqual([1, 1, 2, 3, 5, 8]);
     expect(STATIONS.every((s) => s.lanterns === 3)).toBe(true);
+    for (let i = 1; i < STATIONS.length; i++) {
+      expect(STATIONS[i].ai.depth).toBeGreaterThanOrEqual(STATIONS[i - 1].ai.depth);
+      if (i >= 2) expect(STATIONS[i].ai.blunder ?? 0).toBeLessThanOrEqual(STATIONS[i - 1].ai.blunder ?? 0);
+    }
+  });
+
+  it('only the first rival is careless: from station 2 on, rivals never miss an immediate block or win', () => {
+    expect(STATIONS[0].ai.careless).toBe(true);
+    for (const s of STATIONS.slice(1)) expect(s.ai.careless ?? false).toBe(false);
   });
 });
 

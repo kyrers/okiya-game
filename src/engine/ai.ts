@@ -26,6 +26,13 @@ export interface AiOptions {
   depth: number;
   /** Probability (0..1) of playing a random legal move instead of the best one. Adds "human" error. */
   blunder?: number;
+  /**
+   * When true, blunders and shallow misjudgements may hand the opponent an immediate win
+   * (the station-1 rival only). Default false: the AI always takes an immediate win, and never
+   * plays a move after which the opponent can win at once when a safer move exists. Blunders
+   * are then drawn from the safe moves only.
+   */
+  careless?: boolean;
   /** PRNG in [0,1); defaults to a fixed-seed mulberry32. */
   rng?: () => number;
   /** Optional wall-clock budget in ms for iterative deepening (overrides depth as an upper bound). */
@@ -184,13 +191,48 @@ const defaultRng = mulberry32(12345);
  * `opts.depth` plies (or until `opts.timeMs` elapses). Ties are broken at
  * random with `opts.rng` so games are varied.
  */
+/**
+ * One-ply tactics for every legal move: does it win at once, and does it let the opponent win
+ * at once (by a formation or by blocking us)?
+ */
+export function tactics(state: GameState): { moves: number[]; wins: boolean[]; losesNext: boolean[] } {
+  const moves = legalMoves(state);
+  const wins: boolean[] = [];
+  const losesNext: boolean[] = [];
+  for (const m of moves) {
+    const next = applyMove(state, m);
+    if (next.win) {
+      wins.push(true);
+      losesNext.push(false);
+      continue;
+    }
+    wins.push(false);
+    losesNext.push(legalMoves(next).some((r) => applyMove(next, r).win !== null));
+  }
+  return { moves, wins, losesNext };
+}
+
 export function chooseMove(state: GameState, opts: AiOptions, searcher = new Searcher()): AiResult {
   const rng = opts.rng ?? defaultRng;
   const moves = legalMoves(state);
   if (moves.length === 0) throw new Error('no legal moves');
 
+  // Tactical guard (careful rivals): take an immediate win; otherwise only consider moves that
+  // do not hand the opponent an immediate win, when such moves exist.
+  let allowed = moves;
+  if (!opts.careless) {
+    const t = tactics(state);
+    const winning = moves.filter((_, i) => t.wins[i]);
+    if (winning.length) {
+      const index = winning[Math.floor(rng() * winning.length)];
+      return { index, score: WIN - 1, depth: 0, nodes: 0, moves, scores: moves.map((_, i) => (t.wins[i] ? WIN - 1 : 0)) };
+    }
+    const safe = moves.filter((_, i) => !t.losesNext[i]);
+    if (safe.length) allowed = safe;
+  }
+
   if (opts.blunder && rng() < opts.blunder) {
-    const index = moves[Math.floor(rng() * moves.length)];
+    const index = allowed[Math.floor(rng() * allowed.length)];
     return { index, score: 0, depth: 0, nodes: 0, moves, scores: moves.map(() => 0) };
   }
 
@@ -210,8 +252,9 @@ export function chooseMove(state: GameState, opts: AiOptions, searcher = new Sea
     // Stop early once the outcome is decided.
     if (Math.max(...scores) >= WIN - 20 || Math.min(...scores) <= -(WIN - 20) && Math.max(...scores) <= -(WIN - 20)) break;
   }
-  const max = Math.max(...bestScores);
-  const candidates = moves.filter((_, i) => bestScores[i] === max);
+  const allowedScores = moves.map((m, i) => (allowed.includes(m) ? bestScores[i] : -Infinity));
+  const max = Math.max(...allowedScores);
+  const candidates = moves.filter((_, i) => allowedScores[i] === max);
   const index = candidates[Math.floor(rng() * candidates.length)];
   return { index, score: max, depth: completedDepth, nodes: searcher.nodes, moves, scores: bestScores };
 }
@@ -220,7 +263,7 @@ export function chooseMove(state: GameState, opts: AiOptions, searcher = new Sea
 export type Difficulty = 'novice' | 'apprentice' | 'master';
 
 export const DIFFICULTY: Record<Difficulty, AiOptions> = {
-  novice: { depth: 1, blunder: 0.35 },
+  novice: { depth: 1, blunder: 0.35, careless: true },
   apprentice: { depth: 4, blunder: 0.08 },
   master: { depth: 16, timeMs: 900 },
 };

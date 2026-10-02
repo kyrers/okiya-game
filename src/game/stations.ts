@@ -20,32 +20,32 @@ export const STATIONS: readonly Station[] = [
   {
     index: 0, season: 'Spring', place: 'Plum Gate',
     rival: { name: 'Haru', title: 'the Eager', line: 'She reaches for every line she sees.' },
-    ai: { depth: 1, blunder: 0.35 }, target: 30, lanterns: 3,
+    ai: { depth: 1, blunder: 0.35, careless: true }, target: 30, lanterns: 3,
   },
   {
     index: 1, season: 'Spring', place: 'Willow Bridge',
     rival: { name: 'Ume', title: 'the Gentle', line: 'Kind, careless, and quicker than she looks.' },
-    ai: { depth: 1, blunder: 0.15 }, target: 33, lanterns: 3,
+    ai: { depth: 1, blunder: 0.15 }, target: 30, lanterns: 3, // careful from here on: never misses a block
   },
   {
     index: 2, season: 'Summer', place: 'Cicada Teahouse',
     rival: { name: 'Natsu', title: 'the Mirror', line: 'She answers your shape with her own.' },
-    ai: { depth: 2, blunder: 0.15 }, target: 16, lanterns: 3,
+    ai: { depth: 2, blunder: 0.02 }, target: 14, lanterns: 3,
   },
   {
     index: 3, season: 'Summer', place: 'Firefly Pond',
     rival: { name: 'Kaede', title: 'the Patient', line: 'She waits for you to run out of tiles.' },
-    ai: { depth: 2, blunder: 0.05 }, target: 12, lanterns: 3,
+    ai: { depth: 3, blunder: 0.02 }, target: 12, lanterns: 3,
   },
   {
     index: 4, season: 'Autumn', place: 'Maple Steps',
     rival: { name: 'Aki', title: 'the Wall', line: 'Every tile you want, she has already closed.' },
-    ai: { depth: 3, blunder: 0.05 }, target: 12, lanterns: 3,
+    ai: { depth: 5, blunder: 0.02 }, target: 8, lanterns: 3,
   },
   {
     index: 5, season: 'Winter', place: 'Snow Pavilion',
     rival: { name: 'Okasan', title: 'the Matron', line: 'The house itself sits down to play.' },
-    ai: { depth: 4, blunder: 0.03 }, target: 8, lanterns: 3,
+    ai: { depth: 8, blunder: 0, timeMs: 900 }, target: 3, lanterns: 3, // one win against the Matron
   },
 ];
 
