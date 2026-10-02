@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { applyMove, legalMoves } from '../engine/okiya';
 import { chooseMove } from '../engine/ai';
 import { CHARMS } from '../engine/charms';
-import { continueRun, draftOffers, finishGame, lanternsLeft, newRun, pickCharm, skipDraft, startGame, useLantern, type RunState } from './run';
+import { continueRun, draftOffers, finishGame, lanternsLeft, newRun, pickCharm, skipDraft, startGame, useFirefly, type RunState } from './run';
 import { MAX_HELD, STATIONS } from './stations';
 
 /** Play the current game to the end with depth-1 AIs on both sides (deterministic). */
@@ -131,17 +131,17 @@ describe('run flow', () => {
     expect(picked.held).not.toContain(run.held[1]);
   });
 
-  it('the Paper Lantern can be used once per station and resets at the next station', () => {
+  it('the Firefly can be used once per station and resets at the next station', () => {
     let run = newRun(42);
     run = pickCharm(run, run.offers[0]);
-    run = useLantern(run);
-    expect(run.lanternUsed).toBe(true);
-    expect(() => useLantern(run)).toThrow(/already used/);
+    run = useFirefly(run);
+    expect(run.fireflyUsed).toBe(true);
+    expect(() => useFirefly(run)).toThrow(/already used/);
     run = startGame(run);
     run = playOut(run);
     run = finishGame({ ...run, stationPetals: 1000 });
     run = continueRun(run);
-    expect(run.lanternUsed).toBe(false);
+    expect(run.fireflyUsed).toBe(false);
   });
 
   it('the whole run is serialisable JSON (for autosave)', () => {

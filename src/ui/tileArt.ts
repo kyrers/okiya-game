@@ -4,7 +4,7 @@
  * return SVG markup strings; colours come from CSS custom properties so the
  * palette can be themed.
  */
-import type { Symbol, Tile, Vegetation } from '../engine/okiya';
+import { SYMBOLS, VEGETATIONS, type Symbol, type Tile, type Vegetation } from '../engine/okiya';
 
 export const VEG_LABEL: Record<Vegetation, string> = { maple: 'Maple', cherry: 'Cherry', pine: 'Pine', iris: 'Iris' };
 export const SYM_LABEL: Record<Symbol, string> = { sun: 'Rising sun', poem: 'Poem', bird: 'Bird', rain: 'Rain' };
@@ -16,13 +16,13 @@ export function tileLabel(t: Tile): string {
 /* ---- vegetation motifs (drawn in a 100x100 viewBox, anchored to the bottom) ---- */
 
 function maple(): string {
-  // Three maple leaves (five-pointed stars with stems).
-  const leaf = (x: number, y: number, s: number, rot: number) =>
-    `<g transform="translate(${x} ${y}) rotate(${rot}) scale(${s})" class="veg veg-maple">
-      <path d="M0,-16 L4,-6 L15,-8 L8,0 L13,10 L2,6 L0,16 L-2,6 L-13,10 L-8,0 L-15,-8 L-4,-6 Z"/>
-      <line x1="0" y1="2" x2="0" y2="22" class="stem"/>
+  // Three five-lobed maple leaves with stems.
+  const leaf = (x: number, y: number, sc: number, rot: number) =>
+    `<g transform="translate(${x} ${y}) rotate(${rot}) scale(${sc})" class="veg veg-maple">
+      <path d="M0,-18 C1,-13 3,-10 4,-8 L13,-13 C11,-8 10,-5 9,-2 L17,3 C12,4 9,5 7,6 L10,15 C6,12 3,10 1,8 L0,10 L-1,8 C-3,10 -6,12 -10,15 L-7,6 C-9,5 -12,4 -17,3 L-9,-2 C-10,-5 -11,-8 -13,-13 L-4,-8 C-3,-10 -1,-13 0,-18 Z"/>
+      <line x1="0" y1="8" x2="0" y2="22" class="stem"/>
     </g>`;
-  return leaf(28, 70, 1.0, -20) + leaf(58, 78, 1.25, 15) + leaf(80, 60, 0.8, 40);
+  return leaf(26, 68, 0.95, -18) + leaf(58, 76, 1.2, 12) + leaf(82, 60, 0.75, 38);
 }
 
 function cherry(): string {
@@ -38,15 +38,14 @@ function cherry(): string {
 }
 
 function pine(): string {
-  // A cluster of stylised pine needles (fans).
-  const fan = (x: number, y: number, s: number, rot: number) => {
-    const needles = [];
-    for (let a = -60; a <= 60; a += 15) {
-      needles.push(`<line x1="0" y1="0" x2="${(28 * Math.sin((a * Math.PI) / 180)).toFixed(1)}" y2="${(-28 * Math.cos((a * Math.PI) / 180)).toFixed(1)}"/>`);
-    }
-    return `<g transform="translate(${x} ${y}) rotate(${rot}) scale(${s})" class="veg veg-pine">${needles.join('')}</g>`;
-  };
-  return fan(28, 92, 1, -15) + fan(58, 96, 1.2, 5) + fan(84, 92, 0.9, 25);
+  // A Japanese umbrella pine: a bent trunk with three layered, flat-topped canopies.
+  return `<g class="veg veg-pine">
+    <path d="M52,100 C54,88 50,80 56,70 C60,62 58,56 62,48" class="trunk"/>
+    <path d="M40,76 C44,66 72,64 80,72 C84,76 80,80 72,80 L44,80 C38,80 36,78 40,76 Z" class="canopy"/>
+    <path d="M26,86 C30,76 58,74 66,82 C70,86 66,90 58,90 L30,90 C24,90 22,88 26,86 Z" class="canopy"/>
+    <path d="M50,58 C54,48 78,46 86,54 C90,58 86,62 78,62 L54,62 C48,62 46,60 50,58 Z" class="canopy"/>
+    <path d="M44,78 l-3,-6 M54,78 l0,-7 M64,78 l3,-6 M30,88 l-3,-6 M40,88 l0,-7 M50,88 l3,-6 M54,60 l-3,-6 M64,60 l0,-7 M74,60 l3,-6" class="needles"/>
+  </g>`;
 }
 
 function iris(): string {
@@ -91,14 +90,14 @@ function bird(): string {
 }
 
 function rain(): string {
-  // A cloud band with falling rain strokes.
+  // A brush-edged cloud band with slanted rain strokes.
   const drops = [];
   for (let i = 0; i < 7; i++) {
     const x = 18 + i * 10;
     drops.push(`<line x1="${x}" y1="42" x2="${x - 4}" y2="${56 + (i % 2) * 6}" class="drop"/>`);
   }
   return `<g class="sym sym-rain">
-    <path d="M8,30 C8,16 26,12 32,22 C36,8 58,8 62,20 C72,14 92,20 90,32 L90,36 L8,36 Z" class="cloud"/>
+    <path d="M8,32 C6,22 16,14 26,18 C30,8 48,6 56,16 C64,10 82,12 86,24 C94,26 94,36 86,38 L14,38 C8,38 6,36 8,32 Z" class="cloud"/>
     ${drops.join('')}
   </g>`;
 }
@@ -120,4 +119,20 @@ export function vegGlyph(v: Vegetation): string {
 }
 export function symGlyph(s: Symbol): string {
   return `<svg viewBox="0 0 100 100" class="glyph glyph-${s}" aria-hidden="true"><g transform="translate(0 14)">${SYM_ART[s]()}</g></svg>`;
+}
+
+/** Small inline blossom used as the petal unit. */
+export function petalIcon(): string {
+  return `<svg viewBox="0 0 24 24" class="petal-icon" aria-hidden="true"><g fill="currentColor">${[0, 72, 144, 216, 288]
+    .map((a) => `<circle cx="${(12 + 6 * Math.cos((a * Math.PI) / 180)).toFixed(2)}" cy="${(12 + 6 * Math.sin((a * Math.PI) / 180)).toFixed(2)}" r="4.4"/>`)
+    .join('')}</g><circle cx="12" cy="12" r="2.6" fill="#fff3cf"/></svg>`;
+}
+
+/** 4x4 key of every tile: rows are vegetations, columns are symbols. */
+export function gardenKeyHtml(): string {
+  const cols = SYMBOLS.map((sy) => `<div class="key-head">${symGlyph(sy)}<span>${SYM_LABEL[sy]}</span></div>`).join('');
+  const rows = VEGETATIONS.map(
+    (v) => `<div class="key-head">${vegGlyph(v)}<span>${VEG_LABEL[v]}</span></div>` + SYMBOLS.map((sy) => `<div class="key-tile" title="${VEG_LABEL[v]} · ${SYM_LABEL[sy]}">${tileSvg({ veg: v, sym: sy })}</div>`).join(''),
+  ).join('');
+  return `<div class="garden-key" aria-label="The 16 garden tiles"><div></div>${cols}${rows}</div>`;
 }

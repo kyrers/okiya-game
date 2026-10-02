@@ -4,11 +4,11 @@
 import { BASE_PETALS, CHARM_BY_ID, buildContext, type CharmId } from '../engine/charms';
 import { CENTRE_CELLS, applyMove, legalMoves, tilesRemaining, type GameState, type Player } from '../engine/okiya';
 
-export type LanternHint = 'win' | 'danger' | 'safe';
+export type FireflyHint = 'win' | 'danger' | 'safe';
 
-/** Paper Lantern: for each legal tile, does it win at once, or hand the rival an immediate win? */
-export function lanternHints(state: GameState, me: Player): Map<number, LanternHint> {
-  const out = new Map<number, LanternHint>();
+/** Firefly: for each legal tile, does it win at once, or hand the rival an immediate win? */
+export function fireflyHints(state: GameState, me: Player): Map<number, FireflyHint> {
+  const out = new Map<number, FireflyHint>();
   if (state.current !== me || state.win) return out;
   for (const m of legalMoves(state)) {
     const next = applyMove(state, m);

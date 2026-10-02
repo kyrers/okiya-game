@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { parseTile } from '../engine/okiya';
 import { stateFromPicture } from '../engine/testUtils';
-import { charmCellClasses, lanternHints, worthNow } from './hints';
+import { charmCellClasses, fireflyHints, worthNow } from './hints';
 
-describe('Paper Lantern hints (information only)', () => {
+describe('Firefly hints (information only)', () => {
   it('marks immediate wins and tiles that hand the rival a win', () => {
     // P1 to move, last tile Pr. Ps (8) completes column 0 for P1.
     // Taking Pb (14) instead leaves P2 able to take Ps? No: after Pb the constraint is Pb (pine/bird);
@@ -16,7 +16,7 @@ describe('Paper Lantern hints (information only)', () => {
       1,
       parseTile('Pr'),
     );
-    const h = lanternHints(s, 1);
+    const h = fireflyHints(s, 1);
     expect(h.get(8)).toBe('win');
     expect([...h.keys()].sort((a, b) => a - b)).toEqual([3, 7, 8, 14, 15]); // pine or rain tiles
     expect(h.get(14)).toBe('safe');
@@ -24,7 +24,7 @@ describe('Paper Lantern hints (information only)', () => {
 
   it('is empty when it is not my turn', () => {
     const s = stateFromPicture(`Ms Mp Mb Mr Cs Cp Cb Cr Ps Pp Pb Pr Is Ip Ib Ir`, 2, null);
-    expect(lanternHints(s, 1).size).toBe(0);
+    expect(fireflyHints(s, 1).size).toBe(0);
   });
 });
 

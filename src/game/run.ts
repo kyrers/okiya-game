@@ -28,7 +28,7 @@ export interface RunState {
   stationPetals: number;
   held: CharmId[];
   offers: CharmId[];
-  lanternUsed: boolean;
+  fireflyUsed: boolean;
   /** The human is always player 1; this is who starts the next game. */
   nextFirst: Player;
   game: GameState | null;
@@ -60,7 +60,7 @@ export function newRun(seed: number): RunState {
     stationPetals: 0,
     held: [],
     offers: draftOffers(seed, 0, []),
-    lanternUsed: false,
+    fireflyUsed: false,
     nextFirst: rng(seed, 99)() < 0.5 ? 1 : 2,
     game: null,
     lastResult: null,
@@ -148,7 +148,7 @@ export function continueRun(run: RunState): RunState {
       station: next,
       gamesPlayed: 0,
       stationPetals: 0,
-      lanternUsed: false,
+      fireflyUsed: false,
       offers: draftOffers(run.seed, next, run.held),
       game: null,
     };
@@ -165,7 +165,7 @@ export function lanternsLeft(run: RunState): number {
   return currentStation(run).lanterns - run.gamesPlayed;
 }
 
-export function useLantern(run: RunState): RunState {
-  if (run.lanternUsed) throw new Error('lantern already used at this station');
-  return { ...run, lanternUsed: true };
+export function useFirefly(run: RunState): RunState {
+  if (run.fireflyUsed) throw new Error('firefly already used at this station');
+  return { ...run, fireflyUsed: true };
 }

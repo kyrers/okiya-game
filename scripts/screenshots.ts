@@ -67,16 +67,16 @@ async function run() {
     await shot(page, `${label}-3-station`);
     await page.click('[data-action="start-game"]');
     await page.waitForSelector('.play-screen .board');
-    // Make a few moves, then light the lantern for the screenshot.
+    // Make a few moves, then wake the firefly for the screenshot.
     for (let i = 0; i < 3; i++) await humanMove(page);
     // Wait for our turn again.
     for (let i = 0; i < 40 && !(await page.locator('.board.has-legal').count()); i++) await page.waitForTimeout(200);
     await shot(page, `${label}-4-play`);
-    const lantern = page.locator('[data-action="lantern"]:not([disabled])');
-    if (await lantern.count()) {
-      await lantern.click();
+    const firefly = page.locator('[data-action="firefly"]:not([disabled])');
+    if (await firefly.count()) {
+      await firefly.click();
       await page.waitForTimeout(200);
-      await shot(page, `${label}-5-lantern`);
+      await shot(page, `${label}-5-firefly`);
     }
     // Play to the end for the result sheet.
     for (let i = 0; i < 20; i++) if (!(await humanMove(page))) break;

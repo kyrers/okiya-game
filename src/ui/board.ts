@@ -13,6 +13,8 @@ export interface BoardOptions {
   lastIndex?: number | null;
   /** Extra class names for individual cells (e.g. charm highlights). */
   cellClass?: (index: number) => string;
+  /** Optional badge markup rendered inside a cell (information only). */
+  cellBadge?: (index: number) => string;
 }
 
 export function renderBoard(container: HTMLElement, state: GameState, opts: BoardOptions): void {
@@ -40,6 +42,7 @@ export function renderBoard(container: HTMLElement, state: GameState, opts: Boar
       label = `Player ${cell.player} token`;
     }
     if (opts.cellClass) classes.push(opts.cellClass(i));
+    if (opts.cellBadge) inner += opts.cellBadge(i);
     const clickable = legal.has(i);
     html.push(
       `<button type="button" class="${classes.join(' ')}" data-index="${i}" role="gridcell" aria-label="${label}" ${clickable ? '' : 'tabindex="-1" aria-disabled="true"'}>${inner}</button>`,

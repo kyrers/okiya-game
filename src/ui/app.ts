@@ -3,9 +3,9 @@
  * Every Okiya game is played through the engine; this file only renders and sequences.
  */
 import { chooseMove } from '../engine/ai';
-import { CHARMS, CHARM_BY_ID, type CharmId } from '../engine/charms';
-import { applyMove, legalMoves, mulberry32, tilesRemaining, type GameState, type Tile } from '../engine/okiya';
-import { charmCellClasses, lanternHints, worthNow, type LanternHint } from '../game/hints';
+import { CHARM_BY_ID, type CharmId } from '../engine/charms';
+import { applyMove, legalMoves, mulberry32, type GameState, type Tile } from '../engine/okiya';
+import { charmCellClasses, fireflyHints, worthNow, type FireflyHint } from '../game/hints';
 import {
   HUMAN,
   continueRun,
@@ -17,7 +17,7 @@ import {
   skipDraft,
   startGame,
   stationCleared,
-  useLantern,
+  useFirefly,
   type RunState,
 } from '../game/run';
 import { MAX_HELD, STATIONS } from '../game/stations';
@@ -26,7 +26,7 @@ import { charmGlyph } from './charmArt';
 import { escapeHtml } from './dom';
 import { okiyaRulesHtml } from './rulesPanel';
 import { dailySeed, loadJson, saveJson } from './storage';
-import { SYM_LABEL, VEG_LABEL, symGlyph, tileLabel, tileSvg, vegGlyph } from './tileArt';
+import { SYM_LABEL, VEG_LABEL, gardenKeyHtml, petalIcon, symGlyph, tileLabel, tileSvg, vegGlyph } from './tileArt';
 
 interface Meta {
   runsStarted: number;
@@ -47,12 +47,13 @@ interface UiState {
   meta: Meta;
   showRules: boolean;
   showCharm: CharmId | null;
-  lanternLit: boolean;
+  fireflyLit: boolean;
   lastIndex: number | null;
   aiThinking: boolean;
   releasing: CharmId | null; // when the hand is full: the offered charm chosen, awaiting a release
-  resultShown: boolean;
 }
+
+const petal = () => `<span class="petal-mark">${petalIcon()}</span>`;
 
 export class App {
   private s: UiState;
@@ -69,11 +70,10 @@ export class App {
       meta: loadJson<Meta>(META_KEY, { runsStarted: 0, runsWon: 0, bestStation: 0, bestPetals: 0, discovered: [] }),
       showRules: false,
       showCharm: null,
-      lanternLit: false,
+      fireflyLit: false,
       lastIndex: null,
       aiThinking: false,
       releasing: null,
-      resultShown: false,
     };
     this.root.addEventListener('click', (e) => this.onClick(e));
     document.addEventListener('keydown', (e) => {
@@ -106,7 +106,7 @@ export class App {
     saveJson(META_KEY, this.s.meta);
     this.s.view = 'run';
     this.s.releasing = null;
-    this.s.lanternLit = false;
+    this.s.fireflyLit = false;
     this.s.lastIndex = null;
     this.setRun(newRun(seed));
     this.render();
@@ -116,10 +116,7 @@ export class App {
     this.s.view = 'run';
     const run = this.s.run;
     // A game that ended just before the tab was closed: tally it now instead of stranding it.
-    if (run && run.phase === 'playing' && run.game?.win) {
-      this.setRun(finishGame(run));
-      this.s.resultShown = true;
-    }
+    if (run && run.phase === 'playing' && run.game?.win) this.setRun(finishGame(run));
     this.render();
     this.maybeScheduleAi();
   }
@@ -128,12 +125,10 @@ export class App {
     return mulberry32((run.seed + run.station * 1000 + run.gamesPlayed * 7 + 1) >>> 0 ^ 0xabcdef);
   }
 
-  private startNextGame(run: RunState): void {
-    const next = startGame(run);
+  private enterGame(next: RunState): void {
     this.gameRng = this.gameRngFor(next);
-    this.s.lanternLit = false;
+    this.s.fireflyLit = false;
     this.s.lastIndex = null;
-    this.s.resultShown = false;
     this.setRun(next);
     this.render();
     this.maybeScheduleAi();
@@ -145,7 +140,7 @@ export class App {
     if (!legalMoves(run.game).includes(index)) return;
     const game = applyMove(run.game, index);
     this.s.lastIndex = index;
-    this.s.lanternLit = false;
+    this.s.fireflyLit = false;
     this.setRun({ ...run, game });
     this.render();
     this.afterMove();
@@ -160,7 +155,6 @@ export class App {
         const r = this.s.run;
         if (!r || r.phase !== 'playing' || !r.game?.win) return;
         this.setRun(finishGame(r));
-        this.s.resultShown = true;
         this.render();
       }, 1100);
       return;
@@ -210,12 +204,8 @@ export class App {
       case 'resume':
         this.resumeRun();
         break;
-      case 'abandon':
-        this.setRun(null);
-        this.s.view = 'title';
-        this.render();
-        break;
       case 'title':
+        if (run && run.phase === 'playing' && this.s.view === 'run' && !window.confirm('Leave the garden? Your road is saved and you can continue later.')) return;
         this.s.view = 'title';
         this.render();
         break;
@@ -263,25 +253,19 @@ export class App {
         break;
       case 'start-game':
         if (!run) return;
-        this.startNextGame(run);
+        this.enterGame(startGame(run));
         break;
-      case 'lantern':
-        if (!run || run.lanternUsed || run.phase !== 'playing' || run.game?.current !== HUMAN) return;
-        this.setRun(useLantern(run));
-        this.s.lanternLit = true;
+      case 'firefly':
+        if (!run || run.fireflyUsed || run.phase !== 'playing' || run.game?.current !== HUMAN) return;
+        this.setRun(useFirefly(run));
+        this.s.fireflyLit = true;
         this.render();
         break;
       case 'continue': {
         if (!run || run.phase !== 'result') return;
         const next = continueRun(run);
         if (next.phase === 'playing') {
-          this.gameRng = this.gameRngFor(next);
-          this.s.lanternLit = false;
-          this.s.lastIndex = null;
-          this.s.resultShown = false;
-          this.setRun(next);
-          this.render();
-          this.maybeScheduleAi();
+          this.enterGame(next);
         } else {
           if (next.phase === 'won') {
             this.s.meta.runsWon++;
@@ -307,11 +291,13 @@ export class App {
     html += this.renderOverlays();
     this.root.innerHTML = html;
     if (view === 'run' && run?.game) this.mountBoard(run);
+    this.animateCounter();
   }
 
   private renderTitle(): string {
     const { meta, run } = this.s;
     const resumable = run && run.phase !== 'won' && run.phase !== 'lost';
+    const played = meta.runsStarted > 0;
     return `
     <main class="screen title-screen">
       <header class="title-hero">
@@ -326,11 +312,11 @@ export class App {
         <button class="btn" data-action="daily-run">Today's road <span class="btn-sub">same gardens for everyone today</span></button>
         <button class="btn btn-ghost" data-action="rules">How to play</button>
       </div>
-      <section class="record">
+      ${played ? `<section class="record">
         <div><span class="num">${meta.runsWon}</span><span class="lbl">roads completed</span></div>
         <div><span class="num">${meta.bestStation}/${STATIONS.length}</span><span class="lbl">furthest station</span></div>
-        <div><span class="num">${meta.bestPetals}</span><span class="lbl">most petals in a road</span></div>
-      </section>
+        <div><span class="num">${meta.bestPetals}</span><span class="lbl">most petals</span></div>
+      </section>` : '<section class="record"></section>'}
       <footer class="credits">Built on <strong>Okiya</strong> by Bruno Cathala &amp; Cyril Bouquet (Blue Orange Games). The official rules are played unchanged in every game.</footer>
     </main>`;
   }
@@ -351,12 +337,13 @@ export class App {
     }
   }
 
-  private charmCard(id: CharmId, action: string, extra = ''): string {
+  private charmCard(id: CharmId, action: string, extra = '', cta = ''): string {
     const c = CHARM_BY_ID[id];
     return `<button type="button" class="charm-card ${extra}" data-action="${action}" data-charm="${id}">
       <span class="charm-icon">${charmGlyph(c)}</span>
       <span class="charm-name">${escapeHtml(c.name)}</span>
       <span class="charm-rule">${escapeHtml(c.rule)}</span>
+      ${cta ? `<span class="charm-cta">${cta} <span aria-hidden="true">›</span></span>` : ''}
     </button>`;
   }
 
@@ -368,15 +355,16 @@ export class App {
     return `
     <main class="screen draft-screen">
       ${this.topBar(run, first ? 'Before the road' : `On the way to ${st.place}`)}
-      <section class="panel">
+      <section class="panel draft-panel">
+        <p class="eyebrow">${first ? 'Before the road' : `Station ${st.index + 1} · ${escapeHtml(st.place)}`}</p>
         <h2>${first ? 'Choose your first charm' : 'A charm for the road ahead'}</h2>
         <p class="muted">Charms never change how Okiya is played. They decide how many petals a <em>win</em> is worth.</p>
-        ${releasing ? `<p class="notice">Your hand is full. Release one charm to take <strong>${escapeHtml(CHARM_BY_ID[releasing].name)}</strong>, or <button class="link" data-action="cancel-release">keep your hand</button>.</p>` : ''}
+        ${releasing ? `<p class="notice">Your hand is full. Release one charm below to take <strong>${escapeHtml(CHARM_BY_ID[releasing].name)}</strong>, or <button class="link" data-action="cancel-release">keep your hand</button>.</p>` : ''}
         <div class="charm-grid">
-          ${run.offers.map((id) => this.charmCard(id, 'pick', releasing === id ? 'selected' : releasing ? 'dimmed' : '')).join('')}
+          ${run.offers.map((id) => this.charmCard(id, 'pick', releasing === id ? 'selected' : releasing ? 'dimmed' : '', releasing ? '' : 'Take this charm')).join('')}
         </div>
         ${run.held.length ? `<h3 class="held-title">Your hand ${full ? '(full)' : `(${run.held.length}/${MAX_HELD})`}</h3>
-        <div class="charm-grid small">${run.held.map((id) => this.charmCard(id, releasing ? 'release' : 'charm-info', releasing ? 'release-target' : '')).join('')}</div>` : ''}
+        <div class="charm-grid small">${run.held.map((id) => this.charmCard(id, releasing ? 'release' : 'charm-info', releasing ? 'release-target' : '', releasing ? 'Release' : '')).join('')}</div>` : ''}
         ${!first ? `<div class="row-actions"><button class="btn btn-ghost" data-action="skip-draft">Walk on without a new charm</button></div>` : ''}
       </section>
     </main>`;
@@ -387,7 +375,7 @@ export class App {
       <button class="link brand" data-action="title">Hanamichi</button>
       <span class="context">${escapeHtml(context)}</span>
       <span class="spacer"></span>
-      <span class="petal-total" title="Petals gathered on this road">${run.totalPetals} <span class="petal-mark" aria-hidden="true">✿</span></span>
+      <span class="petal-total" title="Petals gathered on this road">${run.totalPetals} ${petal()}</span>
       <button class="icon-btn" data-action="rules" aria-label="How to play">?</button>
     </header>`;
   }
@@ -404,11 +392,17 @@ export class App {
     </ol>`;
   }
 
+  private roadColumn(run: RunState): string {
+    const st = currentStation(run);
+    return `<aside class="road-col"><p class="eyebrow">${escapeHtml(st.season)} · station ${st.index + 1} of ${STATIONS.length}</p>${this.road(run)}</aside>`;
+  }
+
   private renderIntro(run: RunState): string {
     const st = currentStation(run);
     return `
     <main class="screen intro-screen">
       ${this.topBar(run, `${st.season} · station ${st.index + 1} of ${STATIONS.length}`)}
+      ${this.roadColumn(run)}
       <section class="panel intro season-${st.season.toLowerCase()}">
         <p class="eyebrow">${escapeHtml(st.season)}</p>
         <h2 class="place">${escapeHtml(st.place)}</h2>
@@ -420,17 +414,17 @@ export class App {
           </div>
         </div>
         <dl class="station-facts">
-          <div><dt>Target</dt><dd>${st.target} <span class="petal-mark">✿</span></dd></div>
+          <div><dt>Target</dt><dd>${st.target} ${petal()}</dd></div>
           <div><dt>Lanterns</dt><dd>${st.lanterns} games</dd></div>
-          <div><dt>First move</dt><dd>${run.nextFirst === HUMAN ? 'You' : st.rival.name}</dd></div>
+          <div><dt>First move</dt><dd>${run.nextFirst === HUMAN ? 'You' : escapeHtml(st.rival.name)}</dd></div>
+          <div class="facts-charms"><dt>Charms</dt><dd>${run.held.length ? run.held.map((id) => this.charmChip(id)).join('') : '<span class="muted">none</span>'}</dd></div>
         </dl>
-        <p class="muted">Gather ${st.target} petals across the lanterns to walk on. ${run.nextFirst === HUMAN ? 'You open the garden.' : `${st.rival.name} opens; the loser of each game starts the next.`}</p>
-        <div class="row-actions">
+        <p class="muted">Gather ${st.target} petals across the three lanterns to walk on. ${run.nextFirst === HUMAN ? 'You open the garden.' : `${escapeHtml(st.rival.name)} opens; the loser of each game starts the next.`}</p>
+        <div class="row-actions start">
           <button class="btn btn-primary" data-action="start-game">Light the first lantern</button>
         </div>
-        ${run.held.length ? `<div class="hand-strip">${run.held.map((id) => this.charmChip(id)).join('')}</div>` : ''}
       </section>
-      <aside class="side">${this.road(run)}</aside>
+      <aside class="side intro-side"></aside>
     </main>`;
   }
 
@@ -443,8 +437,10 @@ export class App {
   private constraintHtml(game: GameState, rivalName: string): string {
     if (!game.lastTile) {
       return `<div class="constraint first">
+        <span class="constraint-body">
         <span class="constraint-label">${game.current === HUMAN ? 'Your opening' : `${escapeHtml(rivalName)} opens`}</span>
         <span class="constraint-text">Any tile on the <strong>outer border</strong>. The four centre tiles are closed on move one.</span>
+        </span>
       </div>`;
     }
     const t: Tile = game.lastTile;
@@ -458,65 +454,83 @@ export class App {
     </div>`;
   }
 
+  private statusHtml(run: RunState, game: GameState): string {
+    const st = currentStation(run);
+    const rival = escapeHtml(st.rival.name);
+    if (game.win) {
+      const how = game.win.reason === 'blocked' ? 'blocking' : `a ${game.win.reason}`;
+      return game.win.winner === HUMAN ? `You win by ${how}!` : `${rival} wins by ${game.win.reason === 'blocked' ? 'blocking you' : how}.`;
+    }
+    if (game.current !== HUMAN || run.phase !== 'playing') return `${rival} is thinking…`;
+    if (!game.lastTile) return `<strong>Your move:</strong> take any tile on the outer border`;
+    const t = game.lastTile;
+    return `<strong>Your move:</strong> take a ${vegGlyph(t.veg)} <b>${VEG_LABEL[t.veg].toLowerCase()}</b> or ${symGlyph(t.sym)} <b>${SYM_LABEL[t.sym].toLowerCase()}</b> tile`;
+  }
+
   private renderPlay(run: RunState): string {
     const st = currentStation(run);
     const game = run.game!;
     const target = st.target;
     const pct = Math.min(100, Math.round((100 * run.stationPetals) / target));
-    const lanterns = Array.from({ length: st.lanterns }, (_, i) => {
+    const pips = Array.from({ length: st.lanterns }, (_, i) => {
       const lit = i < run.gamesPlayed || (i === run.gamesPlayed && run.phase === 'playing');
       const burning = i === run.gamesPlayed && run.phase === 'playing';
-      return `<span class="lantern ${lit ? 'lit' : ''} ${burning ? 'burning' : ''}" aria-label="lantern ${i + 1} ${lit ? 'lit' : 'unlit'}"></span>`;
+      return `<span class="lantern ${lit ? 'lit' : ''} ${burning ? 'burning' : ''}" aria-hidden="true"></span>`;
     }).join('');
     const yourTurn = game.current === HUMAN && !game.win && run.phase === 'playing';
-    const status = game.win
-      ? game.win.winner === HUMAN
-        ? `You win by ${game.win.reason === 'blocked' ? 'blocking' : game.win.reason}!`
-        : `${st.rival.name} wins by ${game.win.reason === 'blocked' ? 'blocking you' : game.win.reason}.`
-      : yourTurn
-        ? 'Your move'
-        : `${st.rival.name} is thinking…`;
+    const over = !!game.win;
     const worth = worthNow(game, HUMAN, run.held);
     const myTokens = game.history.filter((m) => m.player === HUMAN).length;
     const rivalTokens = game.history.length - myTokens;
+    const hints = this.s.fireflyLit && yourTurn ? fireflyHints(game, HUMAN) : new Map<number, FireflyHint>();
+    const wins = [...hints.values()].filter((h) => h === 'win').length;
+    const dangers = [...hints.values()].filter((h) => h === 'danger').length;
+    const fireflyNote = this.s.fireflyLit && yourTurn
+      ? wins || dangers
+        ? `${wins ? `${wins} tile${wins > 1 ? 's' : ''} win${wins > 1 ? '' : 's'} now` : ''}${wins && dangers ? ' · ' : ''}${dangers ? `${dangers} tile${dangers > 1 ? 's' : ''} hand${dangers > 1 ? '' : 's'} ${escapeHtml(st.rival.name)} a win` : ''}`
+        : `No tile wins now, and none hands ${escapeHtml(st.rival.name)} a win.`
+      : '';
+    const worthLine = `${worth.base} base + ${worth.tiles} tile${worth.tiles === 1 ? '' : 's'} left${worth.adds.map((a) => ` + ${a.add} ${escapeHtml(CHARM_BY_ID[a.id].name)}`).join('')}${worth.conditional.length ? ` · more if ${worth.conditional.map((id) => escapeHtml(CHARM_BY_ID[id].name)).join(' or ')} blooms` : ''}`;
     return `
-    <main class="screen play-screen season-${st.season.toLowerCase()}">
+    <main class="screen play-screen season-${st.season.toLowerCase()} ${over ? 'game-over' : ''}">
       ${this.topBar(run, `${st.place} · ${st.rival.name} ${st.rival.title}`)}
-      <aside class="road-col"><p class="eyebrow">${escapeHtml(st.season)} · station ${st.index + 1} of ${STATIONS.length}</p>${this.road(run)}</aside>
+      ${this.roadColumn(run)}
       <section class="centre">
-      <section class="hud">
-        <div class="hud-row">
-          <div class="lanterns" title="${lanternsLeft(run)} lantern(s) left">${lanterns}</div>
-          <div class="target">
-            <div class="target-text"><strong>${run.stationPetals}</strong> / ${target} <span class="petal-mark">✿</span></div>
-            <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${target}" aria-valuenow="${run.stationPetals}"><span style="width:${pct}%"></span></div>
+        <section class="hud">
+          <div class="hud-row">
+            <div class="lanterns" aria-label="Game ${Math.min(run.gamesPlayed + 1, st.lanterns)} of ${st.lanterns}">${pips}<span class="lantern-label">Game ${Math.min(run.gamesPlayed + (run.phase === 'playing' ? 1 : 0), st.lanterns)} of ${st.lanterns}</span></div>
+            <div class="target">
+              <div class="target-text"><strong>${run.stationPetals}</strong> / ${target} ${petal()}</div>
+              <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${target}" aria-valuenow="${run.stationPetals}"><span style="width:${pct}%"></span></div>
+            </div>
           </div>
-        </div>
-        <p class="status ${yourTurn ? 'your-turn' : ''} ${game.win ? 'finished' : ''}" aria-live="polite">${escapeHtml(status)}</p>
-      </section>
+          <p class="status ${yourTurn ? 'your-turn' : ''} ${over ? 'finished' : ''}" aria-live="polite">${this.statusHtml(run, game)}</p>
+        </section>
         <div class="players">
-          <div class="player me ${game.current === HUMAN && !game.win ? 'active' : ''}"><span class="token-mini p1"></span>You <small>${8 - myTokens} left</small></div>
-          <div class="player rival ${game.current !== HUMAN && !game.win ? 'active' : ''}"><small>${8 - rivalTokens} left</small>${escapeHtml(st.rival.name)}<span class="token-mini p2"></span></div>
+          <div class="player me ${yourTurn ? 'active' : ''}"><span class="token-mini p1"></span>You <small>${8 - myTokens} tokens</small></div>
+          <div class="player rival ${!yourTurn && !over ? 'active' : ''}"><small>${8 - rivalTokens} tokens</small>${escapeHtml(st.rival.name)}<span class="token-mini p2"></span></div>
         </div>
         <div id="board" class="board"></div>
-        ${this.constraintHtml(game, st.rival.name)}
+        ${over ? '' : this.constraintHtml(game, st.rival.name)}
+        <p class="goal-line">Win: 4 in a line · a 2×2 square · leave ${escapeHtml(st.rival.name)} no tile</p>
       </section>
       <aside class="side tray">
-        <div class="worth">
+        ${over ? '' : `<div class="worth">
           <span class="worth-label">A win now is worth</span>
-          <span class="worth-num">${worth.total} <span class="petal-mark">✿</span></span>
-          <span class="worth-detail">${worth.base} base · ${worth.tiles} tile${worth.tiles === 1 ? '' : 's'} left${worth.adds.map((a) => ` · +${a.add} ${escapeHtml(CHARM_BY_ID[a.id].name)}`).join('')}${worth.conditional.length ? ` · plus ${worth.conditional.map((id) => escapeHtml(CHARM_BY_ID[id].name)).join(', ')} if they fire` : ''}</span>
-        </div>
+          <span class="worth-num">${worth.total} ${petal()}</span>
+          <span class="worth-detail">${worthLine}</span>
+        </div>`}
         <div class="hand">
           <h3>Charms</h3>
           <div class="hand-strip">${run.held.length ? run.held.map((id) => this.charmChip(id)).join('') : '<span class="muted">none yet</span>'}</div>
         </div>
-        <button class="btn lantern-btn ${run.lanternUsed ? 'used' : ''} ${this.s.lanternLit ? 'lit' : ''}" data-action="lantern" ${run.lanternUsed || !yourTurn ? 'disabled' : ''}>
-          <span class="lantern-icon" aria-hidden="true"></span>
-          <span>${this.s.lanternLit ? 'Lantern lit for this move' : run.lanternUsed ? 'Paper Lantern spent here' : 'Light the Paper Lantern'}</span>
-          <span class="btn-sub">${this.s.lanternLit ? 'gold wins now · red hands the rival a win' : 'once per station: reveals winning and dangerous tiles'}</span>
+        <button class="btn firefly-btn ${run.fireflyUsed ? 'used' : ''} ${this.s.fireflyLit ? 'lit' : ''}" data-action="firefly" ${run.fireflyUsed || !yourTurn ? 'disabled' : ''}>
+          <span class="firefly-icon" aria-hidden="true"></span>
+          <span class="firefly-text">
+            <span class="firefly-title">${this.s.fireflyLit ? 'Firefly shining for this move' : run.fireflyUsed ? 'Firefly spent at this station' : 'Wake the Firefly'}</span>
+            <span class="btn-sub">${this.s.fireflyLit ? fireflyNote : 'Once per station: shows which tiles win now and which hand the rival a win.'}</span>
+          </span>
         </button>
-        ${this.road(run)}
       </aside>
       ${run.phase === 'result' && run.lastResult ? this.renderResult(run) : ''}
     </main>`;
@@ -527,28 +541,33 @@ export class App {
     const r = run.lastResult!;
     const cleared = stationCleared(run);
     const left = lanternsLeft(run);
+    const last = run.log[run.log.length - 1];
     const rows: string[] = [];
     if (r.won) {
-      rows.push(`<li><span>Victory</span><span>+${r.base}</span></li>`);
+      rows.push(`<li><span>Victory by ${last.reason === 'blocked' ? 'blocking' : escapeHtml(last.reason)}</span><span>+${r.base}</span></li>`);
       rows.push(`<li><span>${r.tilesRemaining} tile${r.tilesRemaining === 1 ? '' : 's'} left in the garden</span><span>+${r.tilesRemaining}</span></li>`);
       for (const e of r.effects) {
         const fired = e.effect.add || e.effect.mult;
         rows.push(`<li class="${fired ? 'fired' : 'quiet'}"><span>${charmGlyph(e.charm)} ${escapeHtml(e.charm.name)}${fired ? ` <small>${escapeHtml(e.effect.note)}</small>` : ' <small>did not bloom</small>'}</span><span>${e.effect.mult ? `×${1 + e.effect.mult}` : e.effect.add ? `+${e.effect.add}` : '—'}</span></li>`);
       }
     } else {
-      rows.push(`<li><span>${escapeHtml(st.rival.name)} wins by ${r.won ? '' : escapeHtml(run.log[run.log.length - 1]?.reason === 'blocked' ? 'blocking you' : run.log[run.log.length - 1]?.reason ?? '')}</span><span>0</span></li>`);
+      rows.push(`<li><span>${escapeHtml(st.rival.name)} wins by ${last.reason === 'blocked' ? 'blocking you' : escapeHtml(last.reason)} · ${last.moves} moves</span><span>0</span></li>`);
     }
+    const toGo = st.target - run.stationPetals;
     let cta: string;
+    let math = '';
     if (cleared) cta = run.station >= STATIONS.length - 1 ? 'Reach the end of the road' : 'Walk on to the next station';
-    else if (left > 0) cta = `Light the next lantern <span class="btn-sub">${left} left · ${st.target - run.stationPetals} petals to go</span>`;
-    else cta = 'The road ends here';
-    return `<div class="sheet-backdrop">
+    else if (left > 0) {
+      cta = `Light the next lantern`;
+      math = `${run.stationPetals} / ${st.target} · ${left} lantern${left > 1 ? 's' : ''} left · about ${Math.ceil(toGo / left)} petals per win needed`;
+    } else cta = 'The road ends here';
+    return `<div class="sheet-backdrop result-backdrop">
       <section class="sheet result ${r.won ? 'won' : 'lost'}" role="dialog" aria-label="Game result">
         <p class="eyebrow">${cleared ? 'Station cleared' : left > 0 ? `Lantern ${run.gamesPlayed} of ${st.lanterns}` : 'Lanterns spent'}</p>
         <h2>${r.won ? 'The garden blooms' : 'The garden fades'}</h2>
         <ul class="tally">${rows.join('')}</ul>
         <p class="tally-total"><span>Petals this game</span><span class="count-up" data-count="${r.total}">${r.total}</span></p>
-        <p class="tally-station">Station: <strong>${run.stationPetals}</strong> / ${st.target} <span class="petal-mark">✿</span></p>
+        <p class="tally-station">${math ? escapeHtml(math) : `Station: <strong>${run.stationPetals}</strong> / ${st.target}`} ${math ? '' : petal()}</p>
         <button class="btn btn-primary" data-action="continue">${cta}</button>
       </section>
     </div>`;
@@ -562,15 +581,15 @@ export class App {
     <main class="screen end-screen">
       ${this.topBar(run, won ? 'The end of the road' : 'The road ends')}
       <section class="panel end ${won ? 'won' : 'lost'}">
-        <p class="eyebrow">${won ? 'Winter, Snow Pavilion' : `${st.season}, ${escapeHtml(st.place)}`}</p>
+        <p class="eyebrow">${won ? 'Winter · Snow Pavilion' : `${escapeHtml(st.season)} · ${escapeHtml(st.place)}`}</p>
         <h2>${won ? 'You walked the whole Flower Road' : `${escapeHtml(st.rival.name)} closes the gate`}</h2>
         <p class="lede">${won ? 'Every garden bloomed. Okasan bows.' : `${run.stationPetals} of ${st.target} petals gathered at station ${run.station + 1}.`}</p>
         <dl class="station-facts">
-          <div><dt>Petals</dt><dd>${run.totalPetals} <span class="petal-mark">✿</span></dd></div>
+          <div><dt>Petals</dt><dd>${run.totalPetals} ${petal()}</dd></div>
           <div><dt>Games won</dt><dd>${wins} / ${run.log.length}</dd></div>
           <div><dt>Stations</dt><dd>${won ? STATIONS.length : run.station} / ${STATIONS.length}</dd></div>
         </dl>
-        <ol class="log">${run.log.map((l) => `<li class="${l.won ? 'won' : 'lost'}"><span>${escapeHtml(STATIONS[l.station].place)} · lantern ${l.game + 1}</span><span>${l.won ? `won by ${l.reason}` : `lost (${l.reason})`} · ${l.moves} moves</span><span>${l.petals} ✿</span></li>`).join('')}</ol>
+        <ol class="log">${run.log.map((l) => `<li class="${l.won ? 'won' : 'lost'}"><span>${escapeHtml(STATIONS[l.station].place)} · lantern ${l.game + 1}</span><span>${l.won ? `won by ${l.reason}` : `lost (${l.reason})`} · ${l.moves} moves</span><span>${l.petals} ${petal()}</span></li>`).join('')}</ol>
         <div class="row-actions">
           <button class="btn btn-primary" data-action="new-run">Walk again</button>
           <button class="btn btn-ghost" data-action="title">Back to the gate</button>
@@ -588,9 +607,11 @@ export class App {
         <h3>The road</h3>
         <p>Walk six stations. At each one you have <strong>three lanterns</strong>: three full games of Okiya against the station's rival. Gather the station's <strong>petal target</strong> before the lanterns run out and you walk on, drafting a new charm. Miss it and the road ends.</p>
         <p>A won game is worth <strong>3 + the tiles left in the garden</strong> petals (the official victory-point rule), plus whatever your charms add. A lost game is worth nothing. Charms only read the finished game: they never change which tiles you may take or how a game is won.</p>
-        <p>The <strong>Paper Lantern</strong> may be lit once per station: for one move it shows which tiles win at once (gold) and which hand the rival a win (red). It only shows information.</p>
+        <p>The <strong>Firefly</strong> may be woken once per station: for one move it marks the tiles that win at once and the tiles that hand the rival a win. It only shows information.</p>
         <h3>Okiya, the game at the core</h3>
         ${okiyaRulesHtml()}
+        <h3>The sixteen tiles</h3>
+        ${gardenKeyHtml()}
       </section></div>`;
     }
     if (this.s.showCharm) {
@@ -610,36 +631,43 @@ export class App {
     const el = this.root.querySelector<HTMLElement>('#board');
     if (!el || !run.game) return;
     const game = run.game;
-    const hints: Map<number, LanternHint> = this.s.lanternLit && game.current === HUMAN && !game.win ? lanternHints(game, HUMAN) : new Map();
+    const yourTurn = game.current === HUMAN && !game.win && run.phase === 'playing';
+    const hints: Map<number, FireflyHint> = this.s.fireflyLit && yourTurn ? fireflyHints(game, HUMAN) : new Map();
     const charmCls = charmCellClasses(game, HUMAN, run.held);
+    const rival = escapeHtml(currentStation(run).rival.name);
     renderBoard(el, game, {
       human: run.phase === 'playing' && !this.s.aiThinking ? HUMAN : null,
       onMove: (i) => this.humanMove(i),
       lastIndex: this.s.lastIndex,
       cellClass: (i) => {
         const h = hints.get(i);
-        return [charmCls(i), h ? `lantern-${h}` : ''].filter(Boolean).join(' ');
+        return [charmCls(i), h ? `firefly-${h}` : ''].filter(Boolean).join(' ');
+      },
+      cellBadge: (i) => {
+        const h = hints.get(i);
+        if (h === 'win') return `<span class="badge badge-win">${petalIcon()} wins</span>`;
+        if (h === 'danger') return `<span class="badge badge-danger">! ${rival} wins next</span>`;
+        return '';
       },
     });
-    const yourTurn = game.current === HUMAN && !game.win && run.phase === 'playing';
     el.classList.toggle('has-legal', yourTurn);
-    el.classList.toggle('lantern-on', hints.size > 0);
+    el.classList.toggle('firefly-on', hints.size > 0);
     el.classList.toggle('rival-turn', !yourTurn && !game.win);
-    // Count-up animation on the result total.
+  }
+
+  private animateCounter(): void {
     const counter = this.root.querySelector<HTMLElement>('.count-up');
-    if (counter && !counter.dataset.done) {
-      counter.dataset.done = '1';
-      const target = Number(counter.dataset.count);
-      const start = performance.now();
-      const dur = 700;
-      const tick = (now: number) => {
-        const p = Math.min(1, (now - start) / dur);
-        counter.textContent = String(Math.round(target * (1 - Math.pow(1 - p, 3))));
-        if (p < 1) requestAnimationFrame(tick);
-      };
-      if (target > 0 && !matchMedia('(prefers-reduced-motion: reduce)').matches) requestAnimationFrame(tick);
-    }
-    void tilesRemaining;
-    void CHARMS;
+    if (!counter || counter.dataset.done) return;
+    counter.dataset.done = '1';
+    const target = Number(counter.dataset.count);
+    if (!(target > 0) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const start = performance.now();
+    const dur = 700;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / dur);
+      counter.textContent = String(Math.round(target * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
   }
 }
