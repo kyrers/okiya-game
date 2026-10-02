@@ -1,0 +1,27 @@
+Koi-Koi playtest (amended: decline pays, game continues). depth 2
+
+== Board vs Board (baseline yaku frequencies) (200 matches, 1321 games)
+  A wins 44.0% of matches, 45.9% of games; games/match hist 4:8 5:47 6:40 7:52 8:27 9:26; decided in 1 game 0.0%
+  yaku in game 95.5%; winner holds yaku 90.5%; per game: seasons 168.5% grove 0.0% weather 0.1%
+  Koi calls/game 0.00 (accepted 0, declined 0); avg moves 14.4
+
+== Collector vs Board (200 matches, 1270 games)
+  A wins 43.5% of matches, 45.3% of games; games/match hist 4:14 5:42 6:54 7:51 8:29 9:9 10:1; decided in 1 game 0.0%
+  yaku in game 95.4%; winner holds yaku 89.4%; per game: seasons 169.1% grove 0.1% weather 0.3%
+  Koi calls/game 0.00 (accepted 0, declined 0); avg moves 14.4
+
+== Always-call/always-accept vs Board (200 matches, 731 games)
+  A wins 37.5% of matches, 44.0% of games; games/match hist 2:25 3:70 4:58 5:43 6:4; decided in 1 game 0.0%
+  yaku in game 96.6%; winner holds yaku 90.8%; per game: seasons 171.0% grove 0.0% weather 0.3%
+  Koi calls/game 0.75 (accepted 546, declined 0); avg moves 14.4
+
+== Threshold-call/threshold-accept vs Board (200 matches, 945 games)
+  A wins 58.0% of matches, 44.8% of games; games/match hist 2:7 3:38 4:40 5:56 6:39 7:17 8:3; decided in 1 game 0.0%
+  yaku in game 95.9%; winner holds yaku 91.3%; per game: seasons 171.4% grove 0.1% weather 0.1%
+  Koi calls/game 0.33 (accepted 308, declined 0); avg moves 14.4
+
+== Threshold vs Always (200 matches, 619 games)
+  A wins 48.5% of matches, 43.9% of games; games/match hist 1:8 2:52 3:70 4:56 5:11 6:3; decided in 1 game 4.0%
+  yaku in game 97.1%; winner holds yaku 92.4%; per game: seasons 171.4% grove 0.2% weather 0.2%
+  Koi calls/game 1.03 (accepted 391, declined 248); avg moves 14.5
+

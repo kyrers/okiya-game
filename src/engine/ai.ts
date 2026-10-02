@@ -91,7 +91,16 @@ export class Searcher {
   private deadline = Infinity;
   aborted = false;
 
-  constructor(private readonly maxTableSize = 2_000_000) {}
+  /**
+   * @param maxTableSize transposition table cap
+   * @param winBonus optional extra value for a finished game, added on top of
+   *   the win/loss score. Used by layers that care HOW a game is won (e.g.
+   *   petals in Hanamichi). Positive = good for the winner of `state`.
+   */
+  constructor(
+    private readonly maxTableSize = 2_000_000,
+    private readonly winBonus?: (state: GameState) => number,
+  ) {}
 
   reset(): void {
     this.tt.clear();
@@ -103,7 +112,7 @@ export class Searcher {
     this.nodes++;
     if (state.win) {
       // The previous mover won, so the player to move has lost.
-      return -(WIN - ply);
+      return -(WIN - ply + (this.winBonus ? this.winBonus(state) : 0));
     }
     if (depth === 0) return evaluate(state, state.current);
     if ((this.nodes & 1023) === 0 && performance.now() > this.deadline) {

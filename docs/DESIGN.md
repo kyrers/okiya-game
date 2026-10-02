@@ -57,3 +57,135 @@ angle, none allowed to read the others). Full texts: `docs/ideas/idea-A.md`, `id
 | Where the new decisions live | Which charms to draft; *how* to win (diagonal, square, block, fast, hold corners…) | Which tile to take for hand value vs board value; when to double; whether to accept a double | Which rival to fight next; when to spend a once-per-game power |
 | In-game rule changes | none (charms only read the finished game) | one: a fold ends a game early, only in answer to a Koi-Koi call | powers *remove* legal moves (Parasol, Whisper) for one turn |
 | Solo structure | AI ladder depth 1→8 across 8 stations, 3 games each | 3 rivals with different calling temperaments | 4 rivals + 2 "Favors" (retries) |
+
+## 5. Judging
+
+Two fresh judging agents (neither had written a proposal) scored the candidates independently
+against §2. Full verdicts: `docs/judging/judge-1.md`, `docs/judging/judge-2.md`.
+
+| | A — Hanamichi | B — Koi-Koi | C — Lantern Street |
+|---|---|---|---|
+| G1 core fidelity | pass | **fail (minor)**: a fold ends a game Okiya has not ended. Amendable: declining pays the caller and the game plays on | **fail (serious)**: Parasol and Whisper remove legal moves, which changes who wins; not amendable without losing the idea |
+| G2 static site | pass | pass (self-host or drop the web font) | pass |
+| Judge 1 total | **38** | 37 (amended) | 40 but ineligible |
+| Judge 2 total | **36** | 32 (amended) | 38 but ineligible |
+
+Both judges chose **A** as the winner and **B** as runner-up, and both asked for the same changes to A:
+
+1. Every win must score something: base petals = 3 + tiles left (half of competent games leave 0 tiles).
+2. Cap the rival at depth ≤ 4–5 with some random moves; a perfect searcher is unbeatable and the
+   "loser starts" rule sends a losing human first, the side that loses ~65% at equal depth.
+3. Repair the charm pool: cut pure counters (Morning Sun, Full Suit), cut the throw-a-game charms
+   (Second Wind, Moss Path), replace Moss Path with a per-token bonus, add charms that trigger on
+   chain and blocking events (Narrow Gate), and add C's information-only Lantern hint.
+4. Put the layer on the board (live charm hints, live "worth now" petals) instead of text strips.
+5. Fit a 10–15 minute session: 5–6 stations, autosave after every game.
+
+Both judges asked for simulation of A and (amended) B before the final choice, with one key
+number each: for A the **decision-change rate** (share of the charm-aware player's moves that
+differ from a win-only player; target 10–30%, under 5% means "just a scoreboard"); for B the
+**match-win gain from selective Koi-Koi calling** (target ≥ +4 percentage points).
+
+## 6. Playtest by simulation
+
+Scripts: `scripts/sim-hanamichi.ts`, `scripts/sim-koikoi.ts`. Raw outputs in `docs/sim/`.
+
+### B — Koi-Koi (amended, 200 matches per pairing, depth-2 players)
+
+| Metric | Target (from the proposal) | Measured | Verdict |
+|---|---|---|---|
+| Winner holds ≥1 yaku | 45–70% | **90.5%** | fail: yaku are automatic |
+| Four Seasons per game | — | **~170%** (both players, most games) | automatic |
+| Grove or Weather per game | 10–25% | **0.0–0.3%** | fail: unreachable under the chain rule |
+| Threshold calling vs never calling (match wins) | +4–10 pp | **+14 pp** (58.0% vs 44.0%) | pass: the doubling call is a real decision |
+| Always calling vs never | — | −6.5 pp (37.5%) | calling blindly loses |
+| Collector (hand-aware tie-breaks) vs Board | wins fewer games, ≥52% matches | 45.3% games, 43.5% matches | fail: the hand does not reward play |
+
+Conclusion: B's doubling cube works, but its hand layer, which is most of the proposal, is
+bookkeeping: the sets either always happen or never happen. It would need a different set design
+and a new playtest. Not chosen.
+
+### A — Hanamichi (300 games per experiment, player depth 2, rival depth 2 with 10% random moves)
+
+Player models: **Blind** plays the best negamax move. **Charm** picks, among moves within a
+small tolerance of the best score, the one that advances its charms (a cheap heuristic).
+**EV** picks, among near-best moves, the one with the highest average petals over 12 random
+playouts (a better model of a player weighing "how" to win). Each game both players hold the
+same 3 random charms and are scored identically, so differences come from play alone.
+
+| Metric | Target | First charm pool, tolerance 8 | Retuned pool, tolerance 2 | Retuned pool, EV player |
+|---|---|---|---|---|
+| Decision-change rate | 10–30% | 35.6% | **14.1%** | 29.0% |
+| Moves giving up search score | low | 31.7% | 10.7% | — |
+| Win rate (blind → charm) | no loss | 47.3% → 33.0% | 57.7% → 57.7% | 58.0% → 63.7% |
+| Petals per game (blind → charm) | ≥ +25% | 6.37 → 5.14 (−19%) | 6.81 → 7.37 (+8%) | 7.12 → 8.01 (+12.5%) |
+
+Findings and tuning decisions:
+
+- **A crude charm chaser loses.** With a wide tolerance the charm player sacrifices wins and ends
+  with fewer petals. A win is a prerequisite for any petals, so the layer must never tempt the
+  player into bad Okiya. This argues for charms that are mostly decided by *which of several
+  equally good tiles* to take, which is exactly where Okiya's own tension (the constraint chain)
+  lives. Tolerance 2 keeps the win rate intact while still changing 14% of moves.
+- **Playing petals inside the search barely matters** (experiment 4: 0.3% of moves change at
+  depth 2, 0.6% at depth 4), because a visible forced win is rare; most moves are heuristic.
+  The charm influence therefore has to come from the player's own judgement, which the EV model
+  approximates: +12.5% petals, of which +8.0% is explained by the control run where the EV player
+  ignores charms (playouts simply make it stronger). The net effect of charm pursuit at these
+  payouts is about +4.5 points; **doubling every payout raises the gain to +28.6%** at the same
+  decision-change rate. Payouts were therefore raised from the proposal (square +4→+6,
+  row/column +3→+4, diagonal +1 mult→+8, block +6→+4 after the base fix, gate +2→+3) and
+  the `SCALE` knob is left in the script for further tuning.
+- **Per-charm fire rates** (held alone, retuned pool): Rain Chain 100%, Steady Hand 100%, Heart
+  Stone 99%, Corner Shrine 95%, Narrow Gate 66%, Thorn Hedge 53%, Bamboo Fence 21%, Stone
+  Lantern 20%, Swift Blossom 18%, Crane Scroll 10%. Full Suit fired in **0%** of wins and was cut;
+  Morning Sun (100%, a pure counter) was cut. Heart Stone's ×2 multiplier fired in 90% of wins and
+  was changed to +2 per centre cell. The pool mixes reliable "small" charms with rarer "big" ones
+  so that drafting is a real choice.
+- **Ladder calibration** (EV-2 player, 3 random charms, 3-game sets, 100 sets per level):
+
+  | Rival (depth / random-move rate) | Player win rate | Petals per game | Set petals p25 / p40 / p50 / p60 |
+  |---|---|---|---|
+  | 1 / 0.35 | 93% | 15.3 | 36 / 40 / 42 / 46 |
+  | 1 / 0.15 | 91% | 15.2 | 34 / 39 / 42 / 45 |
+  | 2 / 0.15 | 68% | 8.3 | 16 / 21 / 25 / 29 |
+  | 2 / 0.05 | 57% | 6.7 | 10 / 15 / 19 / 24 |
+  | 3 / 0.05 | 45% | 6.1 | 10 / 14 / 16 / 24 |
+  | 4 / 0.03 | 35% | 4.1 | 0 / 9 / 11 / 13 |
+
+  Station targets are set near the 25th–40th percentile of a 3-game set so that each station is
+  cleared roughly 60–80% of the time by this model, giving a full-run completion rate of about
+  13% (inside the 10–25% band the proposal asked for), rising with charm drafting skill.
+
+## 7. Final design: Hanamichi — The Flower Road
+
+A run is a walk along six stations. At each station you face a named rival and have three
+lanterns (three full Okiya games) to gather the station's petal target. Clear it and you draft
+one of three charms (hold up to four); fail and the run ends with a summary.
+
+| Station | Season | Rival | Depth / random-move rate | Target petals (3 games) |
+|---|---|---|---|---|
+| 1 | Spring | Haru, the Eager | 1 / 0.35 | 30 |
+| 2 | Spring | Ume, the Gentle | 1 / 0.15 | 33 |
+| 3 | Summer | Natsu, the Mirror | 2 / 0.15 | 16 |
+| 4 | Summer | Kaede, the Patient | 2 / 0.05 | 12 |
+| 5 | Autumn | Aki, the Wall | 3 / 0.05 | 12 |
+| 6 | Winter | Okasan, the Matron | 4 / 0.03 | 8 |
+
+- **Petals for a won game** = `(3 + tiles left in the garden + Σ charm adds) × (1 + Σ charm mults)`.
+  A lost game scores 0. The base term is the official victory-points rule.
+- **Charms** (10): Stone Lantern (square win +6), Bamboo Fence (row/column win +4), Crane Scroll
+  (diagonal win +8), Thorn Hedge (blocked win +4), Corner Shrine (+2 per corner held), Heart Stone
+  (+2 per centre cell held), Rain Chain (+1 per move that followed the constraint by symbol),
+  Narrow Gate (+3 each time you leave the rival exactly one legal tile), Steady Hand (+1 per two
+  tokens placed), Swift Blossom (win with ≤ 6 tokens: ×2). All are pure functions of a finished
+  game (`src/engine/charms.ts`, unit-tested).
+- **Paper Lantern** (borrowed from idea C, information only): once per station the player may light
+  the lantern to see, for one move, which legal tiles win at once and which hand the rival an
+  immediate win. It never changes what is legal.
+- **Okiya rules untouched**: every game is created with `newGame`, played with `applyMove` and
+  `legalMoves`, and decided by the engine's own win check. The first game at a station starts with
+  a seeded coin toss; afterwards the loser of the previous game starts, as in the official rules.
+- **Solo**: the rival is the negamax AI with the depth and random-move rate above. Everything is
+  client-side; the run autosaves to localStorage after every game; a run can be seeded so the same
+  road can be replayed.
