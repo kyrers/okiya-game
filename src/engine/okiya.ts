@@ -16,6 +16,10 @@
  *  - A player wins immediately on completing a row of 4 of their tokens
  *    (horizontal, vertical or diagonal), or a 2x2 square of their tokens.
  *  - A player also wins if the opponent has no legal move ("blocked").
+ *  - Full garden: the PDF does not say what happens when the 16th tile is
+ *    taken without a formation. We apply the blocking rule literally (the
+ *    opponent cannot make a move, so they lose); see FULL_GARDEN_RULE. The
+ *    result carries `fullGarden: true` so the UI can explain it.
  *  - Victory-points variant: the winner scores as many points as there are
  *    garden tiles left in the garden.
  *
@@ -48,7 +52,20 @@ export interface WinInfo {
   readonly cells: readonly number[];
   /** Garden tiles still in the garden when the game ended (= victory points). */
   readonly tilesRemaining: number;
+  /**
+   * True when the game ended because the garden was emptied without a formation
+   * (a block by exhaustion). Interpretation, not stated in the PDF: see FULL_GARDEN_RULE.
+   */
+  readonly fullGarden?: boolean;
 }
+
+/**
+ * How a full garden without a formation is ruled. The official PDF is silent.
+ * 'blocked' = the player who took the last tile wins, because the opponent cannot
+ * make a move (literal reading of the blocking rule; used by this project).
+ * A 'draw' ruling is not implemented; this constant documents the decision point.
+ */
+export const FULL_GARDEN_RULE: 'blocked' = 'blocked';
 
 export interface Move {
   readonly player: Player;
@@ -235,7 +252,8 @@ export function applyMove(state: GameState, index: number): GameState {
     return { ...next, win: { winner: player, reason: formation.reason, cells: formation.cells, tilesRemaining: remaining } };
   }
   if (legalMoves(next).length === 0) {
-    return { ...next, win: { winner: player, reason: 'blocked', cells: [], tilesRemaining: remaining } };
+    const fullGarden = remaining === 0;
+    return { ...next, win: { winner: player, reason: 'blocked', cells: [], tilesRemaining: remaining, ...(fullGarden ? { fullGarden: true } : {}) } };
   }
   return next;
 }
@@ -247,7 +265,7 @@ export function tokensInHand(state: GameState, player: Player): number {
 
 /* ---------- Match layer (End of the game variants from the PDF) ---------- */
 
-export type MatchMode = 'single' | 'sets3' | 'points10';
+export type MatchMode = 'single' | 'sets3' | 'points10' | 'points15' | 'points20';
 
 export interface MatchState {
   readonly mode: MatchMode;
@@ -260,12 +278,18 @@ export interface MatchState {
   readonly nextFirst: Player;
 }
 
-export function newMatch(mode: MatchMode, first: Player = 1): MatchState {
+/** `first` must be chosen at random by the caller for the first game (PDF: "chosen randomly"). */
+export function newMatch(mode: MatchMode, first: Player): MatchState {
   return { mode, wins: { 1: 0, 2: 0 }, points: { 1: 0, 2: 0 }, gamesPlayed: 0, champion: null, nextFirst: first };
 }
 
 export function pointsTarget(mode: MatchMode): number {
-  return mode === 'points10' ? 10 : Infinity;
+  switch (mode) {
+    case 'points10': return 10;
+    case 'points15': return 15;
+    case 'points20': return 20;
+    default: return Infinity;
+  }
 }
 
 /** Record a finished game into the match. */
@@ -277,7 +301,7 @@ export function recordGame(match: MatchState, win: WinInfo): MatchState {
   let champion: Player | null = null;
   if (match.mode === 'single') champion = w;
   else if (match.mode === 'sets3' && wins[w] >= 3) champion = w;
-  else if (match.mode === 'points10' && points[w] >= 10) champion = w;
+  else if (points[w] >= pointsTarget(match.mode)) champion = w;
   return {
     ...match,
     wins,

@@ -119,7 +119,7 @@ export const CHARMS: readonly Charm[] = [
   {
     id: 'thorn-hedge',
     name: 'Thorn Hedge',
-    rule: 'Win by blocking the rival: +4 petals.',
+    rule: 'Win by blocking the rival (no line or square on that move): +4 petals.',
     glyph: 'block',
     score: (ctx) => (won(ctx) && ctx.state.win!.reason === 'blocked' ? { add: 4, mult: 0, note: 'rival blocked' } : none),
   },

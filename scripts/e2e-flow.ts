@@ -51,9 +51,9 @@ async function main() {
     // Pretend the station is already cleared: finishGame requires a finished game in 'playing'.
     run = { ...run, stationPetals: STATIONS[0].target };
     await seed(page, run);
-    await page.waitForSelector('.sheet.result', { timeout: 5000 });
+    await page.waitForSelector('.sheet.result:visible', { timeout: 5000 });
     ok('A1 finished game on resume is tallied');
-    await page.click('[data-action="continue"]');
+    await page.click('.sheet.result:visible [data-action="continue"]');
     await page.waitForSelector('.draft-screen', { timeout: 5000 });
     ok('A2 cleared station leads to the draft');
     const offers = await page.locator('.charm-grid .charm-card[data-action="pick"]').count();
@@ -89,8 +89,8 @@ async function main() {
     run = playToEnd(run);
     run = { ...run, gamesPlayed: 2, stationPetals: 0 };
     await seed(page, run);
-    await page.waitForSelector('.sheet.result');
-    await page.click('[data-action="continue"]');
+    await page.waitForSelector('.sheet.result:visible');
+    await page.click('.sheet.result:visible [data-action="continue"]');
     await page.waitForSelector('.end-screen .end.lost', { timeout: 5000 });
     ok('C1 third lost lantern ends the run');
     await page.click('[data-action="new-run"]');

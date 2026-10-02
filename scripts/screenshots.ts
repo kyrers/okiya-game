@@ -25,7 +25,7 @@ async function shot(page: Page, name: string) {
 async function humanMove(page: Page): Promise<boolean> {
   // Wait until it is the human's turn (board has legal cells) or the game ended.
   for (let i = 0; i < 40; i++) {
-    if (await page.locator('.sheet.result').count()) return false;
+    if (await page.locator('.sheet.result:visible').count()) return false;
     const legal = page.locator('.board.has-legal .cell.legal');
     if (await legal.count()) {
       // Prefer a tile that is not an immediate loss: just take the first legal one.
@@ -80,10 +80,10 @@ async function run() {
     }
     // Play to the end for the result sheet.
     for (let i = 0; i < 20; i++) if (!(await humanMove(page))) break;
-    await page.waitForSelector('.sheet.result', { timeout: 15000 });
+    await page.waitForSelector('.sheet.result:visible', { timeout: 15000 });
     await shot(page, `${label}-6-result`);
     // Rules sheet.
-    await page.click('[data-action="continue"]');
+    await page.click('.sheet.result:visible [data-action="continue"]');
     await page.waitForTimeout(300);
     await page.click('.topbar [data-action="rules"]');
     await page.waitForSelector('.sheet.rules');

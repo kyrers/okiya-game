@@ -3,6 +3,8 @@ import {
   BORDER_CELLS,
   CENTRE_CELLS,
   FORMATIONS,
+  FULL_GARDEN_RULE,
+  mulberry32,
   allTiles,
   applyMove,
   boardToString,
@@ -19,6 +21,7 @@ import {
   tileCode,
   tilesRemaining,
   tokensInHand,
+  type GameState,
   type Tile,
   type WinInfo,
 } from './okiya';
@@ -318,7 +321,21 @@ describe('blocking the opponent', () => {
       parseTile('Is'),
     );
     const after = applyMove(s, 15);
-    expect(after.win).toEqual<WinInfo>({ winner: 1, reason: 'blocked', cells: [], tilesRemaining: 0 });
+    expect(after.win).toEqual<WinInfo>({ winner: 1, reason: 'blocked', cells: [], tilesRemaining: 0, fullGarden: true });
+    // This ending is an interpretation (the PDF is silent); the engine flags it explicitly.
+    expect(FULL_GARDEN_RULE).toBe('blocked');
+  });
+
+  it('a normal block (tiles still in the garden) is not flagged as a full garden', () => {
+    const s = stateFromPicture(
+      `Ms 2  1  2
+       1  Cp 2  1
+       2  1  Pb 2
+       1  2  1  Ip`,
+      1,
+      parseTile('Mr'),
+    );
+    expect(applyMove(s, 0).win?.fullGarden).toBeUndefined();
   });
 
   it('a formation takes precedence over a block when both happen on the same move', () => {
@@ -342,14 +359,14 @@ describe('match variants (End of the game)', () => {
   const p2wins = (tilesRemaining: number): WinInfo => ({ winner: 2, reason: 'blocked', cells: [], tilesRemaining });
 
   it('single game: the winner of the round wins the match', () => {
-    const m = recordGame(newMatch('single'), p2wins(5));
+    const m = recordGame(newMatch('single', 1), p2wins(5));
     expect(m.champion).toBe(2);
     expect(m.wins).toEqual({ 1: 0, 2: 1 });
     expect(m.gamesPlayed).toBe(1);
   });
 
   it('match in three sets: first to 3 won games', () => {
-    let m = newMatch('sets3');
+    let m = newMatch('sets3', 1);
     m = recordGame(m, p1wins(4));
     m = recordGame(m, p2wins(2));
     m = recordGame(m, p1wins(6));
@@ -361,7 +378,7 @@ describe('match variants (End of the game)', () => {
   });
 
   it('victory points: winner scores the tiles left in the garden; first to 10 wins', () => {
-    let m = newMatch('points10');
+    let m = newMatch('points10', 1);
     m = recordGame(m, p1wins(4));
     expect(m.points).toEqual({ 1: 4, 2: 0 });
     m = recordGame(m, p2wins(7));
@@ -374,6 +391,19 @@ describe('match variants (End of the game)', () => {
     expect(m.champion).toBe(1);
   });
 
+  it('victory points to 15 and 20 for longer matches', () => {
+    let m = newMatch('points15', 2);
+    for (let i = 0; i < 3; i++) m = recordGame(m, p1wins(4)); // 12
+    expect(m.champion).toBeNull();
+    m = recordGame(m, p1wins(3)); // 15
+    expect(m.champion).toBe(1);
+    let n = newMatch('points20', 1);
+    for (let i = 0; i < 4; i++) n = recordGame(n, p2wins(4)); // 16
+    expect(n.champion).toBeNull();
+    n = recordGame(n, p2wins(4)); // 20
+    expect(n.champion).toBe(2);
+  });
+
   it('the loser of the previous game starts the next one', () => {
     let m = newMatch('sets3', 1);
     expect(m.nextFirst).toBe(1);
@@ -382,6 +412,115 @@ describe('match variants (End of the game)', () => {
     m = recordGame(m, p2wins(3));
     expect(m.nextFirst).toBe(1);
   });
+});
+
+describe('wins reached through applyMove for every formation type', () => {
+  it('column: P2 completes column 1 (indices 1, 5, 9, 13)', () => {
+    // P1 to move on CANON with P2 holding 1, 5, 9 and Ip (13) still in the garden.
+    const s = stateFromPicture(
+      `1  2  Mb Mr
+       1  2  Cb Cr
+       1  2  Pb Pr
+       Is Ip Ib Ir`,
+      2,
+      parseTile('Pp'), // last removed tile Pp: P2 may play pine or poem -> Pb(10), Pr(11), Ip(13)
+    );
+    expect(legalMoves(s)).toEqual([10, 11, 13]);
+    const after = applyMove(s, 13);
+    // 10 tiles on the board before the move, 9 after.
+    expect(after.win).toEqual<WinInfo>({ winner: 2, reason: 'column', cells: [1, 5, 9, 13], tilesRemaining: 9 });
+  });
+
+  it('diagonal: P1 completes the anti-diagonal (3, 6, 9, 12) and the engine reports "diagonal"', () => {
+    const s = stateFromPicture(
+      `Ms Mp Mb 1
+       Cs Cp 1  2
+       Ps 1  Pb 2
+       Is Ip Ib Ir`,
+      1,
+      parseTile('Ir'), // P2 just took Ir: iris or rain -> Is(12), Ip(13), Ib(14)
+    );
+    const after = applyMove(s, 12);
+    // 11 tiles on the board before the move, 10 after.
+    expect(after.win).toEqual<WinInfo>({ winner: 1, reason: 'diagonal', cells: [3, 6, 9, 12], tilesRemaining: 10 });
+  });
+
+  it('a move completing two formations reports the first in the fixed order rows, columns, diagonals, squares', () => {
+    // P1 completes row 0 AND column 0 with index 0.
+    const s = stateFromPicture(
+      `Ms 1  1  1
+       1  Cp Cb 2
+       1  Pp 2  Pr
+       1  2  Ib 2`,
+      1,
+      parseTile('Mp'),
+    );
+    const after = applyMove(s, 0);
+    expect(after.win?.reason).toBe('row');
+    expect(after.win?.cells).toEqual([0, 1, 2, 3]);
+  });
+});
+
+describe('newGame with the second player opening', () => {
+  it('respects the first argument and the border rule for that player', () => {
+    const g = newGame(5, 2);
+    expect(g.current).toBe(2);
+    expect(legalMoves(g)).toEqual([0, 1, 2, 3, 4, 7, 8, 11, 12, 13, 14, 15]);
+    const after = applyMove(g, 0);
+    expect(after.board[0]).toEqual({ kind: 'token', player: 2 });
+    expect(after.current).toBe(1);
+  });
+});
+
+describe('property check: random games against an independent reference', () => {
+  /** Independent re-statement of the legal-move rule, written without looking at legalMoves(). */
+  function referenceLegal(state: GameState): number[] {
+    if (state.win) return [];
+    const out: number[] = [];
+    for (let i = 0; i < 16; i++) {
+      const c = state.board[i];
+      if (c.kind !== 'tile') continue;
+      const row = Math.floor(i / 4);
+      const col = i % 4;
+      if (state.lastTile === null) {
+        const border = row === 0 || row === 3 || col === 0 || col === 3;
+        if (border) out.push(i);
+      } else if (c.tile.veg === state.lastTile.veg || c.tile.sym === state.lastTile.sym) out.push(i);
+    }
+    return out;
+  }
+
+  it('500 random games: legal sets match, illegal indices throw, exactly one winner, at most 8 tokens each, no draws', () => {
+    const rng = mulberry32(2026);
+    let fullGardens = 0;
+    for (let n = 0; n < 500; n++) {
+      let g = newGame(n, (n % 2) + 1 as 1 | 2);
+      let moves = 0;
+      while (!g.win) {
+        const legal = legalMoves(g);
+        expect(legal).toEqual(referenceLegal(g));
+        expect(legal.length).toBeGreaterThan(0);
+        for (let i = 0; i < 16; i++) if (!legal.includes(i)) expect(() => applyMove(g, i)).toThrow();
+        const pick = legal[Math.floor(rng() * legal.length)];
+        const next = applyMove(g, pick);
+        expect(next.history.length).toBe(g.history.length + 1);
+        expect(next.lastTile).toEqual((g.board[pick] as { tile: Tile }).tile);
+        g = next;
+        moves++;
+        expect(moves).toBeLessThanOrEqual(16);
+      }
+      expect(tokensInHand(g, 1)).toBeGreaterThanOrEqual(0);
+      expect(tokensInHand(g, 2)).toBeGreaterThanOrEqual(0);
+      expect(g.win!.tilesRemaining).toBe(tilesRemaining(g.board));
+      expect(legalMoves(g)).toEqual([]);
+      if (g.win!.reason === 'blocked') expect(referenceLegal({ ...g, win: null })).toEqual([]);
+      else expect(findWin(g.board, g.win!.winner)).not.toBeNull();
+      // The loser never has a formation of their own on the board.
+      expect(findWin(g.board, g.win!.winner === 1 ? 2 : 1)).toBeNull();
+      if (g.win!.fullGarden) fullGardens++;
+    }
+    expect(fullGardens).toBeGreaterThan(0);
+  }, 30000);
 });
 
 describe('immutability', () => {

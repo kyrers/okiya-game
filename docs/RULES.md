@@ -2,7 +2,8 @@
 
 Source: Blue Orange Games, *Okiya Print & Play* rules by Bruno Cathala and Cyril Bouquet,
 <https://blueorangegames.eu/wp-content/uploads/2020/04/Okiya-PnP-EN.pdf> (4 pages, read on 2026-10-02).
-The summary below is in our own words; the engine in `src/engine/okiya.ts` implements exactly this.
+The summary below is in our own words; the engine in `src/engine/okiya.ts` implements it (one
+interpretation is flagged below where the PDF is silent).
 
 ## Components
 - 16 garden tiles: every combination of 4 vegetations (maple, cherry, pine, iris)
@@ -26,12 +27,20 @@ The summary below is in our own words; the engine in `src/engine/okiya.ts` imple
 ## Winning (immediate)
 - A row of 4 of your tokens: horizontal, vertical or diagonal.
 - A 2x2 square of 4 of your tokens.
-- Your opponent has no legal move (they are **blocked**). Because the garden empties,
-  this also means the game can never end in a draw: whoever takes the last tile wins if
-  no formation was made.
+- Your opponent has no legal move (they are **blocked**).
+
+> **Interpretation (not stated in the PDF).** The sheet does not say what happens when the
+> 16th tile is taken without a formation. This project applies the blocking rule literally:
+> the other player cannot make a move, so the player who took the last tile wins (the engine
+> flags such a game with `fullGarden: true`, constant `FULL_GARDEN_RULE`). At least one
+> secondary source (boardgamesbot.com) calls this ending a tie instead. Under our ruling the
+> game can never end in a draw; the rules auditor measured that this ending decides about
+> 13% of random games and most games between strong, equal AIs.
 
 ## End of the game (match variants)
 - **Single game**: one round, winner takes the match.
 - **Match in three sets**: first player to win 3 games.
 - **Match of victory points**: the winner of a game scores as many points as there are
-  garden tiles left in the garden; first to 10 (or 15/20 for longer matches) wins.
+  garden tiles left in the garden; first to 10 (or 15/20 for longer matches) wins. The engine
+  implements all three targets (`points10`, `points15`, `points20`); Hanamichi itself uses its
+  own station structure instead of these match formats.

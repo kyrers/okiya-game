@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { applyMove, legalMoves } from '../engine/okiya';
 import { chooseMove } from '../engine/ai';
 import { CHARMS } from '../engine/charms';
-import { continueRun, draftOffers, finishGame, lanternsLeft, newRun, pickCharm, skipDraft, startGame, useFirefly, type RunState } from './run';
+import { continueRun, draftOffers, finishGame, lanternsLeft, newRun, pickCharm, skipDraft, startGame, useFirefly, validateRun, type RunState } from './run';
 import { MAX_HELD, STATIONS } from './stations';
 
 /** Play the current game to the end with depth-1 AIs on both sides (deterministic). */
@@ -142,6 +142,35 @@ describe('run flow', () => {
     run = finishGame({ ...run, stationPetals: 1000 });
     run = continueRun(run);
     expect(run.fireflyUsed).toBe(false);
+  });
+
+  it('validateRun accepts a genuine save and rejects tampered or malformed ones', () => {
+    let run = newRun(42);
+    run = pickCharm(run, run.offers[0]);
+    run = startGame(run);
+    run = { ...run, game: applyMove(run.game!, 0) };
+    const saved = JSON.parse(JSON.stringify(run));
+    expect(validateRun(saved)).toEqual(run);
+    // A token moved by hand: the replay no longer matches.
+    const tampered = JSON.parse(JSON.stringify(run)) as RunState;
+    (tampered.game as unknown as { board: unknown[] }).board[5] = { kind: 'token', player: 1 };
+    expect(validateRun(tampered)).toBeNull();
+    expect(validateRun(null)).toBeNull();
+    expect(validateRun({ seed: 1 })).toBeNull();
+    expect(validateRun({ ...saved, held: ['not-a-charm'] })).toBeNull();
+    expect(validateRun({ ...saved, phase: 'playing', game: null })).toBeNull();
+  });
+
+  it('the next game really starts with the recorded loser', () => {
+    let run = newRun(42);
+    run = pickCharm(run, run.offers[0]);
+    run = startGame(run);
+    run = playOut(run);
+    const loser = run.game!.win!.winner === 1 ? 2 : 1;
+    run = finishGame(run);
+    run = continueRun(run);
+    expect(run.phase).toBe('playing');
+    expect(run.game!.current).toBe(loser);
   });
 
   it('the whole run is serialisable JSON (for autosave)', () => {

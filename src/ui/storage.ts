@@ -3,7 +3,10 @@ export function loadJson<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
     if (raw === null) return fallback;
-    return { ...fallback, ...(JSON.parse(raw) as Partial<T>) } as T;
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return fallback;
+    if (fallback === null || typeof fallback !== 'object') return parsed as T;
+    return { ...fallback, ...(parsed as Partial<T>) } as T;
   } catch {
     return fallback;
   }

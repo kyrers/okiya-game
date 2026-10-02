@@ -4,7 +4,8 @@
  * this module only sequences games and scores finished ones with charms.
  */
 import { CHARMS, scoreGame, type CharmId, type PetalBreakdown } from '../engine/charms';
-import { mulberry32, newGame, opponent, type GameState, type Player } from '../engine/okiya';
+import { applyMove, mulberry32, newGame, newGameFromTiles, opponent, type GameState, type Player } from '../engine/okiya';
+import { reconstructLayout } from '../engine/charms';
 import { DRAFT_SIZE, MAX_HELD, STATIONS } from './stations';
 
 export type Phase = 'start-draft' | 'intro' | 'playing' | 'result' | 'draft' | 'won' | 'lost';
@@ -168,4 +169,36 @@ export function lanternsLeft(run: RunState): number {
 export function useFirefly(run: RunState): RunState {
   if (run.fireflyUsed) throw new Error('firefly already used at this station');
   return { ...run, fireflyUsed: true };
+}
+
+/**
+ * Validate a run loaded from storage. The game, if any, is rebuilt by replaying its
+ * history through the engine from the reconstructed layout; the saved state must match
+ * exactly. Returns null when anything disagrees, so a corrupted save is discarded.
+ */
+export function validateRun(raw: unknown): RunState | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Partial<RunState>;
+  const phases: Phase[] = ['start-draft', 'intro', 'playing', 'result', 'draft', 'won', 'lost'];
+  if (typeof r.seed !== 'number' || !r.phase || !phases.includes(r.phase)) return null;
+  if (typeof r.station !== 'number' || r.station < 0 || r.station >= STATIONS.length) return null;
+  if (!Array.isArray(r.held) || r.held.length > MAX_HELD) return null;
+  const ids = new Set(CHARMS.map((c) => c.id));
+  if (!r.held.every((id) => ids.has(id)) || !Array.isArray(r.offers) || !r.offers.every((id) => ids.has(id))) return null;
+  if (r.nextFirst !== 1 && r.nextFirst !== 2) return null;
+  if (r.game) {
+    try {
+      const g = r.game;
+      if (!Array.isArray(g.board) || g.board.length !== 16 || !Array.isArray(g.history)) return null;
+      const first = g.history[0]?.player ?? g.current;
+      let replay = newGameFromTiles(reconstructLayout(g), first);
+      for (const m of g.history) replay = applyMove(replay, m.index);
+      if (JSON.stringify(replay) !== JSON.stringify(g)) return null;
+    } catch {
+      return null;
+    }
+  } else if (r.phase === 'playing' || r.phase === 'result') {
+    return null;
+  }
+  return r as RunState;
 }

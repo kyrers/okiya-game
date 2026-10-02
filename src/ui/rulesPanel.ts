@@ -19,7 +19,10 @@ export function okiyaRulesHtml(): string {
   <ul>
     <li>Four of your tokens in a <strong>row, column or diagonal</strong>.</li>
     <li>Four of your tokens in a <strong>2×2 square</strong>.</li>
-    <li>Leaving your opponent with <strong>no legal tile</strong>: they are blocked and you win. Taking the last tile without a formation blocks them too, so there are no draws.</li>
+    <li>Leaving your opponent with <strong>no legal tile</strong>: they are blocked and you win.</li>
+  </ul>
+  <p class="muted"><strong>Empty garden.</strong> The official sheet does not say what happens when the last tile is taken without a line or square. Here we apply the blocking rule literally: the other player cannot make a move, so whoever took the last tile wins. Some players treat it as a tie instead.</p>
+  <ul style="display:none">
   </ul>
   <p class="muted">Victory points: a win is worth the number of tiles still in the garden. Okiya is by Bruno Cathala and Cyril Bouquet (Blue Orange Games).</p>`;
 }

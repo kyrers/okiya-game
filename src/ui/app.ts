@@ -18,6 +18,7 @@ import {
   startGame,
   stationCleared,
   useFirefly,
+  validateRun,
   type RunState,
 } from '../game/run';
 import { MAX_HELD, STATIONS } from '../game/stations';
@@ -63,7 +64,7 @@ export class App {
 
   constructor(root: HTMLElement) {
     this.root = root;
-    const run = loadJson<RunState | null>(RUN_KEY, null);
+    const run = validateRun(loadJson<unknown>(RUN_KEY, null));
     this.s = {
       view: 'title',
       run: run && run.phase !== 'won' && run.phase !== 'lost' ? run : null,
@@ -458,6 +459,9 @@ export class App {
     const st = currentStation(run);
     const rival = escapeHtml(st.rival.name);
     if (game.win) {
+      if (game.win.fullGarden) {
+        return game.win.winner === HUMAN ? `You win: the garden is empty and ${rival} has no tile to take.` : `${rival} wins: the garden is empty and you have no tile to take.`;
+      }
       const how = game.win.reason === 'blocked' ? 'blocking' : `a ${game.win.reason}`;
       return game.win.winner === HUMAN ? `You win by ${how}!` : `${rival} wins by ${game.win.reason === 'blocked' ? 'blocking you' : how}.`;
     }
@@ -516,7 +520,7 @@ export class App {
       </section>
       <aside class="side tray">
         ${over ? '' : `<div class="worth">
-          <span class="worth-label">A win now is worth</span>
+          <span class="worth-label">${worth.exact ? 'A winning tile is open, worth' : 'A win on your next move is worth'}</span>
           <span class="worth-num">${worth.total} ${petal()}</span>
           <span class="worth-detail">${worthLine}</span>
         </div>`}
@@ -524,6 +528,7 @@ export class App {
           <h3>Charms</h3>
           <div class="hand-strip">${run.held.length ? run.held.map((id) => this.charmChip(id)).join('') : '<span class="muted">none yet</span>'}</div>
         </div>
+        ${run.phase === 'result' && run.lastResult ? `<div class="result-inline">${this.resultPanel(run)}</div>` : ''}
         <button class="btn firefly-btn ${run.fireflyUsed ? 'used' : ''} ${this.s.fireflyLit ? 'lit' : ''}" data-action="firefly" ${run.fireflyUsed || !yourTurn ? 'disabled' : ''}>
           <span class="firefly-icon" aria-hidden="true"></span>
           <span class="firefly-text">
@@ -537,6 +542,10 @@ export class App {
   }
 
   private renderResult(run: RunState): string {
+    return `<div class="sheet-backdrop result-backdrop">${this.resultPanel(run)}</div>`;
+  }
+
+  private resultPanel(run: RunState): string {
     const st = currentStation(run);
     const r = run.lastResult!;
     const cleared = stationCleared(run);
@@ -544,14 +553,15 @@ export class App {
     const last = run.log[run.log.length - 1];
     const rows: string[] = [];
     if (r.won) {
-      rows.push(`<li><span>Victory by ${last.reason === 'blocked' ? 'blocking' : escapeHtml(last.reason)}</span><span>+${r.base}</span></li>`);
+      rows.push(`<li><span>Victory by ${run.game?.win?.fullGarden ? 'emptying the garden' : last.reason === 'blocked' ? 'blocking' : `a ${escapeHtml(last.reason)}`}</span><span>+${r.base}</span></li>`);
       rows.push(`<li><span>${r.tilesRemaining} tile${r.tilesRemaining === 1 ? '' : 's'} left in the garden</span><span>+${r.tilesRemaining}</span></li>`);
       for (const e of r.effects) {
         const fired = e.effect.add || e.effect.mult;
         rows.push(`<li class="${fired ? 'fired' : 'quiet'}"><span>${charmGlyph(e.charm)} ${escapeHtml(e.charm.name)}${fired ? ` <small>${escapeHtml(e.effect.note)}</small>` : ' <small>did not bloom</small>'}</span><span>${e.effect.mult ? `×${1 + e.effect.mult}` : e.effect.add ? `+${e.effect.add}` : '—'}</span></li>`);
       }
     } else {
-      rows.push(`<li><span>${escapeHtml(st.rival.name)} wins by ${last.reason === 'blocked' ? 'blocking you' : escapeHtml(last.reason)} · ${last.moves} moves</span><span>0</span></li>`);
+      const how = run.game?.win?.fullGarden ? 'an empty garden: you had no tile left to take' : last.reason === 'blocked' ? 'blocking you' : `a ${escapeHtml(last.reason)}`;
+      rows.push(`<li><span>${escapeHtml(st.rival.name)} wins by ${how} · ${last.moves} moves</span><span>0</span></li>`);
     }
     const toGo = st.target - run.stationPetals;
     let cta: string;
@@ -561,16 +571,14 @@ export class App {
       cta = `Light the next lantern`;
       math = `${run.stationPetals} / ${st.target} · ${left} lantern${left > 1 ? 's' : ''} left · about ${Math.ceil(toGo / left)} petals per win needed`;
     } else cta = 'The road ends here';
-    return `<div class="sheet-backdrop result-backdrop">
-      <section class="sheet result ${r.won ? 'won' : 'lost'}" role="dialog" aria-label="Game result">
+    return `<section class="sheet result ${r.won ? 'won' : 'lost'}" role="dialog" aria-label="Game result">
         <p class="eyebrow">${cleared ? 'Station cleared' : left > 0 ? `Lantern ${run.gamesPlayed} of ${st.lanterns}` : 'Lanterns spent'}</p>
         <h2>${r.won ? 'The garden blooms' : 'The garden fades'}</h2>
         <ul class="tally">${rows.join('')}</ul>
         <p class="tally-total"><span>Petals this game</span><span class="count-up" data-count="${r.total}">${r.total}</span></p>
         <p class="tally-station">${math ? escapeHtml(math) : `Station: <strong>${run.stationPetals}</strong> / ${st.target}`} ${math ? '' : petal()}</p>
         <button class="btn btn-primary" data-action="continue">${cta}</button>
-      </section>
-    </div>`;
+      </section>`;
   }
 
   private renderEnd(run: RunState): string {
@@ -606,7 +614,7 @@ export class App {
         <h2>How to play</h2>
         <h3>The road</h3>
         <p>Walk six stations. At each one you have <strong>three lanterns</strong>: three full games of Okiya against the station's rival. Gather the station's <strong>petal target</strong> before the lanterns run out and you walk on, drafting a new charm. Miss it and the road ends.</p>
-        <p>A won game is worth <strong>3 + the tiles left in the garden</strong> petals (the official victory-point rule), plus whatever your charms add. A lost game is worth nothing. Charms only read the finished game: they never change which tiles you may take or how a game is won.</p>
+        <p>A won game is worth <strong>3 petals for the win, plus the official victory points</strong> (one per tile left in the garden), plus whatever your charms add. A lost game is worth nothing. Charms only read the finished game: they never change which tiles you may take or how a game is won. When a move completes a line or square and also blocks the rival, it counts as the line or square.</p>
         <p>The <strong>Firefly</strong> may be woken once per station: for one move it marks the tiles that win at once and the tiles that hand the rival a win. It only shows information.</p>
         <h3>Okiya, the game at the core</h3>
         ${okiyaRulesHtml()}

@@ -173,16 +173,17 @@ one of three charms (hold up to four); fail and the run ends with a summary.
 | 6 | Winter | Okasan, the Matron | 4 / 0.03 | 8 |
 
 - **Petals for a won game** = `(3 + tiles left in the garden + Σ charm adds) × (1 + Σ charm mults)`.
-  A lost game scores 0. The base term is the official victory-points rule.
+  A lost game scores 0. The "tiles left" term is the official victory-points rule; the +3 is ours.
 - **Charms** (10): Stone Lantern (square win +6), Bamboo Fence (row/column win +4), Crane Scroll
   (diagonal win +8), Thorn Hedge (blocked win +4), Corner Shrine (+2 per corner held), Heart Stone
   (+2 per centre cell held), Rain Chain (+1 per move that followed the constraint by symbol),
   Narrow Gate (+3 each time you leave the rival exactly one legal tile), Steady Hand (+1 per two
   tokens placed), Swift Blossom (win with ≤ 6 tokens: ×2). All are pure functions of a finished
   game (`src/engine/charms.ts`, unit-tested).
-- **Paper Lantern** (borrowed from idea C, information only): once per station the player may light
-  the lantern to see, for one move, which legal tiles win at once and which hand the rival an
-  immediate win. It never changes what is legal.
+- **Firefly** (borrowed from idea C's "Lantern", information only; renamed after the visual review
+  because "lantern" already meant a game): once per station the player may wake it to see, for one
+  move, which legal tiles win at once and which hand the rival an immediate win. It never changes
+  what is legal.
 - **Okiya rules untouched**: every game is created with `newGame`, played with `applyMove` and
   `legalMoves`, and decided by the engine's own win check. The first game at a station starts with
   a seeded coin toss; afterwards the loser of the previous game starts, as in the official rules.

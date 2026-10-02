@@ -469,10 +469,12 @@ h3 { font-size: 1.05rem; }
 /* Result: warm scrim, bottom sheet on small screens, docked panel on desktop */
 .sheet-backdrop { background: rgba(43, 30, 20, 0.28); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
 .sheet.result { max-height: 70dvh; }
+.result-inline { display: none; }
 @media (min-width: 900px) {
-  .result-backdrop { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; pointer-events: none; place-items: start end; padding: 0; }
-  .result-backdrop .sheet.result { pointer-events: auto; margin: 84px max(16px, calc((100vw - 1200px) / 2 + 16px)) 0 0; width: min(380px, 30vw); max-height: calc(100dvh - 100px); border-radius: 18px; box-shadow: 0 18px 50px rgba(31, 27, 24, 0.35); border: 1px solid rgba(31, 27, 24, 0.12); }
-  .play-screen.game-over .tray { visibility: hidden; }
+  .result-backdrop { display: none; }
+  .result-inline { display: block; }
+  .result-inline .sheet.result { max-height: none; border-radius: 18px; padding: 20px 18px; box-shadow: 0 18px 50px rgba(31, 27, 24, 0.3); border: 1px solid rgba(31, 27, 24, 0.12); animation: rise 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.1); }
+  .play-screen.game-over .firefly-btn, .play-screen.game-over .hand { display: none; }
 }
 
 /* Garden key in the rules */
