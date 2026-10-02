@@ -7,15 +7,7 @@
  *   (BASE + tilesRemaining + Σ add) × (1 + Σ mult)
  * A lost game scores 0 petals.
  */
-import {
-  CENTRE_CELLS,
-  applyMove,
-  legalMoves,
-  newGameFromTiles,
-  type GameState,
-  type Player,
-  type Tile,
-} from './okiya';
+import { CENTRE_CELLS, legalMoves, opponent, type Cell, type GameState, type Player, type Tile } from './okiya';
 
 export const BASE_PETALS = 3;
 
@@ -56,19 +48,27 @@ export interface GameContext {
   myMoves: { index: number; tile: Tile; matchedBy: 'first' | 'vegetation' | 'symbol'; repliesLeft: number }[];
 }
 
-/** Build the context by replaying the history through the unmodified engine. */
+/**
+ * Build the context by replaying the history. The board is rewound by putting the
+ * history's tiles back, then each move is re-applied with the engine's own legalMoves
+ * to count the replies it left. Cells that hold a token without a history entry (only
+ * possible in hand-built test positions) stay as they are.
+ */
 export function buildContext(state: GameState, me: Player): GameContext {
-  const tiles = reconstructLayout(state);
-  const first = state.history[0]?.player ?? 1;
-  let g = newGameFromTiles(tiles, first);
+  const board: Cell[] = state.board.slice();
+  for (const m of state.history) board[m.index] = { kind: 'tile', tile: m.tile };
   const myMoves: GameContext['myMoves'] = [];
-  for (const m of state.history) {
-    const prev = g.lastTile;
-    g = applyMove(g, m.index);
+  let prev: Tile | null = null;
+  for (let i = 0; i < state.history.length; i++) {
+    const m = state.history[i];
+    board[m.index] = { kind: 'token', player: m.player };
+    const after: GameState = { board: board.slice(), current: opponent(m.player), lastTile: m.tile, history: [], win: null };
+    const finished = i === state.history.length - 1 && state.win !== null;
     if (m.player === me) {
       const matchedBy: 'first' | 'vegetation' | 'symbol' = prev === null ? 'first' : prev.veg === m.tile.veg ? 'vegetation' : 'symbol';
-      myMoves.push({ index: m.index, tile: m.tile, matchedBy, repliesLeft: g.win ? 0 : legalMoves(g).length });
+      myMoves.push({ index: m.index, tile: m.tile, matchedBy, repliesLeft: finished ? 0 : legalMoves(after).length });
     }
+    prev = m.tile;
   }
   return { state, me, myMoves };
 }
