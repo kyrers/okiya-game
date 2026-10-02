@@ -165,7 +165,5 @@ are now built only through the state machine.
   the first game.
 - **No third visual review.** The fixes made after visual review 2 were checked by the orchestrating
   session against the regenerated screenshots, not by a fresh reviewer.
-- **Commits are unsigned** (see `NOTES.md`): the repository asks for GPG signatures but the key's
-  pinentry needs a person at the keyboard.
 - The hint "danger" marker only looks one rival move ahead; deeper traps are not shown (by design,
   the Firefly is a small hint, not an engine).
