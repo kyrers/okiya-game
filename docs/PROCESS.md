@@ -147,7 +147,16 @@ to crash every render on resume; counters and offers were not bounded by phase (
 intro screen); huge "integers" passed. Result rendering now looks charms up by id and coerces
 numbers. Tests: 87 (engine membership and sparse-layout tests; run-validation tests for tiles,
 counters, offers, phase, tally and a legitimately reached multi-station run). The end-to-end seeds
-are now built only through the state machine.
+are now built only through the state machine. A later independent review found one more gap: the
+opener of a saved game was compared with the saved `nextFirst` rather than derived, so a save that
+let the previous winner open passed. `requiredOpener(seed, log)` now derives it (seeded coin toss
+for the first game, then the loser of the last logged game) and both the opener and `nextFirst`
+must match it; the review's reproduction (seed 9) is a unit test. A verification workflow (2,992
+opener forgeries, 51,000 legitimate saves fuzzed) confirmed the derivation and pointed at three
+more fields that were still trusted from the save; they are now derived as well: the garden is
+replayed from the seed and game index (so a swapped layout or a fabricated earlier game is
+rejected), a logged win must score at least the base petals and a loss exactly 0, and a carried
+tally must describe the last logged game and be absent while a game is in progress.
 
 ### Follow-up: rival strength (2026-10-03)
 

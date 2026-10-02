@@ -3,9 +3,8 @@
  * the UI drives it and persists it. All Okiya play goes through the engine;
  * this module only sequences games and scores finished ones with charms.
  */
-import { CHARMS, scoreGame, type CharmId, type PetalBreakdown } from '../engine/charms';
-import { applyMove, isPlayer, isTile, isWinReason, mulberry32, newGame, newGameFromTiles, opponent, type GameState, type Player } from '../engine/okiya';
-import { reconstructLayout } from '../engine/charms';
+import { BASE_PETALS, CHARMS, scoreGame, type CharmId, type PetalBreakdown } from '../engine/charms';
+import { applyMove, isPlayer, isTile, isWinReason, mulberry32, newGame, opponent, type GameState, type Player } from '../engine/okiya';
 import { DRAFT_SIZE, MAX_HELD, STATIONS } from './stations';
 
 export type Phase = 'start-draft' | 'intro' | 'playing' | 'result' | 'draft' | 'won' | 'lost';
@@ -52,6 +51,20 @@ export function draftOffers(seed: number, salt: number, held: readonly CharmId[]
   return out;
 }
 
+/** The seeded coin toss that decides who opens the first game of a run (PDF: "chosen randomly"). */
+export function firstOpener(seed: number): Player {
+  return rng(seed, 99)() < 0.5 ? 1 : 2;
+}
+
+/**
+ * Who must open the next game of a run: the coin toss before the first game, afterwards the
+ * loser of the most recent game (official rule), which the log records as `won` for the human.
+ */
+export function requiredOpener(seed: number, log: readonly GameRecord[]): Player {
+  if (log.length === 0) return firstOpener(seed);
+  return log[log.length - 1].won ? opponent(HUMAN) : HUMAN;
+}
+
 export function newRun(seed: number): RunState {
   return {
     seed,
@@ -62,7 +75,7 @@ export function newRun(seed: number): RunState {
     held: [],
     offers: draftOffers(seed, 0, []),
     fireflyUsed: false,
-    nextFirst: rng(seed, 99)() < 0.5 ? 1 : 2,
+    nextFirst: firstOpener(seed),
     game: null,
     lastResult: null,
     totalPetals: 0,
@@ -93,13 +106,17 @@ export function skipDraft(run: RunState): RunState {
   return { ...run, offers: [], phase: 'intro' };
 }
 
+/** The seed of the garden dealt for a given station and game index: the only layout a run can show there. */
+export function gameSeed(runSeed: number, station: number, gameIndex: number): number {
+  return (runSeed + station * 1000 + gameIndex * 7 + 1) >>> 0;
+}
+
 /** Light the next lantern: start a new Okiya game at the current station. */
 export function startGame(run: RunState): RunState {
   if (run.phase !== 'intro' && run.phase !== 'result') throw new Error(`cannot start a game in phase ${run.phase}`);
   const st = currentStation(run);
   if (run.gamesPlayed >= st.lanterns) throw new Error('no lanterns left');
-  const gameSeed = (run.seed + run.station * 1000 + run.gamesPlayed * 7 + 1) >>> 0;
-  const game = newGame(gameSeed, run.nextFirst);
+  const game = newGame(gameSeed(run.seed, run.station, run.gamesPlayed), run.nextFirst);
   return { ...run, phase: 'playing', game, lastResult: null };
 }
 
@@ -212,6 +229,8 @@ export function validateRun(raw: unknown): RunState | null {
     if (!isCount(entry.game) || entry.game >= STATIONS[entry.station].lanterns) return null;
     if (typeof entry.won !== 'boolean' || !isCount(entry.petals) || !isWinReason(entry.reason)) return null;
     if (!isCount(entry.moves) || entry.moves < 1 || entry.moves > 16) return null;
+    // A lost game scores exactly 0; a won game at least the base petals.
+    if (entry.won ? entry.petals < BASE_PETALS : entry.petals !== 0) return null;
   }
   const log = r.log as GameRecord[];
   if (r.lastResult !== null && !isRecord(r.lastResult)) return null;
@@ -248,18 +267,23 @@ export function validateRun(raw: unknown): RunState | null {
     const history = g.history as GameState['history'];
     const first = history[0]?.player ?? (g.current as Player);
     try {
-      // The engine itself rejects any layout that is not the official 16 tiles.
-      let state = newGameFromTiles(reconstructLayout(game as unknown as GameState), first);
+      // Replay from the garden the run deals for this station and game index (not from the saved
+      // tiles), so the layout, the tile set and the game index are all pinned by the seed.
+      const gameIndex = phase === 'result' ? r.gamesPlayed - 1 : r.gamesPlayed;
+      let state = newGame(gameSeed(r.seed, r.station, gameIndex), first);
       for (const m of history) state = applyMove(state, m.index);
       if (JSON.stringify(state) !== JSON.stringify(game)) return null;
       replay = state;
     } catch {
       return null;
     }
-    // Who opened this game must be who the run said would open it (the loser of the previous game).
-    if (phase === 'playing' && first !== r.nextFirst) return null;
-    if (phase === 'result' && (!replay.win || r.nextFirst !== opponent(replay.win.winner))) return null;
+    // Who opened this game is dictated by the run, not by the save: the seeded coin toss for the
+    // first game, afterwards the loser of the previous game (the last log entry at that time).
+    if (phase === 'playing' && first !== requiredOpener(r.seed, log)) return null;
+    if (phase === 'result' && (!replay.win || first !== requiredOpener(r.seed, log.slice(0, -1)))) return null;
   }
+  // nextFirst is likewise derived, never trusted: the loser of the last logged game opens next.
+  if (r.nextFirst !== requiredOpener(r.seed, log)) return null;
 
   /* ---- 4. the log explains the counters ---- */
   let total = 0;
@@ -291,9 +315,15 @@ export function validateRun(raw: unknown): RunState | null {
     const last = log[log.length - 1];
     if (!last || last.station !== r.station || last.game !== r.gamesPlayed - 1 || last.won !== expected.won) return null;
     if (last.petals !== expected.total || last.reason !== replay.win.reason || last.moves !== replay.history.length) return null;
+  } else if (phase === 'playing' || log.length === 0) {
+    // startGame clears the tally, and before the first game there is none.
+    if (r.lastResult !== null) return null;
   } else if (r.lastResult !== null) {
-    // A previous game's tally rides along into draft/intro/won/lost: check its shape.
+    // A previous game's tally rides along into draft/intro/won/lost: check its shape and that it
+    // describes the last logged game.
     const lr = r.lastResult as Record<string, unknown>;
+    const last = log[log.length - 1];
+    if (lr.won !== last.won || lr.total !== last.petals) return null;
     if (typeof lr.won !== 'boolean' || !isCount(lr.base) || !isCount(lr.tilesRemaining) || !isCount(lr.add) || !isCount(lr.mult) || !isCount(lr.total)) return null;
     if (!Array.isArray(lr.effects)) return null;
     for (const eff of lr.effects as unknown[]) {

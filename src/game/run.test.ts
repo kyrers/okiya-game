@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { applyMove, legalMoves, mulberry32 } from '../engine/okiya';
 import { chooseMove } from '../engine/ai';
 import { CHARMS } from '../engine/charms';
-import { continueRun, draftOffers, finishGame, lanternsLeft, newRun, pickCharm, skipDraft, startGame, useFirefly, validateRun, type RunState } from './run';
+import { continueRun, draftOffers, finishGame, firstOpener, lanternsLeft, newRun, pickCharm, requiredOpener, skipDraft, startGame, useFirefly, validateRun, type RunState } from './run';
 import { MAX_HELD, STATIONS } from './stations';
 
 /**
@@ -345,6 +345,114 @@ describe('run flow', () => {
     const extra = rt(result);
     extra.mystery = 1;
     expect(validateRun(extra)).toEqual(rt(result));
+  });
+
+  it('validateRun derives the opener from the previous result: a save that lets the previous WINNER open is rejected', () => {
+    // Reproduction from the review: seed 9, finish the first game with the first legal move each
+    // turn, continue to the next game, then set both nextFirst and the new game's opener to the
+    // previous winner.
+    let run = newRun(9);
+    run = pickCharm(run, run.offers[0]);
+    run = startGame(run);
+    let g = run.game!;
+    while (!g.win) g = applyMove(g, legalMoves(g)[0]);
+    run = finishGame({ ...run, game: g });
+    const winner = g.win!.winner;
+    const loser = winner === 1 ? 2 : 1;
+    run = continueRun(run);
+    expect(run.phase).toBe('playing');
+    expect(run.nextFirst).toBe(loser);
+    expect(run.game!.current).toBe(loser);
+    const rt = (r: unknown) => JSON.parse(JSON.stringify(r)) as Record<string, unknown>;
+    expect(validateRun(rt(run))).toEqual(rt(run)); // control: the genuine save is accepted
+    const forged = rt(run);
+    forged.nextFirst = winner;
+    (forged.game as Record<string, unknown>).current = winner;
+    expect(validateRun(forged)).toBeNull();
+    // The same forgery after the opener has already moved (history present) is rejected too.
+    const moved = { ...run, game: applyMove({ ...run.game!, current: winner }, legalMoves(run.game!)[0]) };
+    const forgedMoved = rt({ ...moved, nextFirst: winner });
+    expect(validateRun(forgedMoved)).toBeNull();
+    // Forging only nextFirst, or only the opener, is rejected as well.
+    const onlyNext = rt(run);
+    onlyNext.nextFirst = winner;
+    expect(validateRun(onlyNext)).toBeNull();
+    const onlyOpener = rt(run);
+    (onlyOpener.game as Record<string, unknown>).current = winner;
+    expect(validateRun(onlyOpener)).toBeNull();
+  });
+
+  it('validateRun pins the garden to the seed and game index, and ties log results to petals and the carried tally', () => {
+    let run = newRun(9);
+    run = pickCharm(run, run.offers[0]);
+    run = startGame(run);
+    let g = run.game!;
+    while (!g.win) g = applyMove(g, legalMoves(g)[0]);
+    run = finishGame({ ...run, game: g });
+    const winner = g.win!.winner;
+    run = continueRun(run); // playing, game 1 of station 0
+    const rt = (r: unknown) => JSON.parse(JSON.stringify(r)) as Record<string, unknown>;
+    expect(validateRun(rt(run))).toEqual(rt(run));
+    // (a) Two untouched tiles swapped on the board: not the garden the seed deals -> rejected.
+    const swapped = rt(run);
+    const board = (swapped.game as Record<string, unknown>).board as unknown[];
+    [board[0], board[1]] = [board[1], board[0]];
+    expect(validateRun(swapped)).toBeNull();
+    // (b) A fabricated earlier game prepended to the log so that the "loser" of a game that never
+    // happened opens the real first game: the layout no longer matches the claimed game index.
+    const fresh = pickCharm(newRun(9), newRun(9).offers[0]);
+    const firstGame = startGame(fresh);
+    const toss = firstGame.game!.current;
+    const fake = rt({
+      ...firstGame,
+      game: { ...firstGame.game!, current: toss === 1 ? 2 : 1 },
+      gamesPlayed: 1,
+      log: [{ station: 0, game: 0, won: toss === 2, petals: toss === 2 ? 5 : 0, reason: 'row', moves: 9 }],
+      stationPetals: toss === 2 ? 5 : 0,
+      totalPetals: toss === 2 ? 5 : 0,
+      nextFirst: toss === 1 ? 2 : 1,
+    });
+    expect(validateRun(fake)).toBeNull();
+    // (c) The previous result flipped with petals kept and the opener re-derived: won/petals contradict.
+    const flipped = rt(run);
+    const entry = (flipped.log as Record<string, unknown>[])[0];
+    entry.won = !entry.won;
+    flipped.nextFirst = winner;
+    (flipped.game as Record<string, unknown>).current = winner;
+    expect(validateRun(flipped)).toBeNull();
+    // (d) A tally carried into 'playing', or one that disagrees with the last logged game.
+    const carried = rt(run);
+    carried.lastResult = rt(finishGame({ ...startGame(pickCharm(newRun(9), newRun(9).offers[0])), game: g }).lastResult);
+    expect(validateRun(carried)).toBeNull();
+    const result = finishGame({ ...startGame(pickCharm(newRun(9), newRun(9).offers[0])), game: g });
+    const intro = continueRun({ ...result, stationPetals: 0 }); // not cleared: next game -> 'playing'
+    expect(intro.phase).toBe('playing');
+    const afterStation = (() => {
+      // Reach a draft legitimately so lastResult is carried: reuse the helper above.
+      const r2 = clearedTwoStations();
+      return r2;
+    })();
+    expect(afterStation.lastResult).not.toBeNull();
+    expect(validateRun(rt(afterStation))).toEqual(rt(afterStation));
+    const badTally = rt(afterStation);
+    (badTally.lastResult as Record<string, unknown>).total = ((badTally.lastResult as Record<string, unknown>).total as number) + 1;
+    expect(validateRun(badTally)).toBeNull();
+  });
+
+  it('the first game of a run must be opened by the seeded coin toss, and requiredOpener follows the log', () => {
+    const run = pickCharm(newRun(9), newRun(9).offers[0]);
+    const started = startGame(run);
+    expect(started.game!.current).toBe(firstOpener(9));
+    expect(requiredOpener(9, [])).toBe(firstOpener(9));
+    expect(requiredOpener(9, [{ station: 0, game: 0, won: true, petals: 5, reason: 'row', moves: 9 }])).toBe(2);
+    expect(requiredOpener(9, [{ station: 0, game: 0, won: false, petals: 0, reason: 'blocked', moves: 16 }])).toBe(1);
+    const rt = (r: unknown) => JSON.parse(JSON.stringify(r)) as Record<string, unknown>;
+    const other = firstOpener(9) === 1 ? 2 : 1;
+    const forged = rt(started);
+    forged.nextFirst = other;
+    (forged.game as Record<string, unknown>).current = other;
+    expect(validateRun(forged)).toBeNull();
+    expect(validateRun(rt(started))).toEqual(rt(started));
   });
 
   it('the next game really starts with the recorded loser', () => {
