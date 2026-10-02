@@ -28,11 +28,12 @@ one person from a link, deployable as a static site, and prove each step.
 | 3 | Ideator C (rivals/powers angle) | Opus | same | `docs/ideas/idea-C.md` |
 | 4 | Judge 1 | Opus | criteria, baseline, 3 ideas, engine | `docs/judging/judge-1.md` |
 | 5 | Judge 2 (player's advocate) | Opus | same | `docs/judging/judge-2.md` |
-| 6 | Visual judge | Opus | 21 screenshots | `docs/reviews/visual-review-1.md` |
-| 7 | Rules auditor | Opus | PDF text, code, tests | `docs/reviews/rules-review.md` |
+| 6 | Visual judge, round 1 | Opus | 21 screenshots | `docs/reviews/visual-review-1.md` (15 findings, scores 6/10 and 5/10) |
+| 7 | Rules auditor | Opus | PDF text, code, tests | `docs/reviews/rules-review.md` (7 findings, verdict "yes, with caveats") and `scripts/audit-invariants.ts` |
+| 8 | Visual judge, round 2 | Opus | review 1 + 21 new screenshots | `docs/reviews/visual-review-2.md` |
 
 Everything else (engine, tests, AI, simulations, UI, docs) was written by the orchestrating
-session directly. Budget: 15 agents allowed, 7 used (see the end of this file for any later ones).
+session directly. Budget: 15 agents allowed, 8 used.
 
 ## Key decisions
 
@@ -69,7 +70,38 @@ session directly. Budget: 15 agents allowed, 7 used (see the end of this file fo
 
 ## Fixes from reviews
 
-(filled in after the reviews; see below)
+### Visual review, round 1 (`docs/reviews/visual-review-1.md`)
+
+| # | Finding | What was done |
+|---|---|---|
+| 1 | Blocker: phone game screens overflowed the viewport by ~16px | Diagnosed with a Playwright script: the single-column grid track was `1fr` (= `minmax(auto, 1fr)`) and grew to a child's min-content width. Changed to `minmax(0, 1fr)` with `min-width: 0` on the areas; scroll width now equals the viewport. |
+| 2 | Playable tiles barely marked; other tiles desaturated to illegibility | No more desaturation (only `saturate(.85)`); playable tiles lift 3px with a darker gold ring and shadow; sun, cloud and rain strokes got outlines/darker colours. |
+| 3 | Paper Lantern reused gold, gave no feedback | Renamed **Firefly** with its own glowing icon; results shown as corner badges with text ("wins", "! Haru wins next"); an explicit message when no tile is marked. Playable treatment unchanged under the hint. |
+| 4 | Desktop station screen looked broken | Intro uses the same three-column grid as play, with the road in the left rail. |
+| 5 | Play screen never said how to win; instruction far from the board | Status line is now the instruction with icons ("Your move: take a cherry or bird tile"); a permanent "Win: 4 in a line · a 2×2 square · leave Haru no tile" line sits under the board. |
+| 6 | "Lantern" meant three things | Lanterns are games only ("Game 1 of 3" label); the hint is the Firefly. |
+| 7 | Result sheet hid the board | Desktop: tally docked in the right rail, board fully visible; phone/tablet: bottom sheet capped at 70dvh, warm blurred scrim; stale "worth now"/constraint cards hidden once the game is over; loss math added ("2 lanterns left · about 15 petals per win needed"). |
+| 8 | Grey labels failed contrast | `--ink-3` darkened to #6b5f53 (≥5:1); caps labels 13px; season kickers darkened. |
+| 9 | Phone header truncation, small targets | Subtitle hidden below 480px; help/close buttons 44px; chips ≥40px. |
+| 10 | Station card misalignment | Charms are a fourth fact column; CTA left-aligned (full width on phone). |
+| 11 | Rail panels wrapping / misaligned on tablet | Firefly button is a column layout; tablet panels constrained to the board width. |
+| 12 | Tile art: maple as stars, pine as grass, generic cloud | Maple redrawn as a five-lobed leaf, pine as a layered umbrella pine with a trunk, cloud with a brush-edged outline; a 4×4 garden key added to the rules sheet. |
+| 13 | Draft cards did not look like choices | "Take this charm ›" affordance, focus ring, vertically centred panel, icons on a faint 4×4 grid. |
+| 14 | Title stats were noise; wordmark looked like a link | Stats hidden until a road has been started; wordmark not underlined; leaving a game asks for confirmation. |
+| 15 | Unclear copy | "5 tokens", a real blossom icon instead of ✿, scoring line reworded. |
+
+### Rules audit (`docs/reviews/rules-review.md`)
+
+| # | Finding | What was done |
+|---|---|---|
+| 1 | High: the full-garden ending is an interpretation the PDF does not state | Kept the literal blocking reading but made it explicit: `FULL_GARDEN_RULE` constant, `fullGarden: true` on the result, dedicated wording in the status line, result sheet, rules sheet, `docs/RULES.md` and README, all labelled as an interpretation with the dissenting source noted. A draw ruling was not implemented (would make `winner` nullable across engine, AI and run). |
+| 2 | Medium: "A win now is worth" was one petal too high | Now "a win on your next move": subtracts the tiles that must leave first, and shows the exact payout when a winning tile is open. Tests updated, including one that matches the real payout of the 13-move test game. |
+| 3 | Low: double formation / formation+block precedence picks the charm | Documented in the Thorn Hedge rule text and the rules sheet; a test pins the fixed order rows → columns → diagonals → squares. |
+| 4 | Low: 15/20-point matches missing; "+3" called official | `points15`/`points20` implemented and tested; wording changed to "3 petals for the win, plus the official victory points". The match formats remain engine-only (Hanamichi uses stations). |
+| 5 | Low: saved runs trusted; stored `null` could crash | `loadJson` returns the fallback for non-objects; `validateRun` replays the saved game through the engine and discards any save that disagrees (tested). |
+| 6 | Info: `newMatch` defaulted to player 1 | `first` is now a required argument. |
+| 7 | Info: 32-bit seed cannot reach every layout | Noted; no change. |
+| Test gaps | No property test, column/diagonal only via `findWin`, danger hint untested, no mutation checks | Added: a random-game property test against an independent reference (legal sets, illegal indices throw, one winner, no draws), column and diagonal wins through `applyMove`, two-formation precedence, `newGame(seed, 2)`, a danger-hint test, a hint immutability test, `validateRun` tests, and "next game starts with the recorded loser". The auditor's own invariant suite is kept as `npm run audit`. |
 
 ## Unfinished / known limitations
 
