@@ -95,6 +95,28 @@ session directly. Budget: 15 agents allowed, 8 used.
 | 14 | Title stats were noise; wordmark looked like a link | Stats hidden until a road has been started; wordmark not underlined; leaving a game asks for confirmation. |
 | 15 | Unclear copy | "5 tokens", a real blossom icon instead of ✿, scoring line reworded. |
 
+### Visual review, round 2 (`docs/reviews/visual-review-2.md`)
+
+The second, fresh reviewer re-checked the 15 round-1 findings on the new screenshots: **10 fixed,
+5 partly fixed, 0 not fixed**; scores rose from 6/10 to **7.5/10** ("looks good") and from 5/10 to
+**7/10** ("usable without explanation"); no blockers. It listed 9 remaining items, all addressed:
+
+| # | Finding | What was done |
+|---|---|---|
+| 1 | Major: on phone/tablet the result still covered the winning row and blurred the board | Blur removed everywhere except the rules sheet. Tablet: the tally is rendered in the flow under the board. Phone: a compact bottom sheet capped at 45dvh with a light scrim, and the page scrolls so the board's bottom edge sits above it. A sumi brush stroke is painted through the winning line (a ring for a square) so the result reads even when partly covered. |
+| 2 | Major: the lit Firefly looked disabled; its answer had 2.5:1 contrast | Three explicit states (idle / shining / spent). Shining: full opacity, gold border and halo, answer in dark ink at 15px with counts ("1 tile wins now · 2 tiles hand Haru a win"). Spent: desaturated icon, lighter border, readable text. |
+| 3 | Major: Firefly below the fold on phone, cut off on tablet | The button is rendered directly under the constraint card on phone and tablet (and in the right rail on desktop). |
+| 4 | Minor: poem read as "!", symbols overlapped vegetation, generic cloud | Poem redrawn as a tilted ochre tanzaku with a cord and brush strokes; symbol moved to the upper-left and vegetation to the lower-right of every tile; maple leaves get a paper halo. (The cloud already had its brush-edged outline from round 1.) |
+| 5 | Minor: jargon and mixed names | "+8 on a diagonal (Crane Scroll)" style scoring text; "1 token" pluralised; result kicker says "Game 1 of 3"; shorter loss math ("2 games left · need about 10 a win"). |
+| 6 | Minor: rules sheet buried the game rules | Order is now: A turn, Winning, The garden (with the 4×4 key), then The Flower Road, Petals and charms, The Firefly; two heading levels with a vermilion rule above part headings; larger legend glyphs. |
+| 7 | Minor: wordmark looked like an indigo hyperlink | Sumi, no underline (underline only on hover/focus); leaving a game in progress asks for confirmation. |
+| 8 | Nit: desktop right rail too narrow | Grid rebalanced to 220 / 560 / 280–340 px with balanced text wrapping. |
+| 9 | Nit: pre-game screens top-heavy | Title, draft and station screens are vertically centred; the tablet station card is capped at 640px. |
+| — | Screenshot set: the Firefly capture showed no marked tile; stale round-1 files | The screenshot script now resumes an engine-built position where the Firefly marks both a winning and a dangerous tile, then plays the winning tile so the result capture shows a won tally. Stale files deleted. |
+
+These round-2 fixes were verified by the orchestrating session from the regenerated screenshots
+(no third review agent was run); see the "Unfinished" section.
+
 ### Rules audit (`docs/reviews/rules-review.md`)
 
 | # | Finding | What was done |
@@ -122,8 +144,8 @@ session directly. Budget: 15 agents allowed, 8 used.
   real players may find station 6 (depth 4 rival) too hard or stations 1–2 too easy.
 - **Not built:** idea A's Daily Road album, Winter Road unlock, charm album; sound; a coach mark on
   the first game.
-- **Screenshots show a lost game.** The screenshot script takes the first legal tile, so the result
-  screens in `docs/screenshots/` are losses; the win tally is exercised by unit tests and `npm run e2e`.
+- **No third visual review.** The fixes made after visual review 2 were checked by the orchestrating
+  session against the regenerated screenshots, not by a fresh reviewer.
 - **Commits are unsigned** (see `NOTES.md`): the repository asks for GPG signatures but the key's
   pinentry needs a person at the keyboard.
 - The hint "danger" marker only looks one rival move ahead; deeper traps are not shown (by design,
