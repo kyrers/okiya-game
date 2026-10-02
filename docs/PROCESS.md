@@ -63,7 +63,7 @@ session directly. Budget: 15 agents allowed, 8 used.
 
 | Check | Command | Result at the end of the session |
 |---|---|---|
-| Unit tests (engine, AI, charms, run flow, hints; includes a 500-game property test against an independent rules reference) | `npm test` | 6 files, 81 tests, all passing |
+| Unit tests (engine, AI, charms, run flow, hints; includes a 500-game property test against an independent rules reference) | `npm test` | 5 files, 81 tests, all passing |
 | Type-check + production build | `npm run build` | passes; `dist/` = 0.7 kB HTML + 21 kB CSS + 42 kB JS, relative asset paths, no external requests |
 | Production bundle smoke | `npm run preview` then `BASE_URL=http://localhost:4173/ npm run screenshots -- <dir>` | all 21 screens rendered from `dist/`, no page errors |
 | End-to-end flow (Playwright, system Chrome) | `npm run e2e` | 11 checks: finished game tallied on resume, cleared station → draft → next station, full-hand release, lost run → walk again, rival opens automatically, legal-move count under the constraint, illegal tile click ignored, rules sheet open/close |
