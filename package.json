@@ -13,10 +13,11 @@
     "screenshots": "tsx scripts/screenshots.ts"
   },
   "devDependencies": {
+    "@types/node": "^26.6.4",
+    "playwright": "^1.63.0",
+    "tsx": "^4.19.0",
     "typescript": "^5.6.0",
     "vite": "^8.3.2",
-    "vitest": "^5.0.3",
-    "tsx": "^4.19.0",
-    "playwright": "^1.63.0"
+    "vitest": "^5.0.3"
   }
 }

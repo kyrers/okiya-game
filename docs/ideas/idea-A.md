@@ -1,134 +1,125 @@
 # Idea A: Hanamichi, The Flower Road
 
 ## Name and one-line pitch
-**Hanamichi** is a roguelike journey along a flower road through four seasons. You beat eight rival gardeners at real Okiya, and winning alone is not enough: each victory has to bloom in the shapes your charms reward.
+**Hanamichi** is a roguelike walk through four seasons of gardens. You beat eight rival gardeners at real Okiya, but a win only counts if it blooms the way your charms reward.
 
 ## Core loop
 1. Pick 1 of 3 starting **charms** (scoring talismans).
-2. Arrive at a **station** that shows a rival, a petal **target** and 3 lanterns (one lantern per game).
-3. Play full Okiya games against the rival's AI. Every win scores **petals**. The tally is shown as `base × mult`, with each charm firing in sequence.
-4. Hit the target before your 3 lanterns are spent and you move on: pick 1 of 3 new charms, hold at most 4, and walk to the next station. If you miss, the run ends and you get a pressed-flower summary card.
-5. A run is 8 stations, about 20 games and 25–35 minutes. Ten minutes covers roughly 3 stations.
+2. Arrive at a **station**: a rival, a petal **target**, and 3 lanterns (= 3 games).
+3. Play full Okiya games against the rival's AI. Each win scores **petals**, tallied as `base × mult` with every charm firing in turn.
+4. Reach the target before the lanterns run out to move on: draft 1 of 3 charms (hold at most 4) and walk on. Miss it and the run ends with a pressed-flower summary card.
+
+A run is 8 stations, about 20 games, about 30 minutes. Ten minutes covers roughly 3 stations.
 
 ## How Okiya stays intact
 | Official rule | Where it lives |
 |---|---|
-| 16 tiles (4 veg × 4 symbols) in a shuffled 4×4 grid | `newGame(seed)`; seed = hash(runSeed, station, gameIndex) |
-| 8 tokens per player | engine, unchanged; shown as stamp counters |
-| First move on the border only | `legalMoves`; the UI dims the 4 centre tiles on move 1 whoever starts |
-| Must share vegetation or symbol with the last removed tile | `lastTile`, shown in the "constraint tray" beside the board |
-| Immediate win: row, column, diagonal or 2×2 square | `findWin`; the game stops at once |
-| Win when the opponent is blocked | `applyMove` block check |
-| First game random, then the loser starts | game 1 of a station uses a seeded coin toss; after that, the loser starts |
-| Victory-points variant (score = tiles left) | **this is the base score of every win** |
+| 16 tiles shuffled into a 4×4 grid; 8 tokens each | `newGame(seed)`, seed = hash(run, station, game) |
+| First move on the border only | `legalMoves`; centre tiles dimmed on move 1 |
+| Share vegetation or symbol with the last tile | `lastTile`, shown in the constraint tray |
+| Instant win: row / column / diagonal / 2×2, or block | `findWin` and the block check in `applyMove` |
+| First game random, then the loser starts | seeded coin toss for game 1 at a station; loser starts after that |
+| Victory points = tiles left | **the base score of every win** |
 
-Architectural guarantee: charms are pure functions `(finalState, me, ctx) => {add, mult}`. They read the finished game and never touch `legalMoves` or `applyMove`. Every game is a rules-exact Okiya game.
+Guarantee: charms are pure functions `(finalState, me, ctx) => {add, mult}`. They read the finished game and never touch `legalMoves` or `applyMove`.
 
 ## The new layer
-**Petals for a won game** = `(tilesRemaining + Σadd) × (1 + Σmult)`. A lost game scores 0 unless a charm says otherwise.
+**Petals for a won game** = `(tilesRemaining + Σadd) × (1 + Σmult)`. A loss scores 0. Mult is additive, so the ceiling is ×5.
 
-**Stations** (initial values, to be tuned by simulation):
+**Stations.** The targets are starting values for tuning. ε is the chance the rival plays a random legal move.
 
-| # | Season | Target | Rival AI |
-|---|---|---|---|
-| 1 | Spring | 6 | depth 1, ε 0.30 |
-| 2 | Spring | 9 | depth 1, ε 0.15 |
-| 3 | Summer | 13 | depth 2, ε 0.15 |
-| 4 | Summer | 17 | depth 2, ε 0.05 |
-| 5 | Autumn | 22 | depth 3, ε 0.05 |
-| 6 | Autumn | 27 | depth 4, ε 0.03 |
-| 7 | Winter | 33 | depth 6 |
-| 8 | Winter (Okiya Master) | 40 | depth 8 |
+| Station | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|
+| Season | Spring | Spring | Summer | Summer | Autumn | Autumn | Winter | Winter |
+| Target | 6 | 9 | 13 | 17 | 22 | 27 | 33 | 40 |
+| AI depth | 1 | 1 | 2 | 2 | 3 | 4 | 6 | 8 |
+| ε | .30 | .15 | .15 | .05 | .05 | .03 | 0 | 0 |
 
-ε is the chance the rival plays a random legal move.
-
-**Charms** (12 in the pool; offers never repeat a charm you hold):
-- **Crane Scroll**: +1 mult on a diagonal win.
-- **Stone Lantern**: +4 on a 2×2 square win.
-- **Bamboo Fence**: +3 on a row or column win.
-- **Thorn Hedge**: +6 on a blocked win. This rescues 0-tile endgames.
-- **Swift Blossom**: +1 mult if you win having placed ≤5 tokens.
+**Charms** (pool of 12; offers never repeat one you hold):
+- **Crane Scroll**: diagonal win, +1 mult.
+- **Stone Lantern**: 2×2 win, +4.
+- **Bamboo Fence**: row or column win, +3.
+- **Thorn Hedge**: blocked win, +6. This rescues 0-tile endings.
+- **Swift Blossom**: won with ≤5 tokens placed, +1 mult.
 - **Morning Sun**: +1 for each Sun tile you took.
 - **Rain Chain**: +1 for each of your moves that matched the constraint *by symbol*.
-- **Full Suit**: +5 if your taken tiles include all 4 tiles of one vegetation or one symbol.
-- **Corner Shrine**: +2 for each corner you hold at the end.
-- **Heart Stone**: +1 mult if you hold ≥2 centre cells.
-- **Second Wind**: +1 mult if you lost the previous game at this station.
-- **Moss Path**: a lost game scores floor(tilesRemaining / 2).
+- **Full Suit**: +5 if you took all 4 tiles of one vegetation or one symbol.
+- **Corner Shrine**: +2 for each corner you hold.
+- **Heart Stone**: holding ≥2 centre cells, +1 mult.
+- **Second Wind**: lost the previous game at this station, +1 mult.
+- **Moss Path**: a loss scores floor(tilesRemaining/2).
 
-Mult is additive, so four mult charms give at most ×5. This caps runaway combos.
-
-**Progress:** clearing station 8 wins the run. localStorage keeps the best station reached, the runs won, and an **Album** of charms you have discovered. *Winter Road* (targets ×1.25) unlocks after your first win.
+**Progress.** Clear station 8 to win the run. localStorage keeps the best station, the runs won, and an **Album** of discovered charms. Winning once unlocks *Winter Road* (targets ×1.25).
 
 ## Solo play
-You always play against a rival AI: negamax with alpha-beta and a transposition table keyed by (board, lastTile, current). The heuristic is open formations minus the opponent's open formations, plus mobility (the size of the opponent's next legal set). Difficulty comes only from search depth and ε. Okiya's branching factor is at most 6 after move 1, so depth 8 runs well under 100 ms. A **Daily Road** uses a seed built from the date, so everyone gets the same layouts and offers (cuttable). Quick Play against any rival you have already beaten is also cuttable.
+Every game is against a rival AI: negamax with alpha-beta and a transposition table keyed by board + lastTile + side to move. The heuristic is my open formations minus theirs, plus the opponent's next-move count. Depth and ε set the difficulty. With at most 6 options after move 1, depth 8 runs in under 100 ms. A **Daily Road** seeded by the date gives everyone the same layouts and offers (cuttable).
 
 ## Visual identity
 - **Palette:**
 
-  | Colour | Hex |
+  | Role | Colour |
   |---|---|
-  | Washi paper | #F3EAD8 |
-  | Sumi ink | #1F1B18 |
-  | Vermilion seal (player) | #C8402A |
-  | Indigo (rival) | #2E3A6B |
-  | Gold leaf | #C9A45C |
+  | Paper | washi #F3EAD8 |
+  | Ink | sumi #1F1B18 |
+  | Player | vermilion seal #C8402A |
+  | Rival | indigo #2E3A6B |
+  | Accent | gold #C9A45C |
   | Maple | #B5452F |
   | Cherry | #E8A3B5 |
   | Pine | #3E6B4F |
   | Iris | #6A5FA8 |
 
-  The paper grain is an SVG `feTurbulence` filter laid over the background.
-- **Type:** a system serif stack (Iowan Old Style, Palatino, Georgia) with wide letter-spacing for headings. Station names are set vertically with `writing-mode: vertical-rl`. No web fonts.
-- **Tiles:** a rounded square tinted by vegetation, with a simple SVG vegetation glyph (a 5-point maple leaf, a 5-petal cherry blossom, stacked triangles for pine, 3 petals for iris) and a symbol glyph in the corner (sun disc, scroll lines, a three-stroke bird, a cloud with rain dashes). **Tokens** are hanko stamps.
-- **Phone:** a header with the station, the target progress bar and 3 lantern icons. Below it the board at `min(92vw, 440px)`, then the constraint tray and a row of charm strips.
-- **Desktop:** three columns. Left, the road as a vertical emaki scroll with 8 stations on season bands. Centre, the board. Right, the charms and score ledger.
+  Paper grain comes from an SVG `feTurbulence` filter.
+- **Type:** a system serif stack (Iowan Old Style, Palatino, Georgia) with spaced capitals. Station names are set vertically (`writing-mode: vertical-rl`). No web fonts.
+- **Tiles:** rounded squares tinted by vegetation, with SVG glyphs for vegetation (leaf, 5-petal blossom, stacked triangles, 3-petal iris) and symbol (sun disc, scroll lines, 3-stroke bird, rain cloud). Tokens are hanko stamps.
+- **Phone:** header (station, target bar, 3 lanterns), then the board at `min(92vw,440px)`, the constraint tray, and a row of charm strips.
+- **Desktop:** the road as a vertical emaki scroll on the left, the board in the centre, charms and the ledger on the right.
 - **Animation moments:**
-  - Legal tiles breathe gold and illegal ones desaturate.
-  - A taken tile lifts and slides into the tray.
-  - The stamp lands with a 1.25→1 scale and a quick ink-bleed blur.
-  - The winning line is painted with a brush-stroke SVG path (`stroke-dashoffset`).
-  - The score tally counts up charm by charm while petals drift down.
-  - The road lantern walks to the next station.
+  - Legal tiles breathe gold; illegal ones desaturate.
+  - A taken tile slides into the tray.
+  - The stamp lands with a 1.25→1 scale and an ink-bleed blur.
+  - The winning line is painted on with a brush stroke (`stroke-dashoffset`).
+  - The score counts up charm by charm while petals drift.
+  - The lantern walks the road to the next station.
 
 ## Scope estimate (about 90 minutes)
 1. `ai.ts`: negamax, transposition table, levels (15 min)
-2. Board view: SVG tiles, highlights, click handling, 400 ms AI delay (25 min)
-3. `charms.ts`: 12 pure scorers plus a breakdown (10 min)
-4. `run.ts`: run state machine (station, lanterns, petals, charms, seeded RNG) saved to localStorage (12 min)
-5. Screens: road and station intro, charm draft, game result tally, run over (18 min)
-6. Polish (10 min). These parts can be cut: brush stroke, falling petals, the desktop 3-column layout (the centred phone layout works fine on desktop), Daily Road, Album, Winter Road.
+2. Board view: SVG tiles, highlights, input, 400 ms AI delay (25 min)
+3. `charms.ts`: 12 scorers plus a breakdown (10 min)
+4. `run.ts`: run state machine with seeded RNG, saved to localStorage (12 min)
+5. Screens: station intro, charm draft, result tally, run over (18 min)
+6. Polish (10 min)
+
+**Cuttable:** brush stroke, petals, the 3-column desktop layout (the centred phone layout works on desktop), Daily Road, Album, Winter Road.
 
 ## Risks / open questions
-- **Charms might not change play.** If "just win fast" is always optimal, this is Okiya with a scoreboard.
-- **Some charms may trigger too rarely to be worth picking.** Crane Scroll and Full Suit are the likely ones.
-- **The top rivals may be unbeatable.** Perfect play may give a forced win for the first player on many layouts.
-- **Wins late in the garden give a low base,** so targets could be too punishing.
-- **Second Wind and Moss Path could reward deliberate losing** (an exploit).
+- **"Just win fast" might dominate,** making charms cosmetic.
+- **Rare charms** (Crane Scroll, Full Suit) may be dead picks.
+- **The depth-8 rival may be unbeatable** if perfect play forces wins for the first player.
+- **Late wins** leave little base score, so the targets may be too steep.
+- **Second Wind and Moss Path** might reward throwing games.
 
 ## Simulation plan
-Run headless Node simulations with `tsx scripts/simulate.ts` and seeded RNG. Reuse the engine and the rival AI.
+`tsx scripts/simulate.ts`, seeded, reusing the engine and the rival AI.
 
-**Player proxies:**
-- **Blind-2:** depth 2, maximises wins only.
-- **Charm-2:** depth 2; terminal nodes are valued at expected petals instead of ±1.
+Player proxies:
+- **Blind-2:** depth 2, plays to win only.
+- **Charm-2:** depth 2, scores end positions by expected petals instead of win/loss.
 - **Charm-4:** the same at depth 4.
 
-**Draft policies:** random, or greedy by measured average value.
-
-Run 5,000 full runs per proxy × policy, plus 20,000 single games per rival level.
+Draft policies: random or greedy. Run 5,000 runs per combination and 20,000 games per rival level.
 
 | Metric | Good | Bad |
 |---|---|---|
-| Run completion, Charm-2 | 10–25% | >50% or <3% |
-| Run completion, Charm-4 | 40–60% | — |
-| Conditional clear rate per station | declines smoothly; every station ≥40% | any station <30% (a wall) |
+| Run win rate, Charm-2 | 10–25% | >50% or <3% |
+| Run win rate, Charm-4 | 40–60% | — |
+| Clear rate per station | smooth decline, every station ≥40% | any <30% (a wall) |
 | Charm-2 petals vs Blind-2 | ≥ +25% | < +10% |
-| Moves where Charm-2's best move differs from Blind-2's | 10–30% | <5% (charms are cosmetic) or >50% |
-| Run win rate when holding a given charm | 0.67–1.5× the mean | outside that band; also flag any charm that fires in <20% of won games while held |
-| Rival ladder | proxy win rate drops at every level | not monotonic |
-| First-player win rate per level | 45–65% | outside that band |
-| Exploit: always throw game 1 when holding Second Wind or Moss Path | gives no gain | beats normal play |
-| Speed: depth-8 move time in Node | p95 < 150 ms | — |
+| Moves where Charm-2's choice differs from Blind-2's | 10–30% | <5% or >50% |
+| Run win rate holding a given charm | 0.67–1.5× the mean | outside the band; or the charm fires in <20% of wins while held |
+| Win rate vs each rival level | falls at every level | — |
+| First-player win rate | 45–65% | — |
+| Exploit: throwing game 1 with Second Wind or Moss Path | no gain | beats normal play |
+| Depth-8 move time | p95 < 150 ms | — |
 
-Tune the targets and ε until every row is green, then freeze the numbers into `stations.ts`.
+Tune the targets and ε until every row passes, then freeze them in `stations.ts`.
