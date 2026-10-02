@@ -7,6 +7,39 @@
  */
 import { chromium, type Page } from 'playwright';
 import { mkdirSync } from 'node:fs';
+import { chooseMove } from '../src/engine/ai';
+import { applyMove, legalMoves, mulberry32 } from '../src/engine/okiya';
+import { fireflyHints } from '../src/game/hints';
+import { newRun, pickCharm, startGame, type RunState } from '../src/game/run';
+
+const RUN_KEY = 'hanamichi.run.v1';
+
+/**
+ * Build, through the real engine, a run paused at a position where it is the human's move and
+ * the Firefly marks at least one winning tile and one dangerous tile. Used so the screenshots
+ * show the hint and a won tally.
+ */
+function seededFireflyRun(): RunState {
+  for (let seed = 1; seed < 5000; seed++) {
+    let run = newRun(seed);
+    run = pickCharm(run, run.offers[0]);
+    run = startGame(run);
+    const rng = mulberry32(seed);
+    let g = run.game!;
+    while (!g.win) {
+      if (g.current === 1) {
+        const hints = fireflyHints(g, 1);
+        const vals = [...hints.values()];
+        if (vals.includes('win') && vals.includes('danger') && g.history.length >= 6) {
+          return { ...run, game: g, nextFirst: run.nextFirst };
+        }
+      }
+      const legal = legalMoves(g);
+      g = applyMove(g, g.current === 1 ? legal[Math.floor(rng() * legal.length)] : chooseMove(g, { depth: 1, rng }).index);
+    }
+  }
+  throw new Error('no suitable position found');
+}
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:5173/';
 const OUT = process.argv[2] ?? 'docs/screenshots';
@@ -67,19 +100,22 @@ async function run() {
     await shot(page, `${label}-3-station`);
     await page.click('[data-action="start-game"]');
     await page.waitForSelector('.play-screen .board');
-    // Make a few moves, then wake the firefly for the screenshot.
+    // Make a few moves for the mid-game capture.
     for (let i = 0; i < 3; i++) await humanMove(page);
-    // Wait for our turn again.
     for (let i = 0; i < 40 && !(await page.locator('.board.has-legal').count()); i++) await page.waitForTimeout(200);
     await shot(page, `${label}-4-play`);
-    const firefly = page.locator('[data-action="firefly"]:not([disabled])');
-    if (await firefly.count()) {
-      await firefly.click();
-      await page.waitForTimeout(200);
-      await shot(page, `${label}-5-firefly`);
-    }
-    // Play to the end for the result sheet.
-    for (let i = 0; i < 20; i++) if (!(await humanMove(page))) break;
+    // Firefly and result: resume a seeded position where the hint marks tiles and a win is available.
+    const seeded = seededFireflyRun();
+    await page.evaluate(([k, v]) => localStorage.setItem(k, v), [RUN_KEY, JSON.stringify(seeded)] as const);
+    await page.reload();
+    await page.waitForSelector('.title-screen');
+    await page.click('[data-action="resume"]');
+    await page.waitForSelector('.board.has-legal');
+    const firefly = page.locator('[data-action="firefly"]:visible:not([disabled])');
+    await firefly.first().click();
+    await page.waitForSelector('.badge-win');
+    await shot(page, `${label}-5-firefly`);
+    await page.click('.board .cell.legal.firefly-win');
     await page.waitForSelector('.sheet.result:visible', { timeout: 15000 });
     await shot(page, `${label}-6-result`);
     // Rules sheet.

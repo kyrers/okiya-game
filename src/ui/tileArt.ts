@@ -71,13 +71,13 @@ function sun(): string {
 }
 
 function poem(): string {
-  // A tanzaku (hanging poem strip) with a small hole and strokes of calligraphy.
-  return `<g class="sym sym-poem" transform="translate(50 36) rotate(6)">
-    <rect x="-12" y="-30" width="24" height="60" rx="2"/>
-    <circle cx="0" cy="-24" r="1.8" class="hole"/>
-    <line x1="0" y1="-14" x2="0" y2="-4" class="ink"/>
-    <line x1="0" y1="0" x2="0" y2="12" class="ink"/>
-    <line x1="0" y1="16" x2="0" y2="22" class="ink"/>
+  // A hanafuda tanzaku: a tilted paper slip with a tie cord and offset brush strokes.
+  return `<g class="sym sym-poem" transform="translate(44 34) rotate(-12)">
+    <rect x="-11" y="-28" width="22" height="56" rx="1.5"/>
+    <path d="M0,-28 C-3,-33 3,-33 0,-28 M0,-30 L0,-34" class="cord"/>
+    <path d="M-4,-16 C-2,-10 -3,-4 -5,2" class="ink"/>
+    <path d="M3,-20 C5,-12 4,-2 2,8" class="ink"/>
+    <path d="M-1,10 C1,14 0,18 -2,22" class="ink thin"/>
   </g>`;
 }
 
@@ -107,9 +107,10 @@ const SYM_ART: Record<Symbol, () => string> = { sun, poem, bird, rain };
 
 /** Full tile SVG (100x100 viewBox). */
 export function tileSvg(t: Tile): string {
+  // Symbol in the upper-left, vegetation in the lower-right, so the pair never overlaps.
   return `<svg viewBox="0 0 100 100" class="tile-art tile-${t.veg} tile-${t.sym}" aria-hidden="true" focusable="false">
-    ${SYM_ART[t.sym]()}
-    ${VEG_ART[t.veg]()}
+    <g class="sym-layer" transform="translate(-9 -6) scale(0.88)">${SYM_ART[t.sym]()}</g>
+    <g class="veg-layer" transform="translate(10 6) scale(0.92)">${VEG_ART[t.veg]()}</g>
   </svg>`;
 }
 

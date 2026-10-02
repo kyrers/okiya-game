@@ -94,14 +94,16 @@ button { font: inherit; color: inherit; }
 
 /* Tile art colours */
 .tile-art .sym-sun { fill: #d9a441; stroke: #b07f22; stroke-width: 2; }
-.tile-art .sym-poem rect { fill: #fbf6ea; stroke: var(--ink); stroke-width: 2; }
-.tile-art .sym-poem .hole { fill: var(--ink); }
-.tile-art .sym-poem .ink { stroke: var(--ink); stroke-width: 3; stroke-linecap: round; }
+.tile-art .sym-poem rect { fill: #e9d3a6; stroke: #3a2a22; stroke-width: 2; }
+.tile-art .sym-poem .cord { fill: none; stroke: #3a2a22; stroke-width: 2; stroke-linecap: round; }
+.tile-art .sym-poem .ink { fill: none; stroke: #3a2a22; stroke-width: 3.2; stroke-linecap: round; }
+.tile-art .sym-poem .ink.thin { stroke-width: 2.2; }
+.tile-art .veg-maple path { paint-order: stroke; stroke: #f3ead8; stroke-width: 3; }
 .tile-art .sym-bird path { fill: var(--ink); }
 .tile-art .sym-bird .tail { fill: none; stroke: var(--ink); stroke-width: 2; }
 .tile-art .sym-rain .cloud { fill: #8f9bb0; stroke: #5b6b8c; stroke-width: 1.6; stroke-linejoin: round; }
 .tile-art .sym-rain .drop { stroke: #5b6b8c; stroke-width: 2.4; stroke-linecap: round; }
-.tile-art .veg-maple path { fill: var(--maple); }
+.tile-art .veg-maple path { fill: var(--maple); paint-order: stroke; stroke: #f3ead8; stroke-width: 3; }
 .tile-art .veg-maple .stem { stroke: var(--maple); stroke-width: 2; }
 .tile-art .branch { fill: none; stroke: #3a2a22; stroke-width: 5; stroke-linecap: round; }
 .tile-art .branch.thin { stroke-width: 3; }
@@ -133,8 +135,8 @@ button { font: inherit; color: inherit; }
 /* Small glyphs (constraint legend) */
 .glyph { width: 1.6em; height: 1.6em; vertical-align: middle; }
 .glyph .sym-sun { fill: #d9a441; stroke: #b07f22; stroke-width: 3; }
-.glyph .sym-poem rect { fill: #fbf6ea; stroke: var(--ink); stroke-width: 3; }
-.glyph .sym-poem .ink, .glyph .sym-poem .hole { stroke: var(--ink); fill: var(--ink); stroke-width: 4; }
+.glyph .sym-poem rect { fill: #e9d3a6; stroke: #3a2a22; stroke-width: 3; }
+.glyph .sym-poem .ink, .glyph .sym-poem .cord { fill: none; stroke: #3a2a22; stroke-width: 4; stroke-linecap: round; }
 .glyph .sym-bird path { fill: var(--ink); }
 .glyph .sym-rain .cloud { fill: #8f9bb0; stroke: #5b6b8c; stroke-width: 2; }
 .glyph .sym-rain .drop { stroke: #5b6b8c; stroke-width: 3.5; }
@@ -488,3 +490,67 @@ h3 { font-size: 1.05rem; }
 .record { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: min(100%, 420px); }
 .record:empty { display: none; }
 .record .lbl { font-size: 0.72rem; }
+
+
+/* ======================= Review 2 fixes ======================= */
+/* Wordmark */
+.topbar .brand { color: #2b2522; text-decoration: none; }
+.topbar .brand:hover, .topbar .brand:focus-visible { text-decoration: underline; text-underline-offset: 3px; color: var(--vermilion-2); }
+
+/* Board wrapper and the brush stroke through the winning line */
+.board-wrap { position: relative; width: var(--board-size); margin: 0 auto; }
+.win-stroke { position: absolute; inset: clamp(6px, 1.5vw, 10px); width: calc(100% - 2 * clamp(6px, 1.5vw, 10px)); height: calc(100% - 2 * clamp(6px, 1.5vw, 10px)); pointer-events: none; overflow: visible; }
+.win-stroke path { fill: none; stroke: #2b2522; stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 1600; stroke-dashoffset: 1600; animation: paint 1.1s ease-out 0.15s forwards; opacity: 0.85; vector-effect: non-scaling-stroke; stroke-width: 5px; }
+@keyframes paint { to { stroke-dashoffset: 0; } }
+
+/* Firefly: three states, two placements */
+.firefly-btn.idle .firefly-sub, .firefly-btn.spent .firefly-sub, .firefly-btn.lit .firefly-sub { color: var(--ink-3); font-size: 0.85rem; text-align: left; }
+.firefly-btn:disabled { opacity: 1; }
+.firefly-btn.lit { opacity: 1; border: 2px solid #d9a441; box-shadow: 0 0 0 4px rgba(217, 164, 65, 0.18); background: #fffaf0; }
+.firefly-btn.lit .firefly-title { color: #2b2522; }
+.firefly-btn.lit .firefly-sub { color: #3d342c; font-size: 0.95rem; }
+.firefly-btn.spent { border-color: rgba(31, 27, 24, 0.12); background: rgba(255, 255, 255, 0.3); }
+.firefly-btn.spent .firefly-icon { filter: saturate(0); opacity: 0.4; animation: none; }
+.firefly-btn.spent .firefly-title { color: var(--ink-2); }
+.firefly-btn.idle:disabled .firefly-title { color: var(--ink-2); }
+.firefly-mobile { width: var(--board-size); margin: 0 auto; }
+.firefly-desktop { display: none; }
+@media (min-width: 900px) { .firefly-mobile { display: none; } .firefly-desktop { display: inline-flex; } }
+
+/* Game over on phone/tablet: no blur, board visible, result in the flow on tablet */
+.result-backdrop { background: rgba(43, 30, 20, 0.12); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.result-backdrop .sheet.result { max-height: 45dvh; padding: 14px 16px calc(14px + env(safe-area-inset-bottom)); }
+.result-backdrop .sheet.result h2 { font-size: 1.4rem; margin-bottom: 4px; }
+.result-backdrop .sheet.result .tally { margin: 6px 0; gap: 4px; }
+.result-backdrop .sheet.result .tally li { padding: 5px 8px; font-size: 0.92rem; }
+.result-backdrop .sheet.result .tally-total { margin: 6px 0 0; padding-top: 6px; }
+.result-backdrop .sheet.result .tally-total .count-up { font-size: 1.6rem; }
+.result-backdrop .sheet.result .tally-station { margin: 0 0 8px; font-size: 0.92rem; }
+.result-tablet { display: none; }
+@media (min-width: 600px) and (max-width: 899px) {
+  .result-backdrop { display: none; }
+  .result-tablet { display: block; width: var(--board-size); margin: 0 auto; }
+  .result-tablet .sheet.result { max-height: none; border-radius: 18px; border: 1px solid rgba(31, 27, 24, 0.12); box-shadow: 0 14px 40px rgba(31, 27, 24, 0.25); }
+  .play-screen.game-over .tray { display: none; }
+}
+@media (min-width: 900px) { .result-tablet { display: none; } }
+
+/* Desktop rails */
+@media (min-width: 900px) {
+  .screen.play-screen { grid-template-columns: minmax(180px, 220px) minmax(0, 560px) minmax(280px, 340px); justify-content: center; }
+  .worth-label, .worth-detail, .firefly-sub, .tally li span:first-child { text-wrap: balance; }
+  .tally li { align-items: center; }
+}
+
+/* Pre-game screens: centred, shared layout */
+.title-screen, .draft-screen { min-height: 100dvh; align-content: center; }
+.intro-screen { min-height: 100dvh; align-content: start; }
+@media (min-width: 600px) and (max-width: 899px) { .intro-screen .panel.intro { max-width: 640px; margin: 0 auto; width: 100%; } .intro-screen { align-content: center; } }
+@media (min-width: 900px) { .intro-screen { align-content: center; } }
+
+/* Rules sheet hierarchy */
+.sheet .rule-part { font-size: 1.25rem; margin: 22px 0 6px; padding-top: 12px; border-top: 2px solid var(--vermilion); }
+.sheet .rule-part:first-of-type { margin-top: 12px; }
+.sheet .rule-sub { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-3); margin: 14px 0 4px; font-family: var(--font-sans); font-weight: 700; }
+.sheet .glyph { width: 1.75em; height: 1.75em; }
+.sheet ol, .sheet ul { padding-left: 20px; margin: 4px 0; }

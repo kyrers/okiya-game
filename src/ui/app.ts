@@ -293,6 +293,29 @@ export class App {
     this.root.innerHTML = html;
     if (view === 'run' && run?.game) this.mountBoard(run);
     this.animateCounter();
+    this.keepBoardVisible(run);
+  }
+
+  /** When a result appears on a small screen, scroll so the board's bottom edge sits above it. */
+  private keepBoardVisible(run: RunState | null): void {
+    if (!run || run.phase !== 'result' || this.s.view !== 'run') return;
+    const board = this.root.querySelector<HTMLElement>('.board-wrap');
+    if (!board) return;
+    const wide = window.innerWidth >= 900;
+    if (wide) return;
+    const sheet = this.root.querySelector<HTMLElement>('.result-backdrop .sheet.result');
+    const inline = this.root.querySelector<HTMLElement>('.result-tablet');
+    requestAnimationFrame(() => {
+      const r = board.getBoundingClientRect();
+      if (sheet && getComputedStyle(sheet).display !== 'none' && window.innerWidth < 600) {
+        const sheetH = sheet.getBoundingClientRect().height;
+        const target = window.scrollY + r.bottom - (window.innerHeight - sheetH) + 8;
+        window.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+      } else if (inline) {
+        const top = window.scrollY + r.top - 72;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      }
+    });
   }
 
   private renderTitle(): string {
@@ -455,6 +478,32 @@ export class App {
     </div>`;
   }
 
+  private fireflyButton(run: RunState, yourTurn: boolean, note: string, extraClass: string): string {
+    const lit = this.s.fireflyLit && yourTurn;
+    const spent = run.fireflyUsed && !lit;
+    const state = lit ? 'lit' : spent ? 'spent' : 'idle';
+    const title = lit ? 'Firefly shining for this move' : spent ? 'Firefly used at this station' : 'Wake the Firefly';
+    const sub = lit ? note : spent ? 'One per station. It wakes again at the next gate.' : 'Once per station: marks the tiles that win now and the tiles that hand the rival a win.';
+    return `<button class="btn firefly-btn ${state} ${extraClass}" data-action="firefly" ${spent || !yourTurn ? 'disabled' : ''} aria-pressed="${lit}">
+      <span class="firefly-icon" aria-hidden="true"></span>
+      <span class="firefly-text">
+        <span class="firefly-title">${title}</span>
+        <span class="firefly-sub">${sub}</span>
+      </span>
+    </button>`;
+  }
+
+  private conditionalText(id: CharmId): string {
+    switch (id) {
+      case 'stone-lantern': return '+6 on a square';
+      case 'bamboo-fence': return '+4 on a row or column';
+      case 'crane-scroll': return '+8 on a diagonal';
+      case 'thorn-hedge': return '+4 on a block';
+      case 'swift-blossom': return '×2 with 6 tokens or fewer';
+      default: return CHARM_BY_ID[id].name;
+    }
+  }
+
   private statusHtml(run: RunState, game: GameState): string {
     const st = currentStation(run);
     const rival = escapeHtml(st.rival.name);
@@ -494,7 +543,8 @@ export class App {
         ? `${wins ? `${wins} tile${wins > 1 ? 's' : ''} win${wins > 1 ? '' : 's'} now` : ''}${wins && dangers ? ' · ' : ''}${dangers ? `${dangers} tile${dangers > 1 ? 's' : ''} hand${dangers > 1 ? '' : 's'} ${escapeHtml(st.rival.name)} a win` : ''}`
         : `No tile wins now, and none hands ${escapeHtml(st.rival.name)} a win.`
       : '';
-    const worthLine = `${worth.base} base + ${worth.tiles} tile${worth.tiles === 1 ? '' : 's'} left${worth.adds.map((a) => ` + ${a.add} ${escapeHtml(CHARM_BY_ID[a.id].name)}`).join('')}${worth.conditional.length ? ` · more if ${worth.conditional.map((id) => escapeHtml(CHARM_BY_ID[id].name)).join(' or ')} blooms` : ''}`;
+    const worthLine = `${worth.base} base + ${worth.tiles} tile${worth.tiles === 1 ? '' : 's'} left${worth.adds.map((a) => ` + ${a.add} ${escapeHtml(CHARM_BY_ID[a.id].name)}`).join('')}${worth.conditional.map((id) => ` · ${this.conditionalText(id)} (${escapeHtml(CHARM_BY_ID[id].name)})`).join('')}`;
+    const fireflyBtn = (cls: string) => this.fireflyButton(run, yourTurn, fireflyNote, cls);
     return `
     <main class="screen play-screen season-${st.season.toLowerCase()} ${over ? 'game-over' : ''}">
       ${this.topBar(run, `${st.place} · ${st.rival.name} ${st.rival.title}`)}
@@ -511,12 +561,14 @@ export class App {
           <p class="status ${yourTurn ? 'your-turn' : ''} ${over ? 'finished' : ''}" aria-live="polite">${this.statusHtml(run, game)}</p>
         </section>
         <div class="players">
-          <div class="player me ${yourTurn ? 'active' : ''}"><span class="token-mini p1"></span>You <small>${8 - myTokens} tokens</small></div>
-          <div class="player rival ${!yourTurn && !over ? 'active' : ''}"><small>${8 - rivalTokens} tokens</small>${escapeHtml(st.rival.name)}<span class="token-mini p2"></span></div>
+          <div class="player me ${yourTurn ? 'active' : ''}"><span class="token-mini p1"></span>You <small>${8 - myTokens} token${8 - myTokens === 1 ? '' : 's'}</small></div>
+          <div class="player rival ${!yourTurn && !over ? 'active' : ''}"><small>${8 - rivalTokens} token${8 - rivalTokens === 1 ? '' : 's'}</small>${escapeHtml(st.rival.name)}<span class="token-mini p2"></span></div>
         </div>
-        <div id="board" class="board"></div>
+        <div class="board-wrap"><div id="board" class="board"></div>${this.winStroke(game)}</div>
         ${over ? '' : this.constraintHtml(game, st.rival.name)}
+        ${over ? '' : fireflyBtn('firefly-mobile')}
         <p class="goal-line">Win: 4 in a line · a 2×2 square · leave ${escapeHtml(st.rival.name)} no tile</p>
+        ${run.phase === 'result' && run.lastResult ? `<div class="result-inline result-tablet">${this.resultPanel(run)}</div>` : ''}
       </section>
       <aside class="side tray">
         ${over ? '' : `<div class="worth">
@@ -528,17 +580,30 @@ export class App {
           <h3>Charms</h3>
           <div class="hand-strip">${run.held.length ? run.held.map((id) => this.charmChip(id)).join('') : '<span class="muted">none yet</span>'}</div>
         </div>
-        ${run.phase === 'result' && run.lastResult ? `<div class="result-inline">${this.resultPanel(run)}</div>` : ''}
-        <button class="btn firefly-btn ${run.fireflyUsed ? 'used' : ''} ${this.s.fireflyLit ? 'lit' : ''}" data-action="firefly" ${run.fireflyUsed || !yourTurn ? 'disabled' : ''}>
-          <span class="firefly-icon" aria-hidden="true"></span>
-          <span class="firefly-text">
-            <span class="firefly-title">${this.s.fireflyLit ? 'Firefly shining for this move' : run.fireflyUsed ? 'Firefly spent at this station' : 'Wake the Firefly'}</span>
-            <span class="btn-sub">${this.s.fireflyLit ? fireflyNote : 'Once per station: shows which tiles win now and which hand the rival a win.'}</span>
-          </span>
-        </button>
+        ${run.phase === 'result' && run.lastResult ? `<div class="result-inline result-desktop">${this.resultPanel(run)}</div>` : ''}
+        ${over ? '' : fireflyBtn('firefly-desktop')}
       </aside>
       ${run.phase === 'result' && run.lastResult ? this.renderResult(run) : ''}
     </main>`;
+  }
+
+  /** A brush stroke through the four winning cells, drawn over the board. */
+  private winStroke(game: GameState): string {
+    const cells = game.win?.cells ?? [];
+    if (cells.length !== 4) return '';
+    const pt = (i: number) => ({ x: ((i % 4) + 0.5) * 25, y: (Math.floor(i / 4) + 0.5) * 25 });
+    const a = pt(cells[0]);
+    const b = pt(cells[3]);
+    const isSquare = game.win?.reason === 'square';
+    const d = isSquare
+      ? (() => {
+          const c = cells.map(pt);
+          const cx = (c[0].x + c[3].x) / 2;
+          const cy = (c[0].y + c[3].y) / 2;
+          return `M${cx - 14},${cy} a14,14 0 1,0 28,0 a14,14 0 1,0 -28,0`;
+        })()
+      : `M${a.x},${a.y} L${b.x},${b.y}`;
+    return `<svg class="win-stroke" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="${d}"/></svg>`;
   }
 
   private renderResult(run: RunState): string {
@@ -569,10 +634,10 @@ export class App {
     if (cleared) cta = run.station >= STATIONS.length - 1 ? 'Reach the end of the road' : 'Walk on to the next station';
     else if (left > 0) {
       cta = `Light the next lantern`;
-      math = `${run.stationPetals} / ${st.target} · ${left} lantern${left > 1 ? 's' : ''} left · about ${Math.ceil(toGo / left)} petals per win needed`;
+      math = `${run.stationPetals} / ${st.target} · ${left} game${left > 1 ? 's' : ''} left · need about ${Math.ceil(toGo / left)} a win`;
     } else cta = 'The road ends here';
     return `<section class="sheet result ${r.won ? 'won' : 'lost'}" role="dialog" aria-label="Game result">
-        <p class="eyebrow">${cleared ? 'Station cleared' : left > 0 ? `Lantern ${run.gamesPlayed} of ${st.lanterns}` : 'Lanterns spent'}</p>
+        <p class="eyebrow">${cleared ? 'Station cleared' : left > 0 ? `Game ${run.gamesPlayed} of ${st.lanterns}` : 'All three games played'}</p>
         <h2>${r.won ? 'The garden blooms' : 'The garden fades'}</h2>
         <ul class="tally">${rows.join('')}</ul>
         <p class="tally-total"><span>Petals this game</span><span class="count-up" data-count="${r.total}">${r.total}</span></p>
@@ -612,14 +677,17 @@ export class App {
       html += `<div class="sheet-backdrop" data-action="close"><section class="sheet rules" role="dialog" aria-label="How to play" onclick="event.stopPropagation()">
         <button class="icon-btn close" data-action="close" aria-label="Close">×</button>
         <h2>How to play</h2>
-        <h3>The road</h3>
-        <p>Walk six stations. At each one you have <strong>three lanterns</strong>: three full games of Okiya against the station's rival. Gather the station's <strong>petal target</strong> before the lanterns run out and you walk on, drafting a new charm. Miss it and the road ends.</p>
-        <p>A won game is worth <strong>3 petals for the win, plus the official victory points</strong> (one per tile left in the garden), plus whatever your charms add. A lost game is worth nothing. Charms only read the finished game: they never change which tiles you may take or how a game is won. When a move completes a line or square and also blocks the rival, it counts as the line or square.</p>
-        <p>The <strong>Firefly</strong> may be woken once per station: for one move it marks the tiles that win at once and the tiles that hand the rival a win. It only shows information.</p>
-        <h3>Okiya, the game at the core</h3>
+        <h3 class="rule-part">Okiya, the game at the core</h3>
         ${okiyaRulesHtml()}
-        <h3>The sixteen tiles</h3>
+        <h4 class="rule-sub">The sixteen tiles</h4>
         ${gardenKeyHtml()}
+        <h3 class="rule-part">The Flower Road</h3>
+        <h4 class="rule-sub">Stations and lanterns</h4>
+        <p>Walk six stations. At each one you have <strong>three lanterns</strong>: three full games of Okiya against the station's rival. Gather the station's <strong>petal target</strong> before the lanterns run out and you walk on, drafting a new charm. Miss it and the road ends.</p>
+        <h4 class="rule-sub">Petals and charms</h4>
+        <p>A won game is worth <strong>3 petals for the win, plus the official victory points</strong> (one per tile left in the garden), plus whatever your charms add. A lost game is worth nothing. Charms only read the finished game: they never change which tiles you may take or how a game is won. When a move completes a line or square and also blocks the rival, it counts as the line or square.</p>
+        <h4 class="rule-sub">The Firefly</h4>
+        <p>The <strong>Firefly</strong> may be woken once per station: for one move it marks the tiles that win at once and the tiles that hand the rival a win. It only shows information.</p>
       </section></div>`;
     }
     if (this.s.showCharm) {
