@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "sim": "tsx scripts/simulate.ts",
     "screenshots": "tsx scripts/screenshots.ts",
-    "e2e": "tsx scripts/e2e-flow.ts"
+    "e2e": "tsx scripts/e2e-flow.ts",
+    "audit": "tsx scripts/audit-invariants.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.4",
