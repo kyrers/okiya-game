@@ -114,6 +114,12 @@ export class App {
 
   private resumeRun(): void {
     this.s.view = 'run';
+    const run = this.s.run;
+    // A game that ended just before the tab was closed: tally it now instead of stranding it.
+    if (run && run.phase === 'playing' && run.game?.win) {
+      this.setRun(finishGame(run));
+      this.s.resultShown = true;
+    }
     this.render();
     this.maybeScheduleAi();
   }
