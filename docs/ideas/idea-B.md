@@ -6,7 +6,7 @@
 
 ## Core loop
 
-An "Evening" is a race to **30 mon** (points) against one AI rival, usually 4–6 Okiya games of about 2 minutes each. Every tile you remove goes face up into your **hand**, where Hanafuda-style sets (*yaku*) light up. You read the board and your hand at once. Completing a yaku lets you call **Koi-Koi**: the rival must accept double stakes or fold. The winner of each game scores, and the loser starts the next.
+An "Evening" is a race to **30 mon** (points) against one AI rival: about 4–6 Okiya games of 2 minutes each. Every tile you remove goes into your **hand**, where Hanafuda-style sets (*yaku*) light up. Completing a yaku lets you call **Koi-Koi**, and the rival must accept double stakes or fold. Each game's winner scores, and the loser starts the next game.
 
 ## How Okiya stays intact
 
@@ -34,16 +34,16 @@ The layer adds one thing only: a concession (fold), allowed only in answer to a 
 | Grove (*Mori*) | All 4 tiles of one vegetation | 5 each |
 | Weather (*Tenki*) | All 4 tiles of one symbol | 5 each |
 
-The chain rule makes Grove and Weather hard. If two of your consecutive picks share a vegetation, the rival's pick in between must have it too. To collect all four, you have to space your picks out and read the chain ahead.
+The chain rule makes Grove and Weather hard. If two of your consecutive picks share a vegetation, the rival's pick in between must share it too. Collecting all four means spacing out your picks.
 
-**Game score (winner only):** `(3 + tiles left in garden + winner's yaku) x stake`. The loser scores 0. A quick win leaves more garden tiles; a long game builds a bigger hand. A "Worth now" ticker shows what a win would pay right now.
+**Game score (winner only):** `(3 + tiles left in garden + winner's yaku) x stake`. The loser scores 0. Quick wins pay garden tiles; long games build bigger hands. A "Worth now" ticker shows the current value of a win.
 
 **Koi-Koi.** You may call it right after a move that completes a new yaku, as long as that move did not end the game. Each player can call at most once per game. The opponent must choose:
 
 - **Accept:** the stake doubles (x1 → x2 → x4) and play continues.
 - **Fold:** the caller scores `(3 + caller's yaku) x current stake`. Garden tiles are **not** paid on a fold; they only reward real board wins. The folder starts the next game.
 
-As with a backgammon cube, accepting is right whenever your chance to win is above about 25%. That makes AI calls real decisions for you.
+As with a backgammon cube, accepting pays when your win chance is above about 25%, so each AI call is a real decision.
 
 ## Solo play
 
@@ -53,11 +53,7 @@ There are three rivals, unlocked in order. Each one pairs an existing `DIFFICULT
 - **Gardener** (`apprentice`): calls at a win chance of 0.60 or more, and accepts at 0.25 or more.
 - **Okami** (`master`): calls at 0.55, accepts at 0.22, and bluffs 10% of the time so its calls don't reveal forced wins.
 
-**Win chance:** if `chooseMove` proves a forced result, the AI uses 1 or 0. Otherwise it runs 40 playouts at depth 2.
-
-**Moves:** the AI re-ranks the root scores from `chooseMove`, so ties go to the move with the most yaku progress.
-
-localStorage keeps unlocks and your best margins.
+To estimate its win chance, the AI uses 1 or 0 when `chooseMove` proves a forced result, and otherwise runs 40 playouts at depth 2. Among moves tied for best, it picks the one with the most yaku progress. localStorage keeps unlocks and your best margins.
 
 ## Visual identity
 
@@ -67,14 +63,14 @@ The look is Hanafuda cards on washi paper.
 - **Tiles:** black-bordered SVG cards. A coloured field with a flat motif shows the vegetation. An emblem shows the symbol: sun disc, *tanzaku* poem strip, swallow, or rain cloud.
 - **Tokens:** hanko seals, vermilion for you and ink black for the rival.
 - **Type:** *Shippori Mincho* (with a serif fallback) for scores and banners; system sans-serif for UI text.
-- **Phone layout:** one column. Top to bottom: scores and the sake-cup stake, the rival's hand as a thin fan, the constraint card with a "maple or rain" pill, the board at `min(92vw, 440px)`, then your fanned hand with chips such as "Mori: Pine 3/4". Decisions appear in a bottom sheet.
-- **Desktop layout:** three columns (rival, board, you), with a 30-coin race track underneath.
+- **Phone:** one column. Scores and sake-cup stake, then the rival's hand as a thin fan, the constraint card with a "maple or rain" pill, the board at `min(92vw, 440px)`, and your hand with chips such as "Mori: Pine 3/4". Decisions use a bottom sheet.
+- **Desktop:** three columns (rival, board, you) above a 30-coin race track.
 - **Animations:**
-  - Legal tiles pulse gold; illegal ones desaturate.
-  - A taken tile flies to its owner's hand while the seal stamps down (scale 1.4→1, slight tilt).
-  - A completed yaku draws a gold brush underline (`stroke-dashoffset`).
-  - Koi-Koi dims the screen, stamps a red seal and flips the cup to show the new stake.
-  - A formation win draws a gold brush stroke through the four seals.
+  - Legal tiles pulse gold.
+  - Taken tiles fly to the hand as the seal stamps down (scale 1.4→1).
+  - A completed yaku draws a gold brush underline.
+  - Koi-Koi stamps a red seal and flips the cup to show the new stake.
+  - A winning formation gets a gold brush stroke.
 
 ## Scope estimate (about 95 minutes, cut down to 90)
 
@@ -90,11 +86,10 @@ The look is Hanafuda cards on washi paper.
 
 ## Risks / open questions
 
-- **Yaku frequency.** Existing simulations average 12–15 moves per game, so hands hold 6–8 tiles. Four Seasons may be nearly automatic.
-- **Fake decision.** If "always call Koi" is as good as calling selectively, the layer adds nothing.
-- **Folds.** Too many concessions would crowd out Okiya's own endings.
-- **Snowballing.** Simulations show the first mover wins only 37–45%, so "loser starts" hurts the loser twice. A x4 game could also decide a whole match.
-- **Mental load.** Players read the board and their hand together; the yaku chips must carry this.
+- **Yaku frequency:** games average 12–15 moves, so hands hold 6–8 tiles. Four Seasons may be nearly automatic.
+- **Fake decision:** "always call Koi" might be as good as calling selectively.
+- **Folds:** too many concessions would crowd out Okiya's own endings.
+- **Snowballing:** the first mover wins only 37–45%, so "loser starts" hurts the loser twice. A x4 game could also decide a match.
 
 ## Simulation plan
 
@@ -110,7 +105,7 @@ Extend `scripts/simulate.ts` and run 5,000 Evenings per pairing at depth 2 and 4
 |---|---|---|
 | Winner holds ≥1 yaku | 45–70% | >85% → Four Seasons must include the last tile taken |
 | Grove or Weather made | 10–25% of games | <5% → "3 of a kind, 3 mon" |
-| Games ending in a fold | 5–15% | >20% → fold pays +2 |
+| Games ending in a fold | 5–15% | >20% → caller gets +2 on a fold |
 | Threshold calling vs never calling (match wins) | +4–10 pp | ≤1 pp, or always calling does as well → stake step x1.5 |
 | Collector vs Board | 2–6 pp fewer games won, but ≥52% of matches | also wins more games → yaku come free |
 | Match length | median 4–6 games | retune the 30-mon target |
