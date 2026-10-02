@@ -44,3 +44,16 @@ Measured with `scripts/simulate.ts` before any idea was read (full output in
 
 These numbers matter for any layer that scores victory points or win types: against a
 competent opponent, VP are scarce and blocks are the normal ending.
+
+## 4. Candidates
+
+Three proposals were written by three independent ideation agents (each given a different
+angle, none allowed to read the others). Full texts: `docs/ideas/idea-A.md`, `idea-B.md`, `idea-C.md`.
+
+| | A — Hanamichi, The Flower Road | B — Okiya Koi-Koi | C — Lantern Street |
+|---|---|---|---|
+| Angle given | campaign / progression between games | a twist layered on each move or game | asymmetric AI rivals with powers |
+| One-liner | Roguelike walk through 8 stations; each win scores petals = `(tiles left + charm adds) × (1 + charm mults)`; draft scoring charms between stations | The tiles you remove form a Hanafuda-style hand; sets (yaku) score and let you call *Koi-Koi* to double the stake, the rival accepts or folds; race to 30 mon | A season of best-of-3 duels against four rival geisha with readable AI styles; beat one to take her *kanzashi* power (Parasol bans a tile, Whisper narrows the constraint, Lantern shows danger) |
+| Where the new decisions live | Which charms to draft; *how* to win (diagonal, square, block, fast, hold corners…) | Which tile to take for hand value vs board value; when to double; whether to accept a double | Which rival to fight next; when to spend a once-per-game power |
+| In-game rule changes | none (charms only read the finished game) | one: a fold ends a game early, only in answer to a Koi-Koi call | powers *remove* legal moves (Parasol, Whisper) for one turn |
+| Solo structure | AI ladder depth 1→8 across 8 stations, 3 games each | 3 rivals with different calling temperaments | 4 rivals + 2 "Favors" (retries) |
