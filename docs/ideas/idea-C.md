@@ -4,7 +4,7 @@
 **Lantern Street**: a four-season gauntlet against rival geisha houses. Each rival has a playstyle you can read and one *kanzashi* (hairpin power). She uses it on you first; beat her and it's yours.
 
 ## Core loop
-You open the link to a street at night with four unlit lanterns. Tap Spring and Haru of House Sakura bows in. You play a best-of-3 duel of real Okiya, about 90 seconds per game. You watch her spend her Parasol to guard the tile she needs, then bait it next game. When you win, her lantern lights and the Parasol flies into your tray. Ten minutes covers about two duels: read a rival, exploit her, gain a power, face a stronger rival.
+Tap the first of four unlit lanterns and Haru of House Sakura bows in. You play a best-of-3 duel of real Okiya (about 90 seconds a game), watch her Parasol guard the tile she needs, and bait it next game. Win and her lantern lights; her Parasol is now yours. Ten minutes is about two duels: read a rival, exploit her, gain a power, face a stronger one.
 
 ## How Okiya stays intact
 - **Shuffled 4x4 garden of 16 tiles:** `newGame(seed)`.
@@ -15,7 +15,7 @@ You open the link to a street at night with four unlit lanterns. Tap Spring and 
 - **First game random, then loser starts:** a seeded coin flip, then `recordGame().nextFirst`.
 - **Victory points (tiles left):** these become the season score.
 
-**Invariant (unit-tested):** every game record replays move for move through the unmodified engine with the same result. `okiya.ts` is never edited.
+**Invariant (unit-tested):** every game record replays through the unmodified engine with the same result.
 
 ## The new layer
 **Kanzashi** can each be used once per game, at most one per turn:
@@ -25,7 +25,7 @@ You open the link to a street at night with four unlit lanterns. Tap Spring and 
 
 Parasol and Whisper are greyed out whenever they would leave the opponent with zero moves.
 
-**Rivals** share one negamax search with alpha-beta pruning. A personality is a search depth, eval weights, some noise, and a threshold for when she uses her kanzashi.
+**Rivals** share one negamax search with alpha-beta pruning. A personality is a search depth, eval weights, noise and a threshold for when she uses her kanzashi.
 
 | Season | Rival | Style you can read | Search | Kanzashi |
 |---|---|---|---|---|
@@ -42,26 +42,21 @@ Parasol and Whisper are greyed out whenever they would leave the opponent with z
 - **Score** = tiles left at each game you won, summed, plus 5 for each unspent Favor if you clear the season. localStorage keeps your best score, furthest season and number of clears (cleared lanterns stay lit on the title screen).
 
 ## Solo play
-It's fully single-player, and the season is the difficulty curve. Each rival has an exploit you can learn:
-- Haru's eager Parasol can be baited.
-- Natsu's mirror can be steered.
-- Aki undervalues 2x2 squares.
+Fully single-player; the season is the difficulty curve. Each rival has a learnable exploit: Haru's eager Parasol can be baited, Natsu's mirror steered, and Aki undervalues 2x2 squares.
 
 **Practice** replays any lit lantern without Favors or score. Seasons are seeded, so a link with `#season=4821` gives everyone the same gardens.
 
 ## Visual identity
 - **Palette:** night indigo `#1b1f3a`, washi paper `#f3ead8` tiles, vermilion `#d2452c` for lanterns and your tokens, gold `#c9a54c` accents. Vegetations: maple `#b5332e`, cherry `#e8a0b4`, pine `#3f6b4a`, iris `#6a5acd`.
 - **Tiles:** the vegetation is a tinted band with an SVG leaf in the corner. The symbol is a bold ink glyph in the centre (sun disc, scroll, bird chevron, rain cloud). Keeping the two apart makes Whisper readable: the unchosen half of the last-taken tile desaturates.
-- **Tokens:** lacquer discs with SVG *mon* crests. Yours is a ring; each rival has her house crest (sakura, iris, maple leaf, wisteria).
+- **Tokens:** lacquer discs with SVG house crests (*mon*).
 - **Type:** system Mincho fonts (`"Hiragino Mincho ProN","Yu Mincho",Georgia,serif`) for names and system sans for the UI. No external requests.
-- **Phone layout:** rival banner (crest, name, kanzashi, one speech line), then a square board at `min(92vw,440px)`, then a tray with the last-taken tile and your kanzashi.
-- **Desktop layout:** three columns: rival panel, board, season lanterns.
+- **Layout:** on phones, a stack of rival banner, square board (`min(92vw,440px)`) and a tray with the last-taken tile and your kanzashi. On desktop, three columns: rival, board, season lanterns.
 - **Animation:**
-  - A taken tile slides onto the pile of taken tiles, and tokens stamp down with an ink ring.
-  - Legal tiles glow softly.
-  - Parasol drops an SVG umbrella; Lantern sweeps a warm glow across the board.
-  - A brush stroke (`stroke-dashoffset`) draws through a winning formation.
-  - Winning a duel lights the rival's lantern, and her hairpin flies to your tray.
+  - Taken tiles slide onto the pile; tokens stamp down with an ink ring.
+  - Parasol drops an SVG umbrella; Lantern sweeps a warm glow.
+  - A brush stroke (`stroke-dashoffset`) draws through the winning formation.
+  - A won duel lights the lantern and flies the hairpin to your tray.
 
 ## Scope estimate
 1. `kanzashi.ts`: restriction type, `restrictedMoves`, the zero-moves check, once-per-game flags. **10 min**
@@ -70,19 +65,18 @@ It's fully single-player, and the season is the difficulty curve. Each rival has
 4. UI: board, SVG glyphs, tokens, rival banner, tray, title street. **35 min**
 5. Animations plus the replay test. **10 min**
 
-**Cuttable, in order:** Lantern (Natsu keeps only her mirror), speech lines, Practice, brush stroke, seed hash. The UI is the real risk; a plain playable season should be ready by about minute 60.
+**Cuttable, in order:** Lantern (Natsu keeps her mirror), speech lines, Practice, brush stroke, seed hash. The UI is the real risk; a plain season plays by about minute 60.
 
 ## Risks / open questions
-- Late in a game, Whisper can leave the opponent one reply and make the win automatic. The fix would be to allow it only while 6 or more tiles remain.
+- Late-game Whisper can leave one reply and an automatic win. Fix: allow it only while 6+ tiles remain.
 - First-player advantage could matter more than personality.
 - Okasan could be unbeatable, or too slow on phones.
-- Kanzashi could be irrelevant, or could decide nearly every game.
+- Kanzashi could be irrelevant, or decide nearly every game.
 - Natsu's mirror may be a free win.
 
 ## Simulation plan
-A headless Node script runs seeded gardens.
 - **Player stand-ins:** P1 (depth 1, 30% noise), P3 (depth 3) and P6 (depth 6). Each holds the kanzashi a player would have at that point in the season.
-- **Volume:** 2,000 duels per stand-in/rival pair, plus paired runs on the same seeds with each kanzashi disabled.
+- **Volume:** a headless Node script plays 2,000 seeded duels per stand-in/rival pair, plus paired runs on the same seeds with each kanzashi disabled.
 
 | Metric | Good | Bad / action |
 |---|---|---|

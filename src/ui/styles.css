@@ -1,0 +1,143 @@
+/* ---------- Palette & tokens ---------- */
+:root {
+  --paper: #f3ead8;
+  --paper-2: #e9dcc3;
+  --paper-3: #dccbaa;
+  --ink: #1f1b18;
+  --ink-2: #5a4f45;
+  --ink-3: #8c8075;
+  --vermilion: #c8402a;
+  --vermilion-2: #a8321f;
+  --indigo: #2e3a6b;
+  --indigo-2: #1f2850;
+  --gold: #c9a45c;
+  --gold-2: #a98538;
+  --maple: #b5452f;
+  --cherry: #d98aa0;
+  --cherry-2: #f2c2d0;
+  --pine: #3e6b4f;
+  --iris: #6a5fa8;
+  --sun: #e2b04a;
+  --p1: var(--vermilion);
+  --p1-2: var(--vermilion-2);
+  --p2: var(--indigo);
+  --p2-2: var(--indigo-2);
+  --shadow: 0 1px 2px rgba(31, 27, 24, 0.18), 0 8px 24px -12px rgba(31, 27, 24, 0.35);
+  --radius: 14px;
+  --font-serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --board-size: min(92vw, 440px, 60vh);
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  background-image:
+    radial-gradient(ellipse at 20% 0%, rgba(201, 164, 92, 0.18), transparent 55%),
+    radial-gradient(ellipse at 100% 100%, rgba(46, 58, 107, 0.12), transparent 50%);
+  background-attachment: fixed;
+}
+h1, h2, h3, .serif { font-family: var(--font-serif); font-weight: 600; letter-spacing: 0.02em; margin: 0; }
+button { font: inherit; color: inherit; }
+
+/* ---------- Board ---------- */
+.board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(4px, 1.2vw, 8px);
+  width: var(--board-size);
+  height: var(--board-size);
+  padding: clamp(6px, 1.5vw, 10px);
+  background: linear-gradient(160deg, var(--paper-3), var(--paper-2));
+  border-radius: calc(var(--radius) + 4px);
+  box-shadow: var(--shadow), inset 0 0 0 1px rgba(31, 27, 24, 0.08);
+  margin: 0 auto;
+}
+.cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1px rgba(31, 27, 24, 0.1), 0 1px 0 rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+  cursor: default;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.2s ease, opacity 0.2s ease;
+}
+.cell-tile .tile-art { width: 100%; height: 100%; display: block; }
+.cell-tile.legal {
+  cursor: pointer;
+  box-shadow: inset 0 0 0 2px var(--gold), 0 0 0 3px rgba(201, 164, 92, 0.25), 0 4px 10px -4px rgba(31, 27, 24, 0.35);
+  animation: breathe 1.8s ease-in-out infinite;
+}
+.cell-tile.legal:hover, .cell-tile.legal:focus-visible { transform: translateY(-2px) scale(1.03); animation: none; outline: none; box-shadow: inset 0 0 0 2px var(--gold-2), 0 0 0 4px rgba(201, 164, 92, 0.4), 0 8px 14px -6px rgba(31, 27, 24, 0.45); }
+.board.has-legal .cell-tile:not(.legal) .tile-art { filter: saturate(0.35) opacity(0.55); }
+@keyframes breathe { 0%, 100% { box-shadow: inset 0 0 0 2px var(--gold), 0 0 0 2px rgba(201, 164, 92, 0.15); } 50% { box-shadow: inset 0 0 0 2px var(--gold), 0 0 0 5px rgba(201, 164, 92, 0.35); } }
+
+/* Tile art colours */
+.tile-art .sym-sun { fill: var(--sun); opacity: 0.9; }
+.tile-art .sym-poem rect { fill: #fbf6ea; stroke: var(--ink); stroke-width: 2; }
+.tile-art .sym-poem .hole { fill: var(--ink); }
+.tile-art .sym-poem .ink { stroke: var(--ink); stroke-width: 3; stroke-linecap: round; }
+.tile-art .sym-bird path { fill: var(--ink); }
+.tile-art .sym-bird .tail { fill: none; stroke: var(--ink); stroke-width: 2; }
+.tile-art .sym-rain .cloud { fill: #9aa3b8; opacity: 0.85; }
+.tile-art .sym-rain .drop { stroke: var(--indigo); stroke-width: 2.2; stroke-linecap: round; opacity: 0.8; }
+.tile-art .veg-maple path { fill: var(--maple); }
+.tile-art .veg-maple .stem { stroke: var(--maple); stroke-width: 2; }
+.tile-art .branch { fill: none; stroke: #3a2a22; stroke-width: 5; stroke-linecap: round; }
+.tile-art .branch.thin { stroke-width: 3; }
+.tile-art .veg-cherry circle { fill: var(--cherry-2); stroke: var(--cherry); stroke-width: 0.8; }
+.tile-art .veg-cherry .pistil { fill: var(--vermilion); stroke: none; }
+.tile-art .veg-pine line { stroke: var(--pine); stroke-width: 2.4; stroke-linecap: round; }
+.tile-art .veg-iris .leaf { fill: none; stroke: var(--pine); stroke-width: 4; stroke-linecap: round; }
+.tile-art .veg-iris .petal { fill: var(--iris); stroke: #4e4580; stroke-width: 0.8; }
+
+/* Tokens */
+.cell-token { background: var(--paper-2); }
+.token { width: 72%; height: 72%; border-radius: 50%; display: grid; place-items: center; position: relative; }
+.token::before { content: ''; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 3px 6px rgba(31, 27, 24, 0.35), inset 0 -3px 0 rgba(0, 0, 0, 0.25), inset 0 2px 0 rgba(255, 255, 255, 0.25); }
+.token-p1 .token { background: radial-gradient(circle at 35% 30%, #e0624c, var(--p1) 55%, var(--p1-2)); }
+.token-p2 .token { background: radial-gradient(circle at 35% 30%, #5262a6, var(--p2) 55%, var(--p2-2)); }
+.token-face { width: 56%; height: 56%; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.55); position: relative; }
+.token-p1 .token-face::after, .token-p2 .token-face::after {
+  content: ''; position: absolute; inset: 22%; border-radius: 50%; background: rgba(255, 255, 255, 0.75);
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+.token-p2 .token-face::after { clip-path: circle(28% at 50% 50%); background: rgba(255, 255, 255, 0.85); }
+.cell-token.just-placed .token { animation: stamp 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+@keyframes stamp { 0% { transform: scale(1.35); filter: blur(1px); opacity: 0.4; } 100% { transform: scale(1); filter: blur(0); opacity: 1; } }
+.cell-token.win { background: linear-gradient(135deg, #fff3cf, #f6d98a); box-shadow: inset 0 0 0 2px var(--gold-2), 0 0 0 3px rgba(201, 164, 92, 0.45); animation: glow 1.2s ease-in-out infinite alternate; }
+@keyframes glow { from { box-shadow: inset 0 0 0 2px var(--gold-2), 0 0 0 2px rgba(201, 164, 92, 0.3); } to { box-shadow: inset 0 0 0 2px var(--gold-2), 0 0 0 6px rgba(201, 164, 92, 0.6); } }
+
+/* Small glyphs (constraint legend) */
+.glyph { width: 1.6em; height: 1.6em; vertical-align: middle; }
+.glyph .sym-sun { fill: var(--sun); }
+.glyph .sym-poem rect { fill: #fbf6ea; stroke: var(--ink); stroke-width: 3; }
+.glyph .sym-poem .ink, .glyph .sym-poem .hole { stroke: var(--ink); fill: var(--ink); stroke-width: 4; }
+.glyph .sym-bird path { fill: var(--ink); }
+.glyph .sym-rain .cloud { fill: #9aa3b8; }
+.glyph .sym-rain .drop { stroke: var(--indigo); stroke-width: 3; }
+.glyph .veg-maple path { fill: var(--maple); }
+.glyph .veg-maple .stem { stroke: var(--maple); stroke-width: 3; }
+.glyph .branch { fill: none; stroke: #3a2a22; stroke-width: 6; }
+.glyph .veg-cherry circle { fill: var(--cherry-2); stroke: var(--cherry); }
+.glyph .veg-cherry .pistil { fill: var(--vermilion); }
+.glyph .veg-pine line { stroke: var(--pine); stroke-width: 4; }
+.glyph .veg-iris .leaf { fill: none; stroke: var(--pine); stroke-width: 5; }
+.glyph .veg-iris .petal { fill: var(--iris); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
