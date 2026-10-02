@@ -61,12 +61,17 @@ session directly. Budget: 15 agents allowed, 8 used.
 
 ## Verification
 
-- `npm test`: unit tests across engine, AI, charms, run flow and hints (see the final count in the
-  session summary below).
-- `npm run build`: type-check plus Vite production build.
-- Production bundle smoke test: `vite preview` + the screenshot script against the built `dist/`.
-- Simulations: see `docs/sim/`.
-- Reviews: see `docs/reviews/` and the "Fixes from reviews" section below.
+| Check | Command | Result at the end of the session |
+|---|---|---|
+| Unit tests (engine, AI, charms, run flow, hints; includes a 500-game property test against an independent rules reference) | `npm test` | 6 files, 81 tests, all passing |
+| Type-check + production build | `npm run build` | passes; `dist/` = 0.7 kB HTML + 21 kB CSS + 42 kB JS, relative asset paths, no external requests |
+| Production bundle smoke | `npm run preview` then `BASE_URL=http://localhost:4173/ npm run screenshots -- <dir>` | all 21 screens rendered from `dist/`, no page errors |
+| End-to-end flow (Playwright, system Chrome) | `npm run e2e` | 11 checks: finished game tallied on resume, cleared station → draft → next station, full-hand release, lost run → walk again, rival opens automatically, legal-move count under the constraint, illegal tile click ignored, rules sheet open/close |
+| Independent rules audit | `npm run audit` | "ALL INVARIANTS HELD": exhaustive formation check over 2¹⁶ boards, 100,000 random games with legal sets compared to a PDF-based reference, 300 AI games with hint checks on 3,850 states, 400 full runs (802 loser-starts transitions) |
+| Simulations | `npm run sim`, `npx tsx scripts/sim-hanamichi.ts`, `npx tsx scripts/sim-koikoi.ts` | outputs in `docs/sim/` |
+| Screenshots | `npm run screenshots` | 21 PNGs in `docs/screenshots/` (phone 390, tablet 820, desktop 1440; 7 screens each) |
+| Visual review | two fresh agents from screenshots | `docs/reviews/visual-review-1.md`, `visual-review-2.md` |
+| Rules review | one fresh agent from the PDF and the code | `docs/reviews/rules-review.md` |
 
 ## Fixes from reviews
 
@@ -105,4 +110,21 @@ session directly. Budget: 15 agents allowed, 8 used.
 
 ## Unfinished / known limitations
 
-(filled in at the end of the session)
+- **Full-garden ruling.** The engine rules an emptied garden as a block win for the last mover
+  (literal reading of the PDF). A "draw" alternative is documented (`FULL_GARDEN_RULE`) but not
+  implemented; doing so would make `WinInfo.winner` nullable across the engine, AI and run.
+- **Rival personalities are flavour.** Haru, Natsu, Aki and the others differ only by search depth
+  and random-move rate (as calibrated by simulation). The readable styles sketched in idea C
+  (mirroring, mobility-hunting) were not implemented.
+- **Classic match formats** (single game, first to 3 sets, 10/15/20 victory points) exist in the
+  engine with tests but are not playable in the app; Hanamichi uses its station structure.
+- **Balance is simulated, not human-tested.** Station targets come from an "EV-2" player model;
+  real players may find station 6 (depth 4 rival) too hard or stations 1–2 too easy.
+- **Not built:** idea A's Daily Road album, Winter Road unlock, charm album; sound; a coach mark on
+  the first game.
+- **Screenshots show a lost game.** The screenshot script takes the first legal tile, so the result
+  screens in `docs/screenshots/` are losses; the win tally is exercised by unit tests and `npm run e2e`.
+- **Commits are unsigned** (see `NOTES.md`): the repository asks for GPG signatures but the key's
+  pinentry needs a person at the keyboard.
+- The hint "danger" marker only looks one rival move ahead; deeper traps are not shown (by design,
+  the Firefly is a small hint, not an engine).
