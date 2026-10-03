@@ -185,7 +185,3 @@ ran before the commit; its outcome is recorded below the table in §8 of DESIGN.
   the late stations hard.
 - **Not built:** idea A's Daily Road album, Winter Road unlock, charm album; sound; a coach mark on
   the first game.
-- **No third visual review.** The fixes made after visual review 2 were checked by the orchestrating
-  session against the regenerated screenshots, not by a fresh reviewer.
-- The hint "danger" marker only looks one rival move ahead; deeper traps are not shown (by design,
-  the Firefly is a small hint, not an engine).
