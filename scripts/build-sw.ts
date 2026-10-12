@@ -55,12 +55,13 @@ self.addEventListener('fetch', (event) => {
           if (res.ok) caches.open(CACHE).then((c) => c.put('./', copy));
           return res;
         })
-        .catch(() => caches.match('./').then((r) => r || Response.error())),
+        .catch(() => caches.match('./', { ignoreVary: true }).then((r) => r || Response.error())),
     );
     return;
   }
-  // Hashed assets never change: cache first.
-  event.respondWith(caches.match(req).then((hit) => hit || fetch(req)));
+  // Hashed assets never change: cache first. Module scripts and fonts are CORS requests that carry
+  // an Origin header, and servers may answer with "Vary: Origin"; match on the URL alone.
+  event.respondWith(caches.match(req, { ignoreVary: true }).then((hit) => hit || fetch(req)));
 });
 `;
 writeFileSync(join(dist, 'sw.js'), sw);

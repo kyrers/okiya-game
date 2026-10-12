@@ -1,7 +1,4 @@
 import '@fontsource/shippori-mincho-b1/latin-800.css';
-import '@fontsource/zen-kaku-gothic-new/latin-400.css';
-import '@fontsource/zen-kaku-gothic-new/latin-500.css';
-import '@fontsource/zen-kaku-gothic-new/latin-700.css';
 import './ui/styles.css';
 import { App } from './ui/app';
 

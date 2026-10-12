@@ -14,6 +14,16 @@ import {
   tap,
 } from './helpers';
 
+/** The brush must actually paint: the garden looks different with the stroke hidden. */
+async function expectBrushPainted(page: import('@playwright/test').Page): Promise<void> {
+  await page.waitForTimeout(1000);
+  const board = page.locator('.game .board');
+  const withBrush = await board.screenshot({ animations: 'disabled' });
+  await page.addStyleTag({ content: '.board-brush { visibility: hidden !important; }' });
+  const without = await board.screenshot({ animations: 'disabled' });
+  expect(withBrush.equals(without)).toBe(false);
+}
+
 test.describe('starting', () => {
   test('home → setup → a game against the computer, first move limited to the outer ring', async ({ page }) => {
     await openHome(page);
@@ -75,6 +85,7 @@ test.describe('the rules on screen', () => {
     await expect(page.locator(`.seat-${winner}.won .say-result`)).toHaveText('Wins');
     await expect(page.locator(`.seat-${winner}.won .say-reason`)).toHaveText(/Four in a (row|column)/);
     await expect(page.locator('.brush-stroke')).toHaveCount(1);
+    await expectBrushPainted(page);
   });
 
   test('a square of four wins', async ({ page, hasTouch }) => {
@@ -83,6 +94,7 @@ test.describe('the rules on screen', () => {
     await continueMatch(page);
     await tap(page, g.moves[g.moves.length - 1], hasTouch);
     await expect(page.locator('.seat.won .say-reason')).toHaveText('A square of four');
+    await expectBrushPainted(page);
   });
 
   test('leaving the opponent no tile to take wins', async ({ page, hasTouch }) => {

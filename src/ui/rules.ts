@@ -6,10 +6,22 @@ import { parseTile, sharesElement } from '../engine/okiya';
 import { miniGarden, tokenSvg } from './art';
 import { gardenKeyHtml, symGlyph, tileLabel, tileSvg, vegGlyph } from './tileArt';
 
+/** The constraint example: a real position, reached by taking Ps, Pr, Cr, then Cb (rules.test.ts). */
+export const EXAMPLE_POSITION = 'Ms 1 Cp Pb  2 Ir Ib Cs  Pp Mb 1 Is  Mr Mp Ip 2';
+export const EXAMPLE_TAKEN = 'Cb';
+
+/** The win diagrams, as drawn: [cells, formation]. '1'/'2' tokens, 'x' a tile that may not be taken. */
+export const WIN_DIAGRAMS: [string, number[] | null][] = [
+  ['. . . . 1 1 1 1 . 2 . . 2 . 2 .', [4, 5, 6, 7]],
+  ['1 2 . . . 1 . 2 . . 1 . 2 . . 1', [0, 5, 10, 15]],
+  ['. . . . 1 1 2 . 1 1 . . 2 . 2 .', [4, 5, 8, 9]],
+  ['1 2 x 2 2 1 2 1 x 1 2 1 2 x 1 x', null],
+];
+
 /** A real position: cherry-bird was just taken; the cherry and bird tiles are the ones allowed. */
 function exampleBoard(): string {
-  const taken = parseTile('Cb');
-  const cells = 'Ms 1 Cp Pb  2 Ir Ib Cs  Pp Mb 1 Is  Mr Mp Ip 2'.split(/\s+/);
+  const taken = parseTile(EXAMPLE_TAKEN);
+  const cells = EXAMPLE_POSITION.split(/\s+/);
   const html = cells
     .map((c) => {
       if (c === '1' || c === '2') return `<span class="eg-cell eg-token">${tokenSvg(Number(c) as 1 | 2)}</span>`;
@@ -32,10 +44,10 @@ export function rulesHtml(): string {
     <h3>How to win</h3>
     <p>Be the first to do one of these:</p>
     <div class="rules-figs">
-      <figure>${miniGarden('. . . . 1 1 1 1 . 2 . . 2 . 2 .', 'Four tokens in a row', [4, 5, 6, 7])}<figcaption>Four in a row or a column</figcaption></figure>
-      <figure>${miniGarden('1 2 . . . 1 . 2 . . 1 . 2 . . 1', 'Four tokens on a diagonal', [0, 5, 10, 15])}<figcaption>Four on a diagonal</figcaption></figure>
-      <figure>${miniGarden('. . . . 1 1 2 . 1 1 . . 2 . 2 .', 'A square of four tokens', [4, 5, 8, 9])}<figcaption>A square of four</figcaption></figure>
-      <figure>${miniGarden('1 2 x 2 2 1 2 1 x 1 2 1 2 x 1 x', 'A blocked opponent: no tile left that may be taken')}<figcaption>Leave your opponent no tile to take</figcaption></figure>
+      <figure>${miniGarden(WIN_DIAGRAMS[0][0], 'Four tokens in a row', WIN_DIAGRAMS[0][1]!)}<figcaption>Four in a row or a column</figcaption></figure>
+      <figure>${miniGarden(WIN_DIAGRAMS[1][0], 'Four tokens on a diagonal', WIN_DIAGRAMS[1][1]!)}<figcaption>Four on a diagonal</figcaption></figure>
+      <figure>${miniGarden(WIN_DIAGRAMS[2][0], 'A square of four tokens', WIN_DIAGRAMS[2][1]!)}<figcaption>A square of four</figcaption></figure>
+      <figure>${miniGarden(WIN_DIAGRAMS[3][0], 'A blocked opponent: no tile left that may be taken')}<figcaption>Leave your opponent no tile to take</figcaption></figure>
     </div>
 
     <h3>Setting up</h3>

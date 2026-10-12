@@ -214,8 +214,29 @@ export class BoardView {
       shape.setAttribute('d', `M ${a.x - ex} ${a.y - ey} L ${b.x + ex} ${b.y + ey}`);
     }
     shape.setAttribute('class', `brush-stroke p${player}`);
-    shape.setAttribute('stroke-width', String(s * 0.26));
-    this.brush.replaceChildren(shape);
+    const width = s * 0.26;
+    shape.setAttribute('stroke-width', String(width));
+    // The rough edge: a displacement filter whose region is this stroke's own box in user space.
+    // (A bounding-box region is empty for a row or column, whose path has zero height; an
+    // oversized region is dropped by WebKit.)
+    const xs = pts.map((p) => p.x);
+    const ys = pts.map((p) => p.y);
+    const pad = s * 1.3;
+    const filter = document.createElementNS(SVG_NS, 'filter');
+    filter.id = 'board-brush-edge';
+    for (const [k, v] of Object.entries({
+      filterUnits: 'userSpaceOnUse',
+      x: Math.min(...xs) - pad,
+      y: Math.min(...ys) - pad,
+      width: Math.max(...xs) - Math.min(...xs) + 2 * pad,
+      height: Math.max(...ys) - Math.min(...ys) + 2 * pad,
+    })) filter.setAttribute(k, String(v));
+    filter.innerHTML = `<feTurbulence type="fractalNoise" baseFrequency="0.045 0.9" numOctaves="2" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="${(s * 0.07).toFixed(1)}" xChannelSelector="R" yChannelSelector="G"/>`;
+    const defs = document.createElementNS(SVG_NS, 'defs');
+    defs.append(filter);
+    shape.setAttribute('filter', 'url(#board-brush-edge)');
+    this.brush.replaceChildren(defs, shape);
     const length = (shape as SVGPathElement).getTotalLength?.() ?? 0;
     if (animate && length > 0 && !matchMedia('(prefers-reduced-motion: reduce)').matches && !document.documentElement.classList.contains('reduce-motion')) {
       shape.style.strokeDasharray = `${length}`;

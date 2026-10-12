@@ -35,7 +35,7 @@ export function openSheet(opts: SheetOptions): Sheet {
         <h2 id="${id}" class="sheet-title"></h2>
         <button type="button" class="icon-btn sheet-close" aria-label="Close">${icon('close')}</button>
       </header>
-      <div class="sheet-body"></div>
+      <div class="sheet-body" tabindex="0" role="region" aria-labelledby="${id}"></div>
     </div>`;
   dialog.querySelector('.sheet-title')!.textContent = opts.title;
   const body = dialog.querySelector<HTMLElement>('.sheet-body')!;

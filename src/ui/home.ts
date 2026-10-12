@@ -19,7 +19,7 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
   el.innerHTML = `
     <section class="home-title">
       <h1 class="wordmark">Okiya</h1>
-      <p class="home-sub">The garden game by Bruno Cathala &amp; Cyril Bouquet</p>
+      <p class="home-sub">The garden game by <span class="nowrap">Bruno Cathala</span> &amp; <span class="nowrap">Cyril Bouquet</span></p>
     </section>
     <div class="seam home-seam"></div>
     <div class="home-actions-wrap"><section class="home-actions">

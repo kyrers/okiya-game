@@ -32,7 +32,9 @@
   --iris: #6a5fa8;
 
   --font-display: 'Shippori Mincho B1', 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
-  --font-ui: 'Zen Kaku Gothic New', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* The platform's own sans for everything that is not display: hinted for small sizes on each
+     system. Shippori Mincho B1 is used only at 18px and above, where it renders cleanly. */
+  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Helvetica Neue', Arial, sans-serif;
 
   --sat: env(safe-area-inset-top, 0px);
   --sab: env(safe-area-inset-bottom, 0px);
@@ -73,6 +75,7 @@ button { cursor: pointer; }
 button:disabled { cursor: default; }
 ::selection { background: rgba(234, 184, 74, 0.45); color: var(--ink); }
 :focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.nowrap { white-space: nowrap; }
 .sr-only {
   position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
@@ -194,7 +197,6 @@ button:disabled { cursor: default; }
   width: var(--board);
   height: var(--board);
   flex: none;
-  transition: width 0.45s var(--ease-out), height 0.45s var(--ease-out);
 }
 .board-grid {
   display: grid;
@@ -298,7 +300,6 @@ button:disabled { cursor: default; }
   stroke-opacity: 0.72;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: url(#brush-edge);
 }
 
 .flyer {
@@ -356,9 +357,11 @@ button:disabled { cursor: default; }
 .pip.used { background: transparent; box-shadow: inset 0 0 0 1.5px rgba(251, 243, 228, 0.42); }
 
 .seat-say { display: flex; flex-direction: column; gap: 0.4em; min-height: 0; container-type: inline-size; }
-/* A narrow seat stacks the taken tile above its words. */
+/* A narrow seat keeps the card in one row with a smaller tile. */
 @container (max-width: 250px) {
-  .say-order { flex-direction: column; align-items: flex-start; padding: 0.55em 0.75em 0.65em; gap: 0.5em; }
+  .say-order { gap: 0.55em; padding: 0.4em 0.65em 0.4em 0.4em; }
+  .say-tile { width: 2.6em; height: 2.6em; }
+  .say-what { font-size: 0.9375em; }
 }
 .say-head { font-weight: 700; font-size: 0.8125em; letter-spacing: 0.02em; color: var(--verm); line-height: 1.2; }
 .seat-2 .say-head { color: var(--indi); }
@@ -442,7 +445,7 @@ button:disabled { cursor: default; }
 .btn .btn-title { display: block; font-size: 1.0625em; }
 .btn .btn-sub { display: block; font-weight: 500; font-size: 0.875em; opacity: 0.78; margin-top: 2px; }
 .btn.big > span { min-width: 0; }
-.btn.big .btn-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.btn.big .btn-sub { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* ==========================================================================
    Home
@@ -533,14 +536,14 @@ button:disabled { cursor: default; }
   .glow-1 { top: 0; bottom: 0; left: 0; right: 50%; height: auto; background: radial-gradient(80% 90% at 100% 50%, rgba(255, 170, 120, 0.3), transparent 70%), var(--verm); }
   .glow-2 { top: 0; bottom: 0; left: 50%; right: 0; height: auto; background: radial-gradient(80% 90% at 0% 50%, rgba(140, 160, 255, 0.28), transparent 70%), var(--indi); }
   .seat {
-    --seat-fs: clamp(0.875rem, 0.25rem + 1.1vw, 1.5rem);
+    --seat-fs: clamp(0.875rem, 0.25rem + 1.2vw, 1.5rem);
     justify-content: center;
     padding: 12px var(--gutter) calc(var(--topbar) * 0.5);
   }
   .seat > * { width: min(100%, 20em); }
   .seat-name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-wrap: balance; }
   .seat-1, .seat-2 { justify-content: center; }
-  .match-label { font-size: clamp(0.875rem, 0.6rem + 0.35vw, 1.0625rem); }
+  .match-label { font-size: clamp(0.875rem, 0.55rem + 0.5vw, 1.125rem); }
 
   .home {
     --home-board: min(calc((var(--vh) - var(--sat) - var(--sab)) * 0.8), calc(100vw * 0.42), 600px);
@@ -626,6 +629,7 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 .sheet .icon-btn { color: var(--ink); background: rgba(31, 27, 24, 0.05); border-color: rgba(31, 27, 24, 0.18); }
 .sheet .icon-btn:hover { background: rgba(31, 27, 24, 0.1); }
 .sheet-panel:focus { outline: none; }
+.sheet-body:focus-visible { outline: 3px solid var(--gold); outline-offset: -3px; }
 .sheet-foot {
   padding: 12px calc(var(--gutter) + var(--sar)) calc(12px + var(--sab)) calc(var(--gutter) + var(--sal));
   border-top: 1px solid rgba(80, 60, 30, 0.14);

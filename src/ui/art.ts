@@ -16,10 +16,6 @@ const SPRITE = `<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" ari
     <radialGradient id="lacquer-2" cx="36%" cy="30%" r="78%">
       <stop offset="0" stop-color="#6375b8"/><stop offset=".5" stop-color="#2e3d78"/><stop offset="1" stop-color="#171f45"/>
     </radialGradient>
-    <filter id="brush-edge" x="-15%" y="-15%" width="130%" height="130%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.045 0.9" numOctaves="2" seed="7" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
   </defs>
   <symbol id="token-1" viewBox="0 0 100 100">
     <ellipse cx="50" cy="57" rx="42" ry="39" fill="#1b0f08" opacity=".32"/>

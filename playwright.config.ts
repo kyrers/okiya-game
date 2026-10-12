@@ -14,7 +14,11 @@ export default defineConfig({
   expect: { timeout: 8_000 },
   reporter: [['list'], ['json', { outputFile: 'test-results/e2e.json' }]],
   use: { baseURL: 'http://localhost:4173/', trace: 'retain-on-failure' },
-  webServer: { command: 'npx vite preview --port 4173 --strictPort', url: 'http://localhost:4173/', reuseExistingServer: true },
+  webServer: [
+    { command: 'npx vite preview --port 4173 --strictPort', url: 'http://localhost:4173/', reuseExistingServer: true },
+    // dist/ under the exact headers vercel.json declares (e2e/vercel.spec.ts).
+    { command: 'npx tsx scripts/serve-vercel.ts 4180', url: 'http://localhost:4180/', reuseExistingServer: true },
+  ],
   projects: [
     { name: 'iphone-se', use: { ...devices['iPhone SE'], browserName: 'webkit' } },
     { name: 'iphone-15', use: { ...devices['iPhone 15'], browserName: 'webkit' } },
