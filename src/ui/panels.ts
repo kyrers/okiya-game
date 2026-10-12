@@ -112,7 +112,7 @@ export function settingsPanel(settings: Settings, onChange: (s: Settings) => voi
     <section class="about">
       <h3>About</h3>
       <p>Okiya is a game designed by Bruno Cathala and Cyril Bouquet, published by Blue Orange Games. This digital edition plays by the official rules; for a garden filled without a winner it follows the designer's ruling: a tie. Who opens after a tie is our choice (the other player than last time), since the rules name only the loser.</p>
-      <p>The art, sounds and code are original. The display typeface, Shippori Mincho B1, is used under the <a href="./licenses/ShipporiMinchoB1-OFL.txt" target="_blank" rel="noopener">SIL Open Font License</a>.</p>
+      <p>The art, sounds and code are original. The typefaces are used under the SIL Open Font License: <a href="./licenses/ShipporiMinchoB1-OFL.txt" target="_blank" rel="noopener">Shippori Mincho B1</a> and <a href="./licenses/SourceSans3-OFL.txt" target="_blank" rel="noopener">Source Sans 3</a>.</p>
       <p>Your matches and settings are saved on this device only. Nothing is sent anywhere.</p>
     </section>`;
   el.addEventListener('change', () => {

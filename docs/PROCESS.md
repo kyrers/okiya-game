@@ -1,187 +1,147 @@
 # Process
 
-How Hanamichi was made, in one autonomous session on 2026-10-02 (started 20:48 local time).
-The brief: build a new web game on top of Okiya, keeping Okiya intact at the core, playable by
-one person from a link, deployable as a static site, and prove each step.
+How the earlier attempt in this repository (a campaign game called *Hanamichi* built around
+Okiya) became a digital edition of Okiya itself. Work done on 2026-10-12 on branch `fix/classic`.
 
-## Timeline
+## The brief
 
-| Step | What happened | Output |
+> Feedback on the earlier attempt: the campaign layer is not wanted, it had UI bugs on phones, and
+> the tile designs were liked. Turn it into a digital version of the board game Okiya, faithful to
+> the official rules, good enough to be sold as a real game. Two players on one device, and one
+> player against the computer. It must work flawlessly on phones, tablets and desktops. Static
+> site deployable to Vercel; all assets original or licensed for commercial use. Use the
+> impeccable skill. Done when you would confidently ship it, with evidence.
+
+Answers the client gave during the session (structured questions):
+
+- End-of-game formats: **all three from the rules** (single game; first to 3 wins; victory points
+  to 10, 15 or 20).
+- Two players: **one shared screen**, no face-to-face table mode.
+- Computer: **three levels** (Easy, Medium, Hard), Hard strong but beatable.
+- Game-screen layout, chosen on the impeccable decision page after one re-roll: **Two halves**.
+
+## What was kept, what was removed
+
+| Kept | Removed |
+|---|---|
+| The rules engine (`src/engine/okiya.ts`) and its tests, corrected for ties | The campaign: stations, charms, petals, Firefly, run state machine, their tests and sims |
+| The negamax AI (`src/engine/ai.ts`), re-tuned | The campaign UI (`app.ts`, charm art, rules panel) and its stylesheet |
+| The 16 liked SVG tiles (`src/ui/tileArt.ts`), unchanged in drawing and colour | `docs/ideas`, `docs/judging`, `docs/reviews`, `docs/sim`, the old screenshots, the old DESIGN.md |
+
+## Steps
+
+| # | Step | Outcome |
 |---|---|---|
-| 1. Rules | Downloaded the official Blue Orange print-and-play PDF, extracted the text and viewed the four pages (the tile pages confirm the 16 tiles = 4 vegetations × 4 symbols; "rain or cloud" is one symbol). Wrote a summary in our own words. | `docs/RULES.md` |
-| 2. Engine + tests | Implemented the rules as pure functions (`src/engine/okiya.ts`) and 33 unit tests with literal expected values (exact legal-move lists, a full 13-move game ending in a row with 3 tiles left, block wins, the no-draw last tile, match variants). Three test expectations were wrong on the first run (a layout literal, a tile that shared "poem", a tile count) and were corrected; the engine itself did not change. | `src/engine/okiya.test.ts` |
-| 3. AI + baseline | Negamax with alpha-beta and a transposition table; a simulation harness. Baseline facts were measured before any idea was read (64% of games between equal AIs end by blocking, ~half leave 0 victory points; the full tree solves in ~5 s and the first player has a forced win in the probed seeds). | `src/engine/ai.ts`, `scripts/simulate.ts`, `docs/sim/baseline-okiya.txt` |
-| 4. Criteria | Wrote the gates and weighted criteria before reading any proposal. | `docs/DESIGN.md` §2 |
-| 5. Ideas | Three ideation agents, each with a different angle, none allowed to read the others. | `docs/ideas/idea-A.md` (Hanamichi), `idea-B.md` (Koi-Koi), `idea-C.md` (Lantern Street) |
-| 6. Judging | Two judging agents that had written nothing, scoring against the criteria. Both chose A, both put B second, both failed C on core fidelity (its powers remove legal moves). Both listed the same five changes for A. | `docs/judging/judge-1.md`, `judge-2.md` |
-| 7. Playtest | Simulated A and (amended) B as the judges asked. B's hand layer proved automatic (Four Seasons in ~170% of games) or impossible (Grove/Weather ≈ 0%), while its doubling call worked. A's first charm policy sacrificed wins; with a narrow tolerance it changed 14% of moves at no cost, and a player weighing petals properly gained +12.5% petals (+28.6% with doubled payouts). The charm pool was retuned (two charms cut, payouts raised, Heart Stone changed) and station targets calibrated from 3-game-set quantiles. | `scripts/sim-hanamichi.ts`, `scripts/sim-koikoi.ts`, `docs/sim/*.txt`, `docs/DESIGN.md` §6–7 |
-| 8. Build | Charm module (tests), run state machine (tests), information-only hints (tests), framework-free UI with SVG tile art, Playwright screenshot script. | `src/`, `scripts/screenshots.ts` |
-| 9. Reviews | A fresh visual judge reviewed 21 screenshots (phone/tablet/desktop); a fresh rules auditor checked the code against the PDF. Fixes applied, screenshots regenerated. | `docs/reviews/` |
-| 10. Docs | README (play, run, deploy), this file, final screenshots. | `README.md`, `docs/screenshots/` |
+| 1 | Read the official PDF again and the old engine. | The engine matched the sheet except for one case the sheet does not cover. |
+| 2 | Researched that case: the garden emptied without a winner. | Bruno Cathala ruled it a **tie** on BoardGameGeek (thread 984327, 2013-05-30, verified through the BGG API). The old engine ruled it a win for the last mover; corrected. |
+| 3 | Product context (impeccable `init`): asked the client three questions; wrote `PRODUCT.md`. | Formats, hot-seat model and difficulty count settled. |
+| 4 | Layout (impeccable surface round): three structures dealt by the skill's roll, shown on its decision page with wireframes; the client re-rolled once, then chose **Two halves**. | Direction contract in `.impeccable/surfaces/src-ui-game-ts.md`. |
+| 5 | Engine and match layer: nullable winner, ties in all match formats, opener after a tie, a match saved as facts and re-derived by replaying the engine, undo. | 56 → 69 unit tests. |
+| 6 | AI: calibrated three levels by simulation against three player models; solved random gardens exactly; moved the search to a Web Worker. | `docs/evidence/difficulty.txt`, `perfect-play.txt`, `think-time.txt`. |
+| 7 | UI built framework-free: home, setup, game, results, rules with diagrams, settings, menu; synthesised sounds; PWA (manifest, icons, generated service worker); `vercel.json`. | First build. |
+| 8 | End-to-end suite on 10 device profiles in WebKit, Chromium and Firefox; layout invariants checked by script on every screen state. | Found and fixed the defects listed below. |
+| 9 | Ship checks: offline play, axe-core, Lighthouse, `vercel.json` against Vercel's schema, the page served under the exact Vercel headers and CSP. | All green after two fixes (below). |
+| 10 | Independent rules audit by a fresh agent. | "Faithful to the official rules: yes, with caveats" (labelling only); caveats fixed. |
+| 11 | Impeccable finish review by a fresh agent; fix batch; verdict pass. | See "Finish review". |
+| 12 | Documentation: README, RULES, this file, DESIGN.md (impeccable documenter). | |
+
+## Decisions and why
+
+- **The tie ruling over the literal reading.** The PDF's three win conditions do not cover a full
+  garden. The designer's own answer is the closest thing to an official rule, so the engine ends
+  such a game with `winner: null`. The one remaining gap, who opens after a tie (the sheet says
+  "the loser"), is filled by alternating the opener; this is labelled as the edition's choice in
+  the rules sheet, the setup notes and About.
+- **Keep the world, change the structure.** The client liked the tiles and did not criticise the
+  look, so the warm-paper tiles, vermilion and indigo stayed; the screen structure was chosen with
+  the client (Two halves): the half of the player to move is lit, the garden sits on the seam.
+- **Hard is not perfect.** With perfect play the opener wins 29 of 40 random gardens and the rest
+  are ties; the second player never wins (`docs/evidence/perfect-play.txt`). A perfect computer
+  would be unbeatable whenever it opens, so Hard searches five moves ahead.
+- **Difficulty from numbers** (400 games per pairing, openings alternating; full table in
+  `docs/evidence/difficulty.txt`):
+
+  | Level | Settings | vs casual player | vs thoughtful | vs strong |
+  |---|---|---|---|---|
+  | Easy | depth 1, 35% random moves, may hand over a win | AI wins 19.5%, loses 72.3% | 9.3% / 77.3% | 5.0% / 82.8% |
+  | Medium | depth 3, 10% random safe moves | 61.3% / 31.0% | 47.5% / 32.3% | 23.5% / 50.3% |
+  | Hard | depth 5, never hands over a win | 83.0% / 11.5% | 73.5% / 12.5% | 53.0% / 22.8% |
+
+  Think time: 12 ms at most for Hard (`docs/evidence/think-time.txt`); the computer still waits
+  700 ms so its move can be followed, and its search runs in a Web Worker.
+- **No framework.** A 4 × 4 board and a handful of sheets do not need one; persistent DOM nodes
+  make moves animate and keep keyboard focus. The whole first load is about 63 KB.
+- **Saved matches are facts, not state.** Only the setup, each garden, its opener and its moves
+  are stored; scores, openers and results are re-derived by replaying the engine, so a tampered
+  save is rejected rather than trusted.
+- **Type.** Shippori Mincho B1 for display (a Japanese foundry's mincho with a fine Latin) and
+  Source Sans 3 for everything else, both OFL and self-hosted. Zen Kaku Gothic New was tried first
+  and replaced: its Latin "t" and "f" render mis-spaced at about 14 px under FreeType ("Wat anabe",
+  "comput er"), found in screenshots and confirmed with a specimen; Shippori shows the same flaw
+  below 18 px, so it is only used at 18 px and above.
+- **Material.** The dyed cloth and the paper are real raster tiles drawn procedurally for this
+  project (`scripts/render-textures.ts`), WebP, 22 KB and 15 KB, blended onto the colours.
+
+## Defects found by testing, and their fixes
+
+| Defect | How it was found | Fix |
+|---|---|---|
+| WebKit's web process **crashed** during play (6 of 6 stress runs) | A long e2e test crashed only in WebKit; bisected with patched APIs, then CSS overrides | The CSS `filter` dimming untakeable tiles was the trigger (0 of 8 crashes without it). Tiles now dim under a shade layer; no CSS filters on the board. |
+| A tap made while the previous tile was flying (0.5 s) was **ignored** | e2e: the second hot-seat move did not register | The flight no longer locks input; a 260 ms guard swallows only an accidental double tap. |
+| Seats **overflowed** short phones (iPhone with Safari toolbars, 393 × 659) | Layout invariants script | Compact seats, end-of-game reserve, rem-based reserves, container queries for narrow landscape seats. |
+| Seat text **squeezed** when the garden shrank at the end of a game | Layout screenshots | Seat width follows the screen (and the garden only when wider). |
+| The brush through a winning **row or column was invisible** | Visual review of captures | The SVG filter region was the stroke's zero-height bounding box; it is now built per stroke in user space (an oversized region is dropped by WebKit, which was the next failure). e2e now proves the stroke paints. |
+| **Offline** reload failed for scripts and fonts | e2e offline test | The service worker matched cached assets with `Vary: Origin`; it now matches on the URL. |
+| Registered custom-property (`@property`) transitions applied late in WebKit | Layout check timing | Removed; the lit half is an opacity cross-fade. |
+| The rules sheet's scroll area was not **keyboard-reachable** | axe-core | Sheet bodies are focusable labelled regions. |
+| Larger default text could push seats over the garden | 20 px root-size e2e on every profile | Layout reserves in rem; garden shrinks instead. |
+
+## Verification (final run)
+
+| Check | Command | Result |
+|---|---|---|
+| Unit tests (engine, AI, match flow, rules-page diagrams) | `npm test` | 4 files, 69 tests, all passing |
+| Type-check and production build | `npm run build` | passes; service worker generated |
+| End-to-end, 10 device profiles (iPhone SE 320 × 568, iPhone SE 3 375 × 553, iPhone 15 393 × 659 and landscape 734 × 343, Pixel 7, Android 360 × 640, iPad portrait and landscape, desktop Chrome 1440 × 900, Firefox 1280 × 800, Safari 1920 × 1080) | `npm run e2e` | FINAL_E2E |
+| Layout invariants on every screen state and profile: no page scroll, nothing off-screen, seats never on the garden or the top bar, targets ≥ 44 px, no overflowing text | `e2e/layout.spec.ts` | included above |
+| Large default text (20 px root) on every profile | `e2e/bigtext.spec.ts` | included above |
+| Offline: after one visit a game against the computer plays with the network off | `e2e/ship.spec.ts` | passes (Chromium) |
+| Accessibility, axe-core WCAG 2.2 AA rules on home, setup, rules, settings, game, menu | `e2e/ship.spec.ts` | 0 violations |
+| Lighthouse 12.6, mobile and desktop, production build | see `docs/evidence/lighthouse.txt` | 100 / 100 / 100 / 100 on both |
+| `vercel.json` against Vercel's published schema (with a negative control) | ajv, draft-07 | valid; the broken copy is rejected |
+| The page under the exact `vercel.json` headers and CSP | `e2e/vercel.spec.ts` + `scripts/serve-vercel.ts` | no CSP violation in Chromium or WebKit; hashed assets `immutable` |
+| Independent rules audit (fresh agent) | its own scripts | 2,948,961 states of 200,000 random games and 250,037,632 nodes of 4 full game trees compared with an independent model: 0 mismatches; 48,862 of 48,862 forged saves rejected; Hard optimal in all 617 endgames of ≤ 5 tiles; UI: 204 turns, 191 illegal taps, 19 endings all correct |
+| Impeccable detector | `impeccable detect --json` | clean |
+| Raster provenance | `impeccable embed-prompt --scan public src/ui/textures` | 8 rasters, 0 missing |
+
+## Finish review
+
+FINISH_REVIEW
 
 ## Agents used
 
-| # | Role | Model | Input | Produced |
-|---|---|---|---|---|
-| 1 | Ideator A (campaign angle) | Opus | rules summary, engine | `docs/ideas/idea-A.md` |
-| 2 | Ideator B (per-move twist angle) | Opus | same | `docs/ideas/idea-B.md` |
-| 3 | Ideator C (rivals/powers angle) | Opus | same | `docs/ideas/idea-C.md` |
-| 4 | Judge 1 | Opus | criteria, baseline, 3 ideas, engine | `docs/judging/judge-1.md` |
-| 5 | Judge 2 (player's advocate) | Opus | same | `docs/judging/judge-2.md` |
-| 6 | Visual judge, round 1 | Opus | 21 screenshots | `docs/reviews/visual-review-1.md` (15 findings, scores 6/10 and 5/10) |
-| 7 | Rules auditor | Opus | PDF text, code, tests | `docs/reviews/rules-review.md` (7 findings, verdict "yes, with caveats") and `scripts/audit-invariants.ts` |
-| 8 | Visual judge, round 2 | Opus | review 1 + 21 new screenshots | `docs/reviews/visual-review-2.md` |
-
-Everything else (engine, tests, AI, simulations, UI, docs) was written by the orchestrating
-session directly. Budget: 15 agents allowed, 8 used.
-
-## Key decisions
-
-- **Engine first, pure and immutable.** Every later layer calls `newGame`, `legalMoves`,
-  `applyMove` and reads `state.win`; nothing else decides legality or victory.
-- **Gates over scores.** Idea C scored highest on raw criteria with both judges but was rejected
-  because its powers change which moves are legal. The brief's "Okiya is still there and played at
-  its core" was treated as non-negotiable.
-- **Let the simulation change the design.** The playtest showed that charm chasing with a loose
-  tolerance *loses* petals, so charms were made to matter mostly at near-ties, payouts were
-  raised, two charms were cut, and the rival ladder was capped at depth 4 with a few random moves.
-- **Information-only borrowing.** The Paper Lantern hint comes from idea C, kept because it never
-  alters legality.
-- **No framework, no external requests.** System fonts, inline SVG art, one CSS file; the build is
-  ~63 KB and works from any sub-path.
-
-## Rejected ideas and why
-
-- **Lantern Street (C)**: Parasol/Whisper remove legal moves (core-rule change).
-- **Okiya Koi-Koi (B)**: fold ends games early (fixable), but the hand sets are either automatic or
-  unreachable, so the layer is bookkeeping (measured).
-- **Charms Full Suit / Morning Sun / Second Wind / Moss Path** (from A): never fire, pure
-  counters, or reward throwing games.
-- **Depth 6–8 perfect rival**: unbeatable given the solver results; capped at depth 4.
-
-## Verification
-
-| Check | Command | Result at the end of the session |
+| Role | Input | Output |
 |---|---|---|
-| Unit tests (engine, AI, charms, run flow, hints; includes a 500-game property test against an independent rules reference) | `npm test` | 5 files, 81 tests, all passing |
-| Type-check + production build | `npm run build` | passes; `dist/` = 0.7 kB HTML + 21 kB CSS + 42 kB JS, relative asset paths, no external requests |
-| Production bundle smoke | `npm run preview` then `BASE_URL=http://localhost:4173/ npm run screenshots -- <dir>` | all 21 screens rendered from `dist/`, no page errors |
-| End-to-end flow (Playwright, system Chrome) | `npm run e2e` | 11 checks: finished game tallied on resume, cleared station → draft → next station, full-hand release, lost run → walk again, rival opens automatically, legal-move count under the constraint, illegal tile click ignored, rules sheet open/close |
-| Independent rules audit | `npm run audit` | "ALL INVARIANTS HELD": exhaustive formation check over 2¹⁶ boards, 100,000 random games with legal sets compared to a PDF-based reference, 300 AI games with hint checks on 3,850 states, 400 full runs (802 loser-starts transitions) |
-| Simulations | `npm run sim`, `npx tsx scripts/sim-hanamichi.ts`, `npx tsx scripts/sim-koikoi.ts` | outputs in `docs/sim/` |
-| Screenshots | `npm run screenshots` | 21 PNGs in `docs/screenshots/` (phone 390, tablet 820, desktop 1440; 7 screens each) |
-| Visual review | two fresh agents from screenshots | `docs/reviews/visual-review-1.md`, `visual-review-2.md` |
-| Rules review | one fresh agent from the PDF and the code | `docs/reviews/rules-review.md` |
+| Rules auditor (fresh, general-purpose) | the PDF text, the BGG ruling, the code | Verdict "yes, with caveats"; findings: stale docs, unlabelled tie-opener choice, the "rain or cloud" name; all fixed |
+| Impeccable finish reviewer (fresh) | the request, answers, contract, screenshots | Disposition and material fixes, then a verdict pass (above) |
+| Impeccable documenter | the finished build | `DESIGN.md` and `.impeccable/design.json` |
 
-## Fixes from reviews
+Everything else (engine, AI, UI, tests, scripts, docs) was written in the main session.
 
-### Visual review, round 1 (`docs/reviews/visual-review-1.md`)
+## Evidence on disk
 
-| # | Finding | What was done |
-|---|---|---|
-| 1 | Blocker: phone game screens overflowed the viewport by ~16px | Diagnosed with a Playwright script: the single-column grid track was `1fr` (= `minmax(auto, 1fr)`) and grew to a child's min-content width. Changed to `minmax(0, 1fr)` with `min-width: 0` on the areas; scroll width now equals the viewport. |
-| 2 | Playable tiles barely marked; other tiles desaturated to illegibility | No more desaturation (only `saturate(.85)`); playable tiles lift 3px with a darker gold ring and shadow; sun, cloud and rain strokes got outlines/darker colours. |
-| 3 | Paper Lantern reused gold, gave no feedback | Renamed **Firefly** with its own glowing icon; results shown as corner badges with text ("wins", "! Haru wins next"); an explicit message when no tile is marked. Playable treatment unchanged under the hint. |
-| 4 | Desktop station screen looked broken | Intro uses the same three-column grid as play, with the road in the left rail. |
-| 5 | Play screen never said how to win; instruction far from the board | Status line is now the instruction with icons ("Your move: take a cherry or bird tile"); a permanent "Win: 4 in a line · a 2×2 square · leave Haru no tile" line sits under the board. |
-| 6 | "Lantern" meant three things | Lanterns are games only ("Game 1 of 3" label); the hint is the Firefly. |
-| 7 | Result sheet hid the board | Desktop: tally docked in the right rail, board fully visible; phone/tablet: bottom sheet capped at 70dvh, warm blurred scrim; stale "worth now"/constraint cards hidden once the game is over; loss math added ("2 lanterns left · about 15 petals per win needed"). |
-| 8 | Grey labels failed contrast | `--ink-3` darkened to #6b5f53 (≥5:1); caps labels 13px; season kickers darkened. |
-| 9 | Phone header truncation, small targets | Subtitle hidden below 480px; help/close buttons 44px; chips ≥40px. |
-| 10 | Station card misalignment | Charms are a fourth fact column; CTA left-aligned (full width on phone). |
-| 11 | Rail panels wrapping / misaligned on tablet | Firefly button is a column layout; tablet panels constrained to the board width. |
-| 12 | Tile art: maple as stars, pine as grass, generic cloud | Maple redrawn as a five-lobed leaf, pine as a layered umbrella pine with a trunk, cloud with a brush-edged outline; a 4×4 garden key added to the rules sheet. |
-| 13 | Draft cards did not look like choices | "Take this charm ›" affordance, focus ring, vertically centred panel, icons on a faint 4×4 grid. |
-| 14 | Title stats were noise; wordmark looked like a link | Stats hidden until a road has been started; wordmark not underlined; leaving a game asks for confirmation. |
-| 15 | Unclear copy | "5 tokens", a real blossom icon instead of ✿, scoring line reworded. |
+- `docs/evidence/`: Lighthouse, difficulty ladder, perfect-play solve, think times, e2e summary.
+- `docs/screenshots/`: phone, phone landscape, tablet and desktop: home, your turn, a won game,
+  the setup sheet, the rules sheet (captured by `scripts/capture.ts` from the production build).
+- `test-screens/` (not committed): every layout state on every profile, written by each e2e run.
 
-### Visual review, round 2 (`docs/reviews/visual-review-2.md`)
+## Open items (not resolved here)
 
-The second, fresh reviewer re-checked the 15 round-1 findings on the new screenshots: **10 fixed,
-5 partly fixed, 0 not fixed**; scores rose from 6/10 to **7.5/10** ("looks good") and from 5/10 to
-**7/10** ("usable without explanation"); no blockers. It listed 9 remaining items, all addressed:
-
-| # | Finding | What was done |
-|---|---|---|
-| 1 | Major: on phone/tablet the result still covered the winning row and blurred the board | Blur removed everywhere except the rules sheet. Tablet: the tally is rendered in the flow under the board. Phone: a compact bottom sheet capped at 45dvh with a light scrim, and the page scrolls so the board's bottom edge sits above it. A sumi brush stroke is painted through the winning line (a ring for a square) so the result reads even when partly covered. |
-| 2 | Major: the lit Firefly looked disabled; its answer had 2.5:1 contrast | Three explicit states (idle / shining / spent). Shining: full opacity, gold border and halo, answer in dark ink at 15px with counts ("1 tile wins now · 2 tiles hand Haru a win"). Spent: desaturated icon, lighter border, readable text. |
-| 3 | Major: Firefly below the fold on phone, cut off on tablet | The button is rendered directly under the constraint card on phone and tablet (and in the right rail on desktop). |
-| 4 | Minor: poem read as "!", symbols overlapped vegetation, generic cloud | Poem redrawn as a tilted ochre tanzaku with a cord and brush strokes; symbol moved to the upper-left and vegetation to the lower-right of every tile; maple leaves get a paper halo. (The cloud already had its brush-edged outline from round 1.) |
-| 5 | Minor: jargon and mixed names | "+8 on a diagonal (Crane Scroll)" style scoring text; "1 token" pluralised; result kicker says "Game 1 of 3"; shorter loss math ("2 games left · need about 10 a win"). |
-| 6 | Minor: rules sheet buried the game rules | Order is now: A turn, Winning, The garden (with the 4×4 key), then The Flower Road, Petals and charms, The Firefly; two heading levels with a vermilion rule above part headings; larger legend glyphs. |
-| 7 | Minor: wordmark looked like an indigo hyperlink | Sumi, no underline (underline only on hover/focus); leaving a game in progress asks for confirmation. |
-| 8 | Nit: desktop right rail too narrow | Grid rebalanced to 220 / 560 / 280–340 px with balanced text wrapping. |
-| 9 | Nit: pre-game screens top-heavy | Title, draft and station screens are vertically centred; the tablet station card is capped at 640px. |
-| — | Screenshot set: the Firefly capture showed no marked tile; stale round-1 files | The screenshot script now resumes an engine-built position where the Firefly marks both a winning and a dangerous tile, then plays the winning tile so the result capture shows a won tally. Stale files deleted. |
-
-These round-2 fixes were verified by the orchestrating session from the regenerated screenshots
-(no third review agent was run); see the "Unfinished" section.
-
-### Rules audit (`docs/reviews/rules-review.md`)
-
-| # | Finding | What was done |
-|---|---|---|
-| 1 | High: the full-garden ending is an interpretation the PDF does not state | Kept the literal blocking reading but made it explicit: `FULL_GARDEN_RULE` constant, `fullGarden: true` on the result, dedicated wording in the status line, result sheet, rules sheet, `docs/RULES.md` and README, all labelled as an interpretation with the dissenting source noted. A draw ruling was not implemented (would make `winner` nullable across engine, AI and run). |
-| 2 | Medium: "A win now is worth" was one petal too high | Now "a win on your next move": subtracts the tiles that must leave first, and shows the exact payout when a winning tile is open. Tests updated, including one that matches the real payout of the 13-move test game. |
-| 3 | Low: double formation / formation+block precedence picks the charm | Documented in the Thorn Hedge rule text and the rules sheet; a test pins the fixed order rows → columns → diagonals → squares. |
-| 4 | Low: 15/20-point matches missing; "+3" called official | `points15`/`points20` implemented and tested; wording changed to "3 petals for the win, plus the official victory points". The match formats remain engine-only (Hanamichi uses stations). |
-| 5 | Low: saved runs trusted; stored `null` could crash | `loadJson` returns the fallback for non-objects; `validateRun` replays the saved game through the engine and discards any save that disagrees (tested). |
-| 6 | Info: `newMatch` defaulted to player 1 | `first` is now a required argument. |
-| 7 | Info: 32-bit seed cannot reach every layout | Noted; no change. |
-| Test gaps | No property test, column/diagonal only via `findWin`, danger hint untested, no mutation checks | Added: a random-game property test against an independent reference (legal sets, illegal indices throw, one winner, no draws), column and diagonal wins through `applyMove`, two-formation precedence, `newGame(seed, 2)`, a danger-hint test, a hint immutability test, `validateRun` tests, and "next game starts with the recorded loser". The auditor's own invariant suite is kept as `npm run audit`. |
-
-### Follow-up: save validation against the official tile set (2026-10-03)
-
-An independent review after the session found that restored saves were not checked against the
-official tile set: `newGameFromTiles` verified 16 distinct tiles but not that each vegetation and
-symbol was one of the official four, so a save edited consistently to use "bamboo" passed
-`validateRun`. Fix: `isTile`/`isVegetation`/`isSymbol`/`isPlayer` guards in the engine, used by
-`newGameFromTiles` (which now also visits holes in a sparse layout), and a rewritten `validateRun`
-that checks every field, the per-phase invariants of the state machine (which phases carry a
-game, how many games and offers, who opens), replays the game through the engine, and requires
-the log to explain the petal counters and the saved tally to equal the recomputed one.
-A verification workflow (3 attackers with different lenses, 1 diff reviewer, 15 skeptics
-re-checking each claim; 609,437 arbitrary inputs and 15,400 legitimate states fuzzed) confirmed
-further gaps that the rewrite closes: a 'result' save with a malformed tally or an empty log used
-to crash every render on resume; counters and offers were not bounded by phase (a soft-lock on the
-intro screen); huge "integers" passed. Result rendering now looks charms up by id and coerces
-numbers. Tests: 87 (engine membership and sparse-layout tests; run-validation tests for tiles,
-counters, offers, phase, tally and a legitimately reached multi-station run). The end-to-end seeds
-are now built only through the state machine. A later independent review found one more gap: the
-opener of a saved game was compared with the saved `nextFirst` rather than derived, so a save that
-let the previous winner open passed. `requiredOpener(seed, log)` now derives it (seeded coin toss
-for the first game, then the loser of the last logged game) and both the opener and `nextFirst`
-must match it; the review's reproduction (seed 9) is a unit test. A verification workflow (2,992
-opener forgeries, 51,000 legitimate saves fuzzed) confirmed the derivation and pointed at three
-more fields that were still trusted from the save; they are now derived as well: the garden is
-replayed from the seed and game index (so a swapped layout or a fabricated earlier game is
-rejected), a logged win must score at least the base petals and a loss exactly 0, and a carried
-tally must describe the last logged game and be absent while a game is in progress.
-
-### Follow-up: rival strength (2026-10-03)
-
-The author found the rivals too easy to beat with a line. Measured against an independent greedy
-player, the old rivals handed the player an immediate win 193 and 195 times in 400 games at stations
-1 and 2, and even the final rival won only 73%. Fix: a tactical guard in the AI (`careless: false`
-by default) so that from station 2 on a rival always takes an immediate win and never hands one
-over when a safe move exists; a strength ladder picked from a depth × blunder sweep; petal targets
-recalibrated for the stronger rivals. Before/after numbers and the method are in `docs/DESIGN.md`
-§8 and `docs/sim/stations-*.txt`. A verification workflow (independent checkers for the guarantee,
-for regressions in the AI change and for the difficulty curve, each claim re-checked by a skeptic)
-ran before the commit; its outcome is recorded below the table in §8 of DESIGN.md.
-
-## Unfinished / known limitations
-
-- **Full-garden ruling.** The engine rules an emptied garden as a block win for the last mover
-  (literal reading of the PDF). A "draw" alternative is documented (`FULL_GARDEN_RULE`) but not
-  implemented; doing so would make `WinInfo.winner` nullable across the engine, AI and run.
-- **Rival personalities are flavour.** Haru, Natsu, Aki and the others differ only by search depth
-  and random-move rate (as calibrated by simulation). The readable styles sketched in idea C
-  (mirroring, mobility-hunting) were not implemented.
-- **Classic match formats** (single game, first to 3 sets, 10/15/20 victory points) exist in the
-  engine with tests but are not playable in the app; Hanamichi uses its station structure.
-- **Balance is simulated, not human-tested.** Station targets come from an "EV-2" player model;
-  after the 2026-10-03 retune the modelled full-run completion is about 8%, so real players may find
-  the late stations hard.
-- **Not built:** idea A's Daily Road album, Winter Road unlock, charm album; sound; a coach mark on
-  the first game.
+- **Licence to sell.** Okiya's name and rules are Blue Orange Games' and the designers' property.
+  This edition uses no Blue Orange art or marks and claims no endorsement, but selling it as
+  "Okiya" needs a licence from the rights holders. This is a business step for the client.
+- **Real devices.** Every device check here ran in emulation (Playwright WebKit, Chromium and
+  Firefox with phone and tablet profiles), not on physical phones. A short pass on a real iPhone
+  and Android phone before launch is recommended (sound with the silent switch, the home-screen
+  install, the wake lock).
+- **Sound on iOS** follows the ringer switch, as Web Audio does in Safari.

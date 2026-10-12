@@ -75,9 +75,10 @@ docs/                 rules, process, evidence, screenshots
   holders (see docs/PROCESS.md, "Open items").
 - **Art**: the garden tiles, tokens, icons and app icon are original SVG drawn for this project.
 - **Sounds**: synthesised at run time with the Web Audio API; there are no audio files.
-- **Typeface**: Shippori Mincho B1 by the Shippori Mincho Project Authors (Fontdasu), SIL Open
-  Font License 1.1, self-hosted from the `@fontsource/shippori-mincho-b1` package (licence text in
-  `node_modules/@fontsource/shippori-mincho-b1/LICENSE`). Interface text uses each device's own
-  system font.
-- **Code**: the dependencies shipped to players are the font package only; everything else is
-  development tooling.
+- **Typefaces**, both under the SIL Open Font License 1.1 and self-hosted (the licence texts ship
+  with the site in `public/licenses/` and are linked from Settings → About):
+  - Shippori Mincho B1 by the Shippori Mincho Project Authors (Fontdasu), for display, from the
+    `@fontsource/shippori-mincho-b1` package;
+  - Source Sans 3 by Adobe (Paul D. Hunt), for interface text, from `@fontsource/source-sans-3`.
+- **Code**: the dependencies shipped to players are the two font packages only; everything else
+  is development tooling.
