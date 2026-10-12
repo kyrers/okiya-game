@@ -111,7 +111,10 @@ Answers the client gave during the session (structured questions):
 | Offline: after one visit a game against the computer plays with the network off | `e2e/ship.spec.ts` | passes (Chromium) |
 | Accessibility, axe-core WCAG 2.2 AA rules on home, setup, rules, settings, game, menu | `e2e/ship.spec.ts` | 0 violations |
 | Lighthouse 12.6, mobile and desktop, production build | see `docs/evidence/lighthouse.txt` | mobile 99 / 100 / 100 / 100 (performance, accessibility, best practices, SEO; first paint 1.7 s on simulated slow 4G, 147 KB transferred); desktop 100 / 100 / 100 / 100 |
+| Vercel's own build pipeline on the final commit | `npx vercel@44.7.3 build --yes` (local, no account) | Build Completed; Build Output v3 static files identical to the tested `dist/`; routes carry the immutable asset cache, `no-cache` service worker, security headers and CSP (`docs/evidence/vercel-build.txt`) |
+| Clean clone, as a CI or Vercel would build it | `git clone`, `npm ci`, `npm run build` | passes |
 | `vercel.json` against Vercel's published schema (with a negative control) | ajv, draft-07 | valid; the broken copy is rejected |
+| Every shipped file accounted for: origin and licence | `docs/ASSETS.md` | all original, or OFL-1.1 (two typefaces, licence texts shipped), or MIT (Vite's preload helper); no file loaded from another domain |
 | The page under the exact `vercel.json` headers and CSP | `e2e/vercel.spec.ts` + `scripts/serve-vercel.ts` | no CSP violation in Chromium or WebKit; hashed assets `immutable` |
 | Independent rules audit (fresh agent) | its own scripts | 2,948,961 states of 200,000 random games and 250,037,632 nodes of 4 full game trees compared with an independent model: 0 mismatches; 48,862 of 48,862 forged saves rejected; Hard optimal in all 617 endgames of ≤ 5 tiles; UI: 204 turns, 191 illegal taps, 19 endings all correct |
 | Impeccable detector | `impeccable detect --json` on the UI files | 0 errors, 0 warnings (one layout-transition warning and one inline-font warning fixed); 62 advisories that only note values not yet named in DESIGN.md: the tile-art pigments, shadow and highlight tints, a few one-off radii and type sizes |
@@ -148,28 +151,38 @@ Everything else (engine, AI, UI, tests, scripts, docs) was written in the main s
 
 ## Evidence on disk
 
-- `docs/evidence/`: Lighthouse, difficulty ladder, perfect-play solve, think times, e2e summary.
+- `docs/evidence/`: Lighthouse, difficulty ladder, perfect-play solve, think times, e2e summary,
+  Vercel build output summary.
+- `docs/ASSETS.md`: every shipped file, its origin and its licence.
 - `docs/screenshots/`: phone, phone landscape, tablet and desktop: home, your turn, a won game,
   the setup sheet, the rules sheet (captured by `scripts/capture.ts` from the production build).
 - `test-screens/` (not committed): every layout state on every profile, written by each e2e run.
 
-## Open items (not resolved here)
+## Outside this build
+
+Nothing known is open in the build itself. These are steps only the client can take; none of them
+changes the code:
 
 - **Licence to sell.** The name Okiya (also sold as Niya) and the published game belong to its
   publisher and designers. This edition uses no Blue Orange art or marks and claims no
   endorsement, but selling it under that name needs a licence from the rights holders. This is a
   business step for the client.
-- **Deployment.** Not deployed: publishing to Vercel needs the client's account. `vercel.json`
+- **Deployment.** Not published: that needs the client's Vercel account. Deployability is
+  demonstrated: Vercel's own build (`vercel build`, CLI 44.7.3, run locally with no account)
+  completes and emits Build Output v3 whose static files are identical to the tested `dist/` and
+  whose routes carry the cache rules, security headers and CSP of `vercel.json`. `vercel.json`
   validates against Vercel's schema, the build was tested under its exact headers, and a clean
   clone builds with `npm ci && npm run build` (the build type-checks the tests too, so it needs the
   devDependencies, which Vercel installs by default; no package downloads browsers on install).
   Importing the repository in Vercel (or `vercel --prod`) is the remaining step.
-- **Share image URL.** `index.html` points `og:image` at `./og-image.png`; social scrapers want an
+- **Share image URL.** `index.html` points `og:image` at `./og-image.jpg`; social scrapers want an
   absolute URL, so set it to the production domain once it exists.
-- **Real devices.** Every device check here ran in emulation (Playwright WebKit, Chromium and
-  Firefox with phone and tablet profiles), not on physical phones. A short pass on a real iPhone
-  and Android phone before launch is recommended (sound with the silent switch, the home-screen
-  install, the wake lock).
+- **Physical devices.** No phones or tablets are attached to this environment, so device checks
+  ran in emulation: Safari's engine (WebKit), Chromium and Firefox with real phone and tablet
+  viewports, pixel densities, touch input and Safari's toolbar-reduced heights, 11 profiles in
+  all. The usual pre-launch smoke test on the client's own phones remains their QA step; things
+  only hardware shows are the silent switch muting sound, the home-screen install and the wake
+  lock.
 - **Sound on iOS** follows the ringer switch, as Web Audio does in Safari.
 - **Font licences.** Both typefaces are OFL and their licence texts ship with the site. Source Sans
   3 carries the Reserved Font Name "Source"; the files are the unmodified Google Fonts web subsets

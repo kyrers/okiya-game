@@ -27,7 +27,7 @@ test.describe('installable and offline', () => {
     const m = await (await request.get('/manifest.webmanifest')).json();
     expect(m.name).toBe('Okiya');
     for (const icon of m.icons) expect((await request.get(icon.src.replace('./', '/'))).ok()).toBe(true);
-    for (const f of ['/apple-touch-icon.png', '/favicon-32.png', '/og-image.png', '/icon.svg', '/sw.js']) expect((await request.get(f)).ok()).toBe(true);
+    for (const f of ['/apple-touch-icon.png', '/favicon-32.png', '/og-image.jpg', '/icon.svg', '/sw.js']) expect((await request.get(f)).ok()).toBe(true);
   });
 });
 

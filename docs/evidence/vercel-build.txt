@@ -1,0 +1,10 @@
+Vercel build on the final code: npx vercel@44.7.3 build --yes (local; no account, nothing deployed).
+Result: Build Completed in .vercel/output [2s]
+Build Output API version: 3
+Routes:
+  ^/assets(?:/(.*))$  headers: Cache-Control=public, max-age=31536000, immutable
+  ^/sw\.js$  headers: Cache-Control=no-cache
+  ^(?:/(.*))$  headers: X-Content-Type-Options, Referrer-Policy, Permissions-Policy, Content-Security-Policy
+    {"handle":"error"}
+  ^(?!/api).*$  {"status":404,"src":"^(?!/api).*$","dest":"/404.html"}
+static output identical to dist/

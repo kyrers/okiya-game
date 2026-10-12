@@ -19,7 +19,8 @@ function walk(dir: string): string[] {
 // .woff duplicates the .woff2 fonts for very old browsers that cannot run a service worker anyway.
 const files = walk(dist)
   .map((p) => relative(dist, p).split('\\').join('/'))
-  .filter((f) => f !== 'sw.js' && !f.endsWith('.woff') && !f.endsWith('.map'))
+  // The share image is for link previews, never shown in the game: not worth an offline copy.
+  .filter((f) => f !== 'sw.js' && !f.endsWith('.woff') && !f.endsWith('.map') && !f.startsWith('og-image'))
   .sort();
 
 const hash = createHash('sha256');

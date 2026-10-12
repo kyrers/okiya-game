@@ -1,5 +1,5 @@
 /**
- * Captures the share image (public/og-image.png) and the documentation screenshots
+ * Captures the share image (public/og-image.jpg) and the documentation screenshots
  * (docs/screenshots/) from a running build. Positions are real games, built by the engine.
  *
  *   npm run build && npx vite preview --port 4173 &
@@ -117,8 +117,8 @@ for (const d of DEVICES) {
     await page.setViewportSize({ width: 1200, height: 630 });
     await open(page, null);
     await settle(page);
-    await page.screenshot({ path: `${root}public/og-image.png`, scale: 'css' });
-    console.log('public/og-image.png');
+    await page.screenshot({ path: `${root}public/og-image.jpg`, scale: 'css', type: 'jpeg', quality: 85 });
+    console.log('public/og-image.jpg');
   }
   await ctx.close();
 }
