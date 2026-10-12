@@ -17,7 +17,7 @@ export default defineConfig({
   webServer: [
     { command: 'npx vite preview --port 4173 --strictPort', url: 'http://localhost:4173/', reuseExistingServer: true },
     // dist/ under the exact headers vercel.json declares (e2e/vercel.spec.ts).
-    { command: 'npx tsx scripts/serve-vercel.ts 4180', url: 'http://localhost:4180/', reuseExistingServer: true },
+    { command: 'npx tsx scripts/serve-vercel.ts 4180', url: 'http://127.0.0.1:4180/', reuseExistingServer: true },
   ],
   projects: [
     { name: 'iphone-se', use: { ...devices['iPhone SE'], browserName: 'webkit' } },

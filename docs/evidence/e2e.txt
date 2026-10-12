@@ -1,18 +1,18 @@
-End-to-end results of the final run on the production build (2026-10-12 16:09 UTC), 11 device profiles.
+End-to-end results of the final run on the production build (2026-10-12 16:34 UTC), 11 device profiles.
 
 == main (npx playwright test --grep-invert @perf, 6 workers)
-  iphone-se              passed  22  skipped  3  failed 0
-  iphone-15              passed  22  skipped  3  failed 0
-  iphone-15-landscape    passed  22  skipped  3  failed 0
-  pixel-7                passed  24  skipped  1  failed 0
-  iphone-se-3            passed  22  skipped  3  failed 0
-  android-360            passed  24  skipped  1  failed 0
-  ipad-portrait          passed  22  skipped  3  failed 0
-  ipad-landscape         passed  22  skipped  3  failed 0
-  desktop-chrome         passed  25  skipped  0  failed 0
-  desktop-firefox        passed  22  skipped  3  failed 0
-  desktop-safari         passed  23  skipped  2  failed 0
-  total                  passed 250  skipped 25  failed 0
+  iphone-se              passed  25  skipped  3  failed 0
+  iphone-15              passed  25  skipped  3  failed 0
+  iphone-15-landscape    passed  25  skipped  3  failed 0
+  pixel-7                passed  27  skipped  1  failed 0
+  iphone-se-3            passed  25  skipped  3  failed 0
+  android-360            passed  27  skipped  1  failed 0
+  ipad-portrait          passed  25  skipped  3  failed 0
+  ipad-landscape         passed  25  skipped  3  failed 0
+  desktop-chrome         passed  28  skipped  0  failed 0
+  desktop-firefox        passed  25  skipped  3  failed 0
+  desktop-safari         passed  26  skipped  2  failed 0
+  total                  passed 283  skipped 25  failed 0
 
 == perf (npx playwright test --grep @perf --workers=1)
   iphone-se              passed   1  skipped  0  failed 0

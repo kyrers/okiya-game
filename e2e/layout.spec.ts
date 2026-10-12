@@ -43,6 +43,15 @@ async function checkLayout(page: Page, label: string): Promise<void> {
       const b = el.getBoundingClientRect();
       if (b.left < -1 || b.top < -1 || b.right > vw + 1 || b.bottom > vh + 1) out.push(`${name(el)} leaves the viewport (${Math.round(b.left)},${Math.round(b.top)},${Math.round(b.right)},${Math.round(b.bottom)} in ${vw}x${vh})`);
     }
+    if (dialog) {
+      // A sheet sits centred, and its title starts on the same edge as its text.
+      const panel = dialog.querySelector('.sheet-panel')!.getBoundingClientRect();
+      const gap = Math.abs(panel.left - (vw - panel.right));
+      if (gap > 2) out.push(`sheet is off-centre by ${Math.round(gap / 2)}px`);
+      const title = dialog.querySelector('.sheet-title')!.getBoundingClientRect();
+      const first = dialog.querySelector('.sheet-body > *')!.getBoundingClientRect();
+      if (Math.abs(title.left - first.left) > 1) out.push(`sheet title starts at ${Math.round(title.left)}, its text at ${Math.round(first.left)}`);
+    }
     const board = document.querySelector('.game .board')?.getBoundingClientRect();
     const hit = (a: DOMRect, b: DOMRect) => a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1;
     if (board && !dialog) {

@@ -27,4 +27,5 @@ createServer((req, res) => {
   for (const r of rules) if (r.re.test(path)) for (const h of r.headers) res.setHeader(h.key, h.value);
   res.setHeader('Content-Type', TYPES[extname(file)] ?? 'application/octet-stream');
   res.end(readFileSync(file));
-}).listen(port, () => console.log(`dist/ with vercel.json headers on http://localhost:${port}/`));
+  // Loopback only: a test server, never reachable from the network.
+}).listen(port, '127.0.0.1', () => console.log(`dist/ with vercel.json headers on http://127.0.0.1:${port}/`));

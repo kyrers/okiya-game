@@ -344,7 +344,9 @@ button:disabled { cursor: default; }
 .seat-name {
   font-family: var(--font-display);
   font-size: 1.375em;
-  line-height: 1.15;
+  /* The name clips (ellipsis), so its line box must hold the font's full ascent and descent:
+     Shippori's deep descenders (g, j, p, q, y) and accents need 1.5. */
+  line-height: 1.5;
   letter-spacing: 0.01em;
   min-width: 0;
   flex: 1 1 5em;
@@ -455,7 +457,7 @@ button:disabled { cursor: default; }
 .btn .btn-title { display: block; font-size: 1.0625em; }
 .btn .btn-sub { display: block; font-weight: 400; font-size: 0.875em; opacity: 0.8; margin-top: 2px; }
 .btn.big > span { min-width: 0; }
-.btn.big .btn-sub { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.btn.big .btn-sub { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.45; }
 
 /* ==========================================================================
    Home
@@ -623,10 +625,14 @@ dialog.sheet {
   color: var(--ink);
   max-width: none;
   max-height: none;
-  width: 100%;
-  margin: auto 0 0;
+  /* A bottom sheet, never wider than a comfortable reading column: on a phone held sideways it
+     sits centred instead of stretching edge to edge with its text pushed to the left. */
+  width: min(100%, 44rem);
+  margin: auto auto 0;
   overflow: visible;
 }
+/* The rules sheet is as wide as a comfortable line of text, so its title and text share one edge. */
+dialog.sheet.sheet-rules { width: min(100%, 38rem); }
 dialog.sheet::backdrop { background: rgba(12, 10, 22, 0.6); }
 dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 @keyframes sheet-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -672,7 +678,7 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
   dialog.sheet { margin: auto; width: min(560px, 100vw - 48px); }
   .sheet-panel { border-radius: 20px; max-height: min(calc(var(--vh) - 64px), 860px); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45); }
   .sheet-body { padding-bottom: 24px; }
-  .sheet-rules { width: min(680px, 100vw - 48px); }
+  .sheet-rules { width: min(38rem, 100vw - 48px); }
   .sheet-confirm, .sheet-menu { width: min(420px, 100vw - 48px); }
 }
 
@@ -777,7 +783,7 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 
 /* ---------- rules ---------- */
 
-.rules { display: flex; flex-direction: column; gap: 12px; font-size: 1rem; line-height: 1.55; max-width: 62ch; }
+.rules { display: flex; flex-direction: column; gap: 12px; font-size: 1rem; line-height: 1.55; }
 .rules h3 { font-family: var(--font-display); font-size: 1.3rem; margin-top: 14px; line-height: 1.2; }
 .rules-lede { font-size: 1.0625rem; }
 .rules-figs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }

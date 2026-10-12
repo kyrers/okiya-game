@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 /** The page under the exact headers vercel.json sends (scripts/serve-vercel.ts on port 4180). */
-test.use({ baseURL: 'http://localhost:4180/' });
+test.use({ baseURL: 'http://127.0.0.1:4180/' });
 
 test('the Vercel security headers and CSP allow everything the game does', async ({ page, browserName }) => {
   test.skip(browserName !== 'chromium' && browserName !== 'webkit', 'Chromium and WebKit cover the CSP engines');

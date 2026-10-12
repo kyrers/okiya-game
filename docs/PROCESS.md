@@ -98,6 +98,8 @@ Answers the client gave during the session (structured questions):
 | Larger default text could push seats over the garden | 20 px root-size e2e on every profile | Layout reserves in rem; garden shrinks instead. |
 | Gold focus ring on paper (sheets) at 1.6:1, placeholder text at 3.4:1 | The impeccable documenter, deriving DESIGN.md from the build | Focus is vermilion on paper and ink on the garden (both above 3:1); placeholder in ink-3 (5.3:1). |
 | The UI face mis-spaced letters at about 14 px | Screenshots, then a font specimen | Source Sans 3 replaces Zen Kaku Gothic New (see Decisions). |
+| The "g" of a player called **Diogo** was cut off | The client, on a real phone | Names end in an ellipsis, so their box clips; its line height (1.15) was shorter than Shippori's ascent plus descent. Clipping boxes now use a line height that holds the whole font box (1.5 for names, 1.45 for button details). A geometric e2e test checks every profile, and a control proves it catches the old value. |
+| **How to play** text not centred in landscape | The client, on a real phone | On short, wide screens the bottom sheet spanned the screen with its text on the left. Sheets are at most 44rem wide and centred; the rules sheet is one reading column (38rem) so title and text share an edge. Checked on every profile by the layout test. |
 
 ## Verification (final run)
 
@@ -105,9 +107,12 @@ Answers the client gave during the session (structured questions):
 |---|---|---|
 | Unit tests (engine, AI, match flow, rules-page diagrams) | `npm test` | 4 files, 69 tests, all passing |
 | Type-check and production build | `npm run build` | passes; service worker generated |
-| End-to-end, 11 device profiles: iPhone SE 320 × 568, iPhone SE (3rd gen) 375 × 553, iPhone 15 393 × 659 and landscape 734 × 343 (WebKit, Safari's visible area); Pixel 7 412 × 839 and Android 360 × 640 (Chromium); iPad 810 × 1080 and 1080 × 810 (WebKit); desktop Chrome 1440 × 900, Firefox 1280 × 800, Safari 1920 × 1080 | `npm run e2e` | **250 passed, 0 failed**, 25 skipped by design (engine-scoped checks); perf pass 11 of 11. Per profile: `docs/evidence/e2e.txt` |
+| End-to-end, 11 device profiles: iPhone SE 320 × 568, iPhone SE (3rd gen) 375 × 553, iPhone 15 393 × 659 and landscape 734 × 343 (WebKit, Safari's visible area); Pixel 7 412 × 839 and Android 360 × 640 (Chromium); iPad 810 × 1080 and 1080 × 810 (WebKit); desktop Chrome 1440 × 900, Firefox 1280 × 800, Safari 1920 × 1080 | `npm run e2e` | **283 passed, 0 failed**, 25 skipped by design (engine-scoped checks); perf pass 11 of 11. Per profile: `docs/evidence/e2e.txt` |
 | Layout invariants on every screen state and profile: no page scroll, nothing off-screen, seats never on the garden or the top bar, targets ≥ 44 px, no overflowing text | `e2e/layout.spec.ts` | included above |
 | Large default text (20 px root) on every profile | `e2e/bigtext.spec.ts` | included above |
+| Text in clipping boxes keeps its descenders and accents ("Diogo", "Ágqy Jóy"): every line's font box inside the clip box, with a control that fails on the old line height | `e2e/glyphs.spec.ts` | included above |
+| Every sheet centred, title and text on one edge, on every profile | `e2e/layout.spec.ts` | included above |
+| Real phone | the client, on their own phone over the local network | "Looks ok mostly"; two findings, both fixed (below) |
 | Offline: after one visit a game against the computer plays with the network off | `e2e/ship.spec.ts` | passes (Chromium) |
 | Accessibility, axe-core WCAG 2.2 AA rules on home, setup, rules, settings, game, menu | `e2e/ship.spec.ts` | 0 violations |
 | Lighthouse 12.6, mobile and desktop, production build | see `docs/evidence/lighthouse.txt` | mobile 99 / 100 / 100 / 100 (performance, accessibility, best practices, SEO; first paint 1.7 s on simulated slow 4G, 147 KB transferred); desktop 100 / 100 / 100 / 100 |
@@ -176,12 +181,12 @@ changes the code:
   Importing the repository in Vercel (or `vercel --prod`) is the remaining step.
 - **Share image URL.** `index.html` points `og:image` at `./og-image.jpg`; social scrapers want an
   absolute URL, so set it to the production domain once it exists.
-- **Physical devices.** No phones or tablets are attached to this environment, so device checks
-  ran in emulation: Safari's engine (WebKit), Chromium and Firefox with real phone and tablet
-  viewports, pixel densities, touch input and Safari's toolbar-reduced heights, 11 profiles in
-  all. The usual pre-launch smoke test on the client's own phones remains their QA step; things
-  only hardware shows are the silent switch muting sound, the home-screen install and the wake
-  lock.
+- **Physical devices.** No phones are attached to this environment, so the systematic device
+  checks ran in emulation (11 profiles in WebKit, Chromium and Firefox). The client then played
+  the production build on their own phone, served on the local network for the test: "looks ok
+  mostly", with two findings (the clipped "g", the landscape rules sheet), both fixed and now
+  covered by tests. The test host was closed afterwards, as asked. Offline play, the home-screen
+  install and the wake lock need https, so they only switch on once the site is deployed.
 - **Sound on iOS** follows the ringer switch, as Web Audio does in Safari.
 - **Font licences.** Both typefaces are OFL and their licence texts ship with the site. Source Sans
   3 carries the Reserved Font Name "Source"; the files are the unmodified Google Fonts web subsets
