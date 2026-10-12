@@ -70,7 +70,8 @@ export function rulesHtml(): string {
     <p>If no tile left in the garden shares the plant or the symbol of the tile just taken, the player to move cannot play: they are blocked, and they lose.</p>
 
     <h3>A full garden</h3>
-    <p>If the last of the sixteen tiles is taken and nobody has made a line or a square, the game is a <b>tie</b>. The printed rules do not cover this case; this is the ruling of the designer, Bruno Cathala. In a match, the player who did not open the tied game opens the next one.</p>
+    <p>If the last of the sixteen tiles is taken and nobody has made a line or a square, the game is a <b>tie</b>. The printed rules do not cover this case; this is the ruling of the designer, Bruno Cathala.</p>
+    <p class="rules-aside">Who opens after a tie is this edition's choice: the printed rules have the loser of a game open the next one, and a tie has no loser, so the player who did not open the tied game opens the next.</p>
 
     <h3>Matches</h3>
     <dl class="rules-modes">
@@ -80,7 +81,7 @@ export function rulesHtml(): string {
     </dl>
 
     <h3>The sixteen tiles</h3>
-    <p>Each tile pairs one of four plants with one of four symbols.</p>
+    <p>Each tile pairs one of four plants with one of four symbols. The printed rules call the fourth symbol "rain or cloud": here, a cloud with rain falling.</p>
     ${gardenKeyHtml()}
 
     <p class="rules-credit">Okiya is a game by Bruno Cathala and Cyril Bouquet.</p>

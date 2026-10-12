@@ -55,8 +55,8 @@ export function setupForm(initial: MatchSetup, onStart: (s: MatchSetup) => void)
         ${(['points10', 'points15', 'points20'] as const).map((m) => seg('target', m, `${m.slice(6)} points`, pointsTarget === m)).join('')}
       </div>
     </fieldset>
-    <p class="setup-note" data-for="computer">You play vermilion. Who opens the first game is drawn at random; after that, the loser of each game opens the next.</p>
-    <p class="setup-note" data-for="human">Who opens the first game is drawn at random; after that, the loser of each game opens the next.</p>`;
+    <p class="setup-note" data-for="computer">You play vermilion. Who opens the first game is drawn at random; after that, the loser of each game opens the next (after a tie, the other player opens).</p>
+    <p class="setup-note" data-for="human">Who opens the first game is drawn at random; after that, the loser of each game opens the next (after a tie, the other player opens).</p>`;
   form.id = 'setup-form';
 
   const sync = () => {
@@ -111,8 +111,8 @@ export function settingsPanel(settings: Settings, onChange: (s: Settings) => voi
     ${toggle('reduceMotion', 'Reduce motion', 'No flying tiles or sweeping light. Your device setting is always respected.', settings.reduceMotion)}
     <section class="about">
       <h3>About</h3>
-      <p>Okiya is a game by Bruno Cathala and Cyril Bouquet. This edition plays by the official rules; for a garden filled without a winner it follows the designer's ruling: a tie.</p>
-      <p>The art, sounds and code are original. The display typeface, Shippori Mincho B1, is used under the SIL Open Font License.</p>
+      <p>Okiya is a game designed by Bruno Cathala and Cyril Bouquet, published by Blue Orange Games. This digital edition plays by the official rules; for a garden filled without a winner it follows the designer's ruling: a tie. Who opens after a tie is our choice (the other player than last time), since the rules name only the loser.</p>
+      <p>The art, sounds and code are original. The display typeface, Shippori Mincho B1, is used under the <a href="./licenses/ShipporiMinchoB1-OFL.txt" target="_blank" rel="noopener">SIL Open Font License</a>.</p>
       <p>Your matches and settings are saved on this device only. Nothing is sent anywhere.</p>
     </section>`;
   el.addEventListener('change', () => {

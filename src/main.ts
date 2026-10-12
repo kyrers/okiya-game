@@ -1,4 +1,7 @@
 import '@fontsource/shippori-mincho-b1/latin-800.css';
+import '@fontsource/source-sans-3/latin-400.css';
+import '@fontsource/source-sans-3/latin-600.css';
+import '@fontsource/source-sans-3/latin-700.css';
 import './ui/styles.css';
 import { App } from './ui/app';
 

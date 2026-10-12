@@ -16,6 +16,15 @@ export const MODE_WORD: Record<MatchMode, string> = {
   points20: 'First to 20 points',
 };
 
+/** Shorter forms for the top bar of a phone. */
+export const MODE_SHORT: Record<MatchMode, string> = {
+  single: 'Single game',
+  sets3: 'First to 3',
+  points10: 'To 10 points',
+  points15: 'To 15 points',
+  points20: 'To 20 points',
+};
+
 export const MODE_DETAIL: Record<MatchMode, string> = {
   single: 'One game decides it.',
   sets3: 'Play on until someone has won three games.',
@@ -24,13 +33,20 @@ export const MODE_DETAIL: Record<MatchMode, string> = {
   points20: 'A win scores the tiles still in the garden.',
 };
 
-/** "Take a cherry or bird tile", with the two glyphs, as HTML. */
+/** "a" or "an" for the word that follows. */
+export function article(word: string): string {
+  return /^[aeiou]/i.test(word) ? 'an' : 'a';
+}
+
+/** "Take an iris or bird tile", with the two glyphs, as HTML. */
 export function orderHtml(t: Tile): string {
-  return `Take a <span class="w">${vegGlyph(t.veg)}${VEG_WORD[t.veg]}</span> or <span class="w">${symGlyph(t.sym)}${SYM_WORD[t.sym]}</span> tile`;
+  const v = VEG_WORD[t.veg];
+  return `Take ${article(v)} <span class="w">${vegGlyph(t.veg)}${v}</span> or <span class="w">${symGlyph(t.sym)}${SYM_WORD[t.sym]}</span> tile`;
 }
 
 export function orderText(t: Tile): string {
-  return `take a ${VEG_WORD[t.veg]} or ${SYM_WORD[t.sym]} tile`;
+  const v = VEG_WORD[t.veg];
+  return `take ${article(v)} ${v} or ${SYM_WORD[t.sym]} tile`;
 }
 
 export function tileWords(t: Tile): string {

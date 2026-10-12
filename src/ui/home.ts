@@ -19,7 +19,7 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
   el.innerHTML = `
     <section class="home-title">
       <h1 class="wordmark">Okiya</h1>
-      <p class="home-sub">The garden game by <span class="nowrap">Bruno Cathala</span> &amp; <span class="nowrap">Cyril Bouquet</span></p>
+      <p class="home-sub">Game design by <span class="nowrap">Bruno Cathala</span> &amp; <span class="nowrap">Cyril Bouquet</span></p>
     </section>
     <div class="seam home-seam"></div>
     <div class="home-actions-wrap"><section class="home-actions">
@@ -31,7 +31,17 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
       </nav>
     </section></div>`;
   // A different garden each visit, all sixteen tiles face up.
-  el.querySelector('.home-seam')!.append(staticGarden(newGame(Math.floor(Math.random() * 2 ** 31))));
+  const garden = staticGarden(newGame(Math.floor(Math.random() * 2 ** 31)));
+  el.querySelector('.home-seam')!.append(garden);
+  // The two dyes meet at the garden's centre line (portrait), wherever the layout puts it.
+  if (typeof ResizeObserver !== 'undefined') {
+    const place = () => {
+      const g = garden.getBoundingClientRect();
+      const h = el.getBoundingClientRect();
+      if (g.height > 0) el.style.setProperty('--home-seam', `${Math.round(g.top - h.top + g.height / 2)}px`);
+    };
+    new ResizeObserver(place).observe(el);
+  }
   el.addEventListener('click', (ev) => {
     const go = (ev.target as Element).closest<HTMLElement>('[data-go]')?.dataset.go;
     if (go === 'continue') actions.continueMatch();

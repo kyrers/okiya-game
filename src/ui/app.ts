@@ -49,6 +49,7 @@ export class App {
       this.game.destroy();
       this.game = null;
     }
+    keepAwake(false);
     const el = homeScreen(this.savedMatch(), {
       continueMatch: () => this.continueMatch(),
       newMatch: () => this.openSetup(),
@@ -71,6 +72,7 @@ export class App {
     this.mount(this.game.el);
     if (history.state?.okiya !== 'game') history.pushState({ okiya: 'game' }, '');
     this.game.focusBoard();
+    keepAwake(true);
   }
 
   private continueMatch(): void {
@@ -163,3 +165,35 @@ export class App {
     document.documentElement.classList.toggle('reduce-motion', this.settings.reduceMotion);
   }
 }
+
+/* While a game is on screen, keep the display awake: players may think for a while, and a dimmed
+   tablet in the middle of a two-player game is the worst moment to ask for a tap. */
+let wakeWanted = false;
+let wakeLock: { release(): Promise<void> } | null = null;
+
+function keepAwake(on: boolean): void {
+  wakeWanted = on;
+  if (on) void acquire();
+  else {
+    void wakeLock?.release().catch(() => undefined);
+    wakeLock = null;
+  }
+}
+
+async function acquire(): Promise<void> {
+  const nav = navigator as Navigator & { wakeLock?: { request(type: 'screen'): Promise<{ release(): Promise<void> }> } };
+  if (!nav.wakeLock || wakeLock || document.visibilityState !== 'visible') return;
+  try {
+    wakeLock = await nav.wakeLock.request('screen');
+  } catch {
+    wakeLock = null; // not allowed (battery saver, iframe, older browser): the game is unaffected
+  }
+}
+
+// The browser releases the lock when the page is hidden; take it back on return.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && wakeWanted) {
+    wakeLock = null;
+    void acquire();
+  }
+});

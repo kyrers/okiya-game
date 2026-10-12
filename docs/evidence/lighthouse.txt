@@ -1,0 +1,11 @@
+Production build (npm run build), served by vite preview on localhost:4173.
+
+== Lighthouse 12.6.0, mobile (mobile, simulate), 2026-10-12T14:50:29.613Z
+Scores: performance 100, accessibility 100, best-practices 100, seo 100
+Metrics: first-contentful-paint 1.2 s, largest-contentful-paint 1.4 s, total-blocking-time 0 ms, cumulative-layout-shift 0, speed-index 1.2 s, interactive 1.4 s
+Transfer: Total size was 63 KiB
+
+== Lighthouse 12.6.0, desktop (desktop, simulate), 2026-10-12T14:50:40.361Z
+Scores: performance 100, accessibility 100, best-practices 100, seo 100
+Metrics: first-contentful-paint 0.3 s, largest-contentful-paint 0.4 s, total-blocking-time 0 ms, cumulative-layout-shift 0.001, speed-index 0.3 s, interactive 0.4 s
+Transfer: Total size was 63 KiB

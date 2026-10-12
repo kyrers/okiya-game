@@ -22,7 +22,7 @@ import { BoardView } from './board';
 import { motionReduced, type Settings } from './prefs';
 import { soundDenied, soundEnd, soundLift, soundPlace } from './sound';
 import { tileLabel, tileSvg } from './tileArt';
-import { DIFFICULTY_WORD, MODE_WORD, orderHtml, orderText, possessive, reasonWords, tileWords, verb } from './words';
+import { DIFFICULTY_WORD, MODE_SHORT, MODE_WORD, orderHtml, orderText, possessive, reasonWords, tileWords, verb } from './words';
 
 export interface GameScreenDeps {
   settings(): Settings;
@@ -331,10 +331,10 @@ export class GameScreen {
       names: this.setup.names,
     });
     const m = this.view.match;
-    const parts = [`Game ${this.view.gameNumber}`, MODE_WORD[this.setup.mode]];
+    const parts = [`Game ${this.view.gameNumber}`, `<span class="long">${MODE_WORD[this.setup.mode]}</span><span class="short">${MODE_SHORT[this.setup.mode]}</span>`];
     if (this.setup.opponent === 'computer') parts.push(DIFFICULTY_WORD[this.setup.difficulty]);
     if (m.ties > 0 && this.setup.mode !== 'single') parts.push(`${m.ties} ${m.ties === 1 ? 'tie' : 'ties'}`);
-    this.label.textContent = parts.join(' · ');
+    this.label.innerHTML = parts.join(' · ');
     this.renderSeats();
     this.updateUndo();
   }
@@ -361,11 +361,13 @@ export class GameScreen {
     el.className = `seat seat-${p} ${state}`;
     el.setAttribute('aria-label', `${name}${setup.opponent === 'computer' && p === COMPUTER_SEAT ? `, ${DIFFICULTY_WORD[setup.difficulty]}` : ''}`);
     const left = tokensInHand(g, p);
-    const pips = Array.from({ length: TOKENS_PER_PLAYER }, (_, i) => `<i class="pip${i < left ? '' : ' used'}"></i>`).join('');
+    // The tokens still in hand, drawn as small copies of the player's own token.
+    const pips = Array.from({ length: TOKENS_PER_PLAYER }, (_, i) => (i < left ? tokenSvg(p, 'pip') : '<i class="pip used"></i>')).join('');
     const idLine = `
       <div class="seat-id">
         <span class="seat-chip">${tokenSvg(p)}</span>
         <h2 class="seat-name">${escape(name)}</h2>
+        <span class="seat-count" aria-hidden="true">${left}<span class="seat-count-of">/${TOKENS_PER_PLAYER}</span></span>
         ${this.scoreHtml(p)}
       </div>
       <div class="seat-pips" role="img" aria-label="${left} of ${TOKENS_PER_PLAYER} tokens left">${pips}</div>`;
@@ -377,8 +379,9 @@ export class GameScreen {
     const mode = this.setup.mode;
     if (mode === 'single') return '';
     if (mode === 'sets3') {
-      const dots = [0, 1, 2].map((i) => `<i class="win-dot${i < m.wins[p] ? ' on' : ''}"></i>`).join('');
-      return `<span class="seat-score" role="img" aria-label="${m.wins[p]} of 3 wins">${dots}</span>`;
+      // Won games are gold seals, square like a stamp: nothing like the round tokens.
+      const seals = [0, 1, 2].map((i) => `<i class="seal${i < m.wins[p] ? ' won' : ''}"></i>`).join('');
+      return `<span class="seat-score" role="img" aria-label="${m.wins[p]} of 3 wins">${seals}</span>`;
     }
     const target = pointsTarget(mode);
     return `<span class="seat-score points" aria-label="${m.points[p]} of ${target} points"><b>${m.points[p]}</b><span>/${target}</span></span>`;
@@ -390,21 +393,20 @@ export class GameScreen {
     const name = setup.names[p - 1];
     const computer = isComputer(setup, p);
     if (state === 'moving') {
-      const head = computer
-        ? `<p class="say-head thinking">Thinking<span class="dots" aria-hidden="true"></span></p>`
-        : `<p class="say-head">${possessive(name)} turn</p>`;
       if (!g.lastTile) {
-        return `<div class="say-order">
+        const who = computer ? 'The computer opens' : verb(name, 'You open', `${escape(name)} opens`);
+        return `<div class="say-order${computer ? ' thinking' : ''}">
             <span class="say-tile ring" aria-hidden="true">${ringIcon()}</span>
-            <div class="say-text">${head}<p class="say-what">${computer ? 'Opens' : verb(name, 'You open', 'Opens')}: any tile on the <b>outer ring</b></p></div>
+            <p class="say-what">${computer ? `${who}<span class="dots" aria-hidden="true"></span>` : `${who}: take any tile on the <b>outer ring</b>`}</p>
           </div>
           <p class="say-note">${this.openerNote()}</p>`;
       }
       const opp = setup.names[opponent(p) - 1];
       const denied = this.deniedIndex !== null && !computer ? this.deniedNote() : '';
-      return `<div class="say-order">
+      const what = computer ? `The computer is thinking<span class="dots" aria-hidden="true"></span>` : orderHtml(g.lastTile);
+      return `<div class="say-order${computer ? ' thinking' : ''}">
           <span class="say-tile" role="img" aria-label="${escape(opp)} took ${tileLabel(g.lastTile)}">${tileSvg(g.lastTile)}</span>
-          <div class="say-text">${head}<p class="say-what">${orderHtml(g.lastTile)}</p></div>
+          <p class="say-what">${what}</p>
         </div>${denied}`;
     }
     if (state === 'waiting') {
