@@ -114,7 +114,7 @@ Answers the client gave during the session (structured questions):
 |---|---|---|
 | Unit tests (engine, AI, match flow, rules-page diagrams) | `npm test` | 4 files, 69 tests, all passing |
 | Type-check and production build | `npm run build` | passes; service worker generated |
-| End-to-end, 11 device profiles: iPhone SE 320 × 568, iPhone SE (3rd gen) 375 × 553, iPhone 15 393 × 659 and landscape 734 × 343 (WebKit, Safari's visible area); Pixel 7 412 × 839 and Android 360 × 640 (Chromium); iPad 810 × 1080 and 1080 × 810 (WebKit); desktop Chrome 1440 × 900, Firefox 1280 × 800, Safari 1920 × 1080 | `npm run e2e` | **289 passed, 0 failed**, 41 skipped by design (checks that belong to one or two engines); perf pass 11 of 11. Per profile: `docs/evidence/e2e.txt` |
+| End-to-end, 11 device profiles: iPhone SE 320 × 568, iPhone SE (3rd gen) 375 × 553, iPhone 15 393 × 659 and landscape 734 × 343 (WebKit, Safari's visible area); Pixel 7 412 × 839 and Android 360 × 640 (Chromium); iPad 810 × 1080 and 1080 × 810 (WebKit); desktop Chrome 1440 × 900, Firefox 1280 × 800, Safari 1920 × 1080 | `npm run e2e` | **289 passed, 0 failed**, 41 skipped by design (checks that belong to one or two engines); perf pass 11 of 11. Per profile: `docs/evidence/e2e.txt`, written by `scripts/e2e-evidence.ts` from the three passes' JSON reports |
 | Layout invariants on every screen state and profile: no page scroll, nothing off-screen, seats never on the garden or the top bar, targets ≥ 44 px, no overflowing text | `e2e/layout.spec.ts` | included above |
 | Large default text (20 px root) on every profile | `e2e/bigtext.spec.ts` | included above |
 | Text in clipping boxes keeps its descenders and accents ("Diogo", "Ágqy Jóy"): every line's font box inside the clip box, with a control that fails on the old line height | `e2e/glyphs.spec.ts` | included above |
@@ -125,7 +125,7 @@ Answers the client gave during the session (structured questions):
 | Installable to the home screen: Chrome's own installability check | `e2e/ship.spec.ts` (`Page.getInstallabilityErrors`, `Page.getAppManifest`) | no installability errors, no manifest errors (desktop and both Android profiles) |
 | Screen kept awake during a game, released on leaving it | `e2e/ship.spec.ts` | lock acquired at game start and released on Home (desktop and both Android profiles) |
 | Accessibility, axe-core WCAG 2.2 AA rules on home, setup, rules, settings, game, menu | `e2e/ship.spec.ts` | 0 violations |
-| Lighthouse 12.6, mobile and desktop, production build | see `docs/evidence/lighthouse.txt` | mobile 99 / 100 / 100 / 100 (performance, accessibility, best practices, SEO; first paint 1.7 s on simulated slow 4G, 147 KB transferred); desktop 100 / 100 / 100 / 100 |
+| Lighthouse 12.6, mobile and desktop, production build | see `docs/evidence/lighthouse.txt` | mobile 99 / 100 / 100 / 100 (performance, accessibility, best practices, SEO; first paint 1.7 s on simulated slow 4G, 148 KB transferred); desktop 100 / 100 / 100 / 100 |
 | Vercel's own build pipeline on the final commit | `npx vercel@44.7.3 build --yes` (local, no account) | Build Completed; Build Output v3 static files identical to the tested `dist/`; routes carry the immutable asset cache, `no-cache` service worker, security headers and CSP (`docs/evidence/vercel-build.txt`) |
 | Clean clone, as a CI or Vercel would build it | `git clone`, `npm ci`, `npm run build` | passes |
 | `vercel.json` against Vercel's published schema (with a negative control) | ajv, draft-07 | valid; the broken copy is rejected |
