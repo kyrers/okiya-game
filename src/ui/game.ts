@@ -472,8 +472,9 @@ export class GameScreen {
     const names = [1, 2].map((p) => this.seats[p as Player].querySelector<HTMLElement>('.seat-name')).filter((n): n is HTMLElement => !!n);
     // Measured with the clamp lifted, where the name is laid out in full: a clamped box in Chromium
     // draws an ellipsis while reporting neither a scroll overflow nor text past its edge. Too wide
-    // (with a pixel to spare: text widths differ by fractions from one screen to another), or more
-    // lines than the box shows.
+    // (with a pixel to spare: text widths differ by fractions from one screen to another, and with
+    // no spare a name 0.3 px too wide at scale 2 showed as "Comput…"; keep it), or more lines than
+    // the box shows.
     const over = () => {
       const allowed = names.map((n) => {
         const cs = getComputedStyle(n);
