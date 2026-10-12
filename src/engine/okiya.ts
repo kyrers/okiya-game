@@ -17,9 +17,10 @@
  *    (horizontal, vertical or diagonal), or a 2x2 square of their tokens.
  *  - A player also wins if the opponent has no legal move ("blocked").
  *  - Full garden: the PDF does not say what happens when the 16th tile is
- *    taken without a formation. We apply the blocking rule literally (the
- *    opponent cannot make a move, so they lose); see FULL_GARDEN_RULE. The
- *    result carries `fullGarden: true` so the UI can explain it.
+ *    taken without a formation. The designer, Bruno Cathala, ruled that the
+ *    game is a tie (BoardGameGeek thread 984327, 2013-05-30: "in this case,
+ *    it's a tie !"). The engine ends such a game with `winner: null` and
+ *    reason 'full'.
  *  - Victory-points variant: the winner scores as many points as there are
  *    garden tiles left in the garden.
  *
@@ -43,34 +44,24 @@ export type Player = 1 | 2;
 /** A board cell is either a garden tile still in place, or a player's token. */
 export type Cell = { kind: 'tile'; tile: Tile } | { kind: 'token'; player: Player };
 
-export const WIN_REASONS = ['row', 'column', 'diagonal', 'square', 'blocked'] as const;
-export type WinReason = (typeof WIN_REASONS)[number];
+/** How a game can end. 'full' = the 16th tile was taken without a formation: a tie. */
+export const END_REASONS = ['row', 'column', 'diagonal', 'square', 'blocked', 'full'] as const;
+export type EndReason = (typeof END_REASONS)[number];
+export type FormationReason = 'row' | 'column' | 'diagonal' | 'square';
 
-export function isWinReason(x: unknown): x is WinReason {
-  return typeof x === 'string' && (WIN_REASONS as readonly string[]).includes(x);
+export function isEndReason(x: unknown): x is EndReason {
+  return typeof x === 'string' && (END_REASONS as readonly string[]).includes(x);
 }
 
-export interface WinInfo {
-  readonly winner: Player;
-  readonly reason: WinReason;
-  /** Board indices (0..15) of the winning formation; empty for a block. */
+export interface GameResult {
+  /** The winner, or null for a tie (reason 'full'). */
+  readonly winner: Player | null;
+  readonly reason: EndReason;
+  /** Board indices (0..15) of the winning formation; empty for a block or a tie. */
   readonly cells: readonly number[];
-  /** Garden tiles still in the garden when the game ended (= victory points). */
+  /** Garden tiles still in the garden when the game ended (= the winner's victory points). */
   readonly tilesRemaining: number;
-  /**
-   * True when the game ended because the garden was emptied without a formation
-   * (a block by exhaustion). Interpretation, not stated in the PDF: see FULL_GARDEN_RULE.
-   */
-  readonly fullGarden?: boolean;
 }
-
-/**
- * How a full garden without a formation is ruled. The official PDF is silent.
- * 'blocked' = the player who took the last tile wins, because the opponent cannot
- * make a move (literal reading of the blocking rule; used by this project).
- * A 'draw' ruling is not implemented; this constant documents the decision point.
- */
-export const FULL_GARDEN_RULE: 'blocked' = 'blocked';
 
 export interface Move {
   readonly player: Player;
@@ -84,7 +75,8 @@ export interface GameState {
   /** The tile removed on the previous move; null before the first move. */
   readonly lastTile: Tile | null;
   readonly history: readonly Move[];
-  readonly win: WinInfo | null;
+  /** Set once the game is over. */
+  readonly result: GameResult | null;
 }
 
 export const BOARD_SIZE = 4;
@@ -150,7 +142,7 @@ export function indexOf(row: number, col: number): number {
  * Order matters for deterministic reporting: rows, columns, diagonals, squares.
  */
 export interface Formation {
-  readonly reason: Exclude<WinReason, 'blocked'>;
+  readonly reason: FormationReason;
   readonly cells: readonly number[];
 }
 
@@ -215,7 +207,7 @@ export function newGameFromTiles(tiles: readonly Tile[], first: Player = 1): Gam
     current: first,
     lastTile: null,
     history: [],
-    win: null,
+    result: null,
   };
 }
 
@@ -230,7 +222,7 @@ export function newGame(seed: number, first: Player = 1): GameState {
  *  - Later moves: any remaining tile sharing veg or symbol with `lastTile`.
  */
 export function legalMoves(state: GameState): number[] {
-  if (state.win) return [];
+  if (state.result) return [];
   const out: number[] = [];
   for (let i = 0; i < CELL_COUNT; i++) {
     const cell = state.board[i];
@@ -262,11 +254,12 @@ export function tilesRemaining(board: readonly Cell[]): number {
 
 /**
  * Apply a move: the current player takes the tile at `index` and replaces it
- * with one of their tokens. Throws on an illegal move. Resolves the win check
- * (formation first, then "opponent is blocked").
+ * with one of their tokens. Throws on an illegal move. Resolves the end of the
+ * game: a formation wins first; otherwise an emptied garden is a tie; otherwise
+ * an opponent without a legal move is blocked and loses.
  */
 export function applyMove(state: GameState, index: number): GameState {
-  if (state.win) throw new Error('game is over');
+  if (state.result) throw new Error('game is over');
   if (!isLegalMove(state, index)) throw new Error(`illegal move ${index}`);
   const cell = state.board[index];
   if (cell.kind !== 'tile') throw new Error('unreachable: legal move on non-tile');
@@ -279,16 +272,18 @@ export function applyMove(state: GameState, index: number): GameState {
     current: opponent(player),
     lastTile: cell.tile,
     history: [...state.history, move],
-    win: null,
+    result: null,
   };
   const remaining = tilesRemaining(board);
   const formation = findWin(board, player);
   if (formation) {
-    return { ...next, win: { winner: player, reason: formation.reason, cells: formation.cells, tilesRemaining: remaining } };
+    return { ...next, result: { winner: player, reason: formation.reason, cells: formation.cells, tilesRemaining: remaining } };
+  }
+  if (remaining === 0) {
+    return { ...next, result: { winner: null, reason: 'full', cells: [], tilesRemaining: 0 } };
   }
   if (legalMoves(next).length === 0) {
-    const fullGarden = remaining === 0;
-    return { ...next, win: { winner: player, reason: 'blocked', cells: [], tilesRemaining: remaining, ...(fullGarden ? { fullGarden: true } : {}) } };
+    return { ...next, result: { winner: player, reason: 'blocked', cells: [], tilesRemaining: remaining } };
   }
   return next;
 }
@@ -300,22 +295,30 @@ export function tokensInHand(state: GameState, player: Player): number {
 
 /* ---------- Match layer (End of the game variants from the PDF) ---------- */
 
-export type MatchMode = 'single' | 'sets3' | 'points10' | 'points15' | 'points20';
+export const MATCH_MODES = ['single', 'sets3', 'points10', 'points15', 'points20'] as const;
+export type MatchMode = (typeof MATCH_MODES)[number];
+
+export function isMatchMode(x: unknown): x is MatchMode {
+  return typeof x === 'string' && (MATCH_MODES as readonly string[]).includes(x);
+}
 
 export interface MatchState {
   readonly mode: MatchMode;
   readonly wins: Readonly<Record<Player, number>>;
   readonly points: Readonly<Record<Player, number>>;
+  readonly ties: number;
   readonly gamesPlayed: number;
-  /** Winner of the whole match, if decided. */
+  /** True once the match is decided (or, for a single game, once it has been played). */
+  readonly over: boolean;
+  /** Winner of the whole match; null while it runs, and for a single game that was tied. */
   readonly champion: Player | null;
-  /** Who starts the next game: the loser of the previous one. */
+  /** Who opens the next game. */
   readonly nextFirst: Player;
 }
 
 /** `first` must be chosen at random by the caller for the first game (PDF: "chosen randomly"). */
 export function newMatch(mode: MatchMode, first: Player): MatchState {
-  return { mode, wins: { 1: 0, 2: 0 }, points: { 1: 0, 2: 0 }, gamesPlayed: 0, champion: null, nextFirst: first };
+  return { mode, wins: { 1: 0, 2: 0 }, points: { 1: 0, 2: 0 }, ties: 0, gamesPlayed: 0, over: false, champion: null, nextFirst: first };
 }
 
 export function pointsTarget(mode: MatchMode): number {
@@ -327,21 +330,30 @@ export function pointsTarget(mode: MatchMode): number {
   }
 }
 
-/** Record a finished game into the match. */
-export function recordGame(match: MatchState, win: WinInfo): MatchState {
-  if (match.champion) throw new Error('match is over');
-  const w = win.winner;
+/**
+ * Record a finished game into the match. The game must have been opened by `match.nextFirst`.
+ * - A win adds a won game and, in a points match, the tiles left in the garden.
+ * - The loser of a game opens the next one (PDF). After a tie there is no loser; the player who
+ *   did not open the tied game opens the next one (our interpretation: openings alternate).
+ */
+export function recordGame(match: MatchState, result: GameResult): MatchState {
+  if (match.over) throw new Error('match is over');
+  if (result.winner === null) {
+    return { ...match, ties: match.ties + 1, gamesPlayed: match.gamesPlayed + 1, over: match.mode === 'single', nextFirst: opponent(match.nextFirst) };
+  }
+  const w = result.winner;
   const wins = { ...match.wins, [w]: match.wins[w] + 1 };
-  const points = { ...match.points, [w]: match.points[w] + win.tilesRemaining };
+  const points = { ...match.points, [w]: match.points[w] + result.tilesRemaining };
   let champion: Player | null = null;
   if (match.mode === 'single') champion = w;
-  else if (match.mode === 'sets3' && wins[w] >= 3) champion = w;
-  else if (points[w] >= pointsTarget(match.mode)) champion = w;
+  else if (match.mode === 'sets3') champion = wins[w] >= 3 ? w : null;
+  else champion = points[w] >= pointsTarget(match.mode) ? w : null;
   return {
     ...match,
     wins,
     points,
     gamesPlayed: match.gamesPlayed + 1,
+    over: champion !== null,
     champion,
     nextFirst: opponent(w), // the loser of the previous game starts
   };

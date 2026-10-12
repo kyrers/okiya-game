@@ -74,11 +74,11 @@ describe('tactical guard (careful rivals)', () => {
     while (out.length < count) {
       let g = newGame(seed + n++);
       const stopAt = 2 + Math.floor(rng() * 10);
-      for (let i = 0; i < stopAt && !g.win; i++) {
+      for (let i = 0; i < stopAt && !g.result; i++) {
         const legal = legalMoves(g);
         g = applyMove(g, legal[Math.floor(rng() * legal.length)]);
       }
-      if (!g.win) out.push(g);
+      if (!g.result) out.push(g);
     }
     return out;
   }
@@ -124,7 +124,7 @@ describe('tactical guard (careful rivals)', () => {
     }
   });
 
-  it('a careless rival may hand over an immediate win (that is what makes station 1 easy)', () => {
+  it('a careless AI may hand over an immediate win (that is what makes Easy easy)', () => {
     let handed = 0;
     for (const g of randomPositions(600, 77)) {
       const t = tactics(g);

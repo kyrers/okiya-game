@@ -12,5 +12,5 @@ export function stateFromPicture(picture: string, current: Player, lastTile: Til
     if (code === '2') return { kind: 'token', player: 2 };
     return { kind: 'tile', tile: parseTile(code) };
   });
-  return { board, current, lastTile, history: [], win: null };
+  return { board, current, lastTile, history: [], result: null };
 }
