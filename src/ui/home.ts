@@ -54,7 +54,7 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
 
 function summary(v: MatchView): string {
   const s = v.saved.setup;
-  const who = s.opponent === 'computer' ? `vs Computer, ${DIFFICULTY_WORD[s.difficulty]}` : `${esc(s.names[0])} vs ${esc(s.names[1])}`;
+  const who = s.opponent === 'computer' ? `vs Computer, ${DIFFICULTY_WORD[s.difficulty]}` : `<bdi>${esc(s.names[0])}</bdi> vs <bdi>${esc(s.names[1])}</bdi>`;
   // A no-break space before each separator, so a line never starts with one.
   const parts = [who, MODE_WORD[s.mode]];
   if (s.mode !== 'single') parts.push(`Game ${v.gameNumber}`);

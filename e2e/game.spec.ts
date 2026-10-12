@@ -199,6 +199,19 @@ test.describe('against the computer', () => {
     expect(usedWorker).toBe(true);
   });
 
+  test('two players on one device have no undo, on screen or in the menu', async ({ page, hasTouch }) => {
+    const g = findGame((s) => s.history.length >= 6, 81);
+    await seedMatch(page, saved(HOT_SEAT, [{ tiles: g.tiles, first: g.first, moves: g.moves.slice(0, 2) }]));
+    await continueMatch(page);
+    await tap(page, g.moves[2], hasTouch);
+    await expect(page.getByRole('button', { name: 'Undo' })).toBeHidden();
+    await page.getByRole('button', { name: 'Menu' }).click();
+    const menu = page.getByRole('dialog', { name: 'Menu' });
+    await expect(menu.getByRole('button', { name: 'How to play' })).toBeVisible();
+    await expect(menu.getByRole('button', { name: 'Undo' })).toHaveCount(0);
+    await expect(menu.getByRole('button', { name: 'Home', exact: true })).toBeVisible();
+  });
+
   test('undo takes back your move and the computer’s reply', async ({ page, hasTouch }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const g = findGame(() => true, 11);

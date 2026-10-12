@@ -58,6 +58,8 @@ export class GameScreen {
   private resizeObserver: ResizeObserver | null = null;
   private contentObserver: ResizeObserver | null = null;
   private fitPending = false;
+  private fitSize = '';
+  private readonly fitStore = new Map<string, { level: number; room: number; maxRoom: number; lastRoom: number }>();
   private onFonts: (() => void) | null = null;
   private deniedIndex: number | null = null;
 
@@ -103,17 +105,16 @@ export class GameScreen {
     if (typeof ResizeObserver !== 'undefined') {
       this.resizeObserver = new ResizeObserver(() => this.fitSeats());
       this.resizeObserver.observe(this.el);
-      this.contentObserver = new ResizeObserver(() => {
-        if (this.fitPending) return;
-        this.fitPending = true;
-        requestAnimationFrame(() => {
-          this.fitPending = false;
-          if (!this.destroyed) this.fitSeats();
-        });
-      });
+      this.contentObserver = new ResizeObserver(() => this.refitSoon());
       this.observeSeatContent();
     }
-    this.onFonts = () => !this.destroyed && this.fitSeats();
+    this.onFonts = () => {
+      if (this.destroyed) return;
+      // New metrics: measure again from the start, on the next frame. WebKit fires font events in
+      // the middle of a style update, where measuring returns the layout from before any change.
+      this.fitStore.clear();
+      this.refitSoon();
+    };
     document.fonts?.addEventListener('loadingdone', this.onFonts);
     void document.fonts?.ready.then(this.onFonts);
   }
@@ -132,6 +133,15 @@ export class GameScreen {
     if (this.onFonts) document.fonts?.removeEventListener('loadingdone', this.onFonts);
   }
 
+  private refitSoon(): void {
+    if (this.fitPending) return;
+    this.fitPending = true;
+    requestAnimationFrame(() => {
+      this.fitPending = false;
+      if (!this.destroyed) this.fitSeats();
+    });
+  }
+
   private observeSeatContent(): void {
     if (!this.contentObserver) return;
     this.contentObserver.disconnect();
@@ -148,11 +158,15 @@ export class GameScreen {
   }
 
   get canUndo(): boolean {
-    return !this.animating && undo(this.view, this.undoSeat()) !== null;
+    return this.setup.opponent === 'computer' && !this.animating && undo(this.view, this.undoSeat()) !== null;
+  }
+
+  get hasUndo(): boolean {
+    return this.setup.opponent === 'computer';
   }
 
   undo(): void {
-    if (this.animating) return;
+    if (!this.hasUndo || this.animating) return;
     const u = undo(this.view, this.undoSeat());
     if (!u) return;
     this.generation++;
@@ -375,9 +389,11 @@ export class GameScreen {
   }
 
   private updateUndo(): void {
+    // Undo is for play against the computer only: between two people at one screen, as at the
+    // table, a tile taken stays taken.
     const can = !this.animating && undo(this.view, this.undoSeat()) !== null;
     this.undoBtn.disabled = !can;
-    this.undoBtn.hidden = !!this.view.game.result;
+    this.undoBtn.hidden = this.setup.opponent !== 'computer' || !!this.view.game.result;
   }
 
   private renderSeats(): void {
@@ -387,20 +403,118 @@ export class GameScreen {
   }
 
   /**
-   * A seat never lets its content spill: when it does not fit the room the layout gives it, it
-   * sheds detail in steps until it does (1: the opener's note; 2: the row of small tokens, shown as
-   * a count instead; 3: a size smaller). Measured, so it holds for any screen, text size or name.
+   * The seats never let their content spill, and never drop what a player needs to read. When a
+   * seat does not fit the room the layout gives it, both seats step together: (1) the row of small
+   * tokens becomes a count; (2) the seats take a little room from the garden, at most a tenth of
+   * it; (3) the type steps down a size, and the seats may take up to 15% of the garden; (4) only as
+   * a last resort, which the size sweep proves no tested screen reaches, the opener's note is left
+   * out. Names shrink to fit, then wrap, before
+   * any of this. The steps reached are remembered per screen size and per phase (playing, over),
+   * and only ever go up, so the garden keeps its size for a whole game.
    */
   private fitSeats(): void {
-    for (const p of [1, 2] as const) {
-      const seat = this.seats[p];
-      seat.classList.remove('fit-1', 'fit-2', 'fit-3');
-      for (const step of ['fit-1', 'fit-2', 'fit-3']) {
-        if (!spills(seat)) break;
-        seat.classList.add(step);
-      }
+    const size = `${innerWidth}x${innerHeight}`;
+    if (size !== this.fitSize) {
+      this.fitSize = size;
+      this.fitStore.clear();
+    }
+    const key = this.view.game.result ? 'over' : 'playing';
+    const fit = this.fitStore.get(key) ?? { level: 0, room: 0, maxRoom: -1, lastRoom: -1 };
+    this.applyFit(fit);
+    if (fit.maxRoom < 0) {
+      // A tenth of the garden as it is with no extra room (15% as a last resort, before a note
+      // would be left out), measured once; and never so much that a tile drops under 44 px, a
+      // finger's width (a tile is 22% of the garden).
+      this.el.style.setProperty('--seat-room', '0px');
+      const garden = this.board.el.getBoundingClientRect().width;
+      const floor = (garden - 44 / 0.22) / 2;
+      fit.maxRoom = Math.max(0, Math.floor(Math.min(garden * 0.1, floor)));
+      fit.lastRoom = Math.max(0, Math.floor(Math.min(garden * 0.15, floor)));
+      this.applyFit(fit);
+    }
+    const spill = () => spills(this.seats[1]) || spills(this.seats[2]);
+    if (fit.level < 1 && spill()) {
+      fit.level = 1;
+      this.applyFit(fit);
+    }
+    while (fit.level === 1 && spill() && fit.room < fit.maxRoom) {
+      fit.room = Math.min(fit.maxRoom, fit.room + 6);
+      this.applyFit(fit);
+    }
+    if (fit.level < 2 && spill()) {
+      fit.level = 2;
+      this.applyFit(fit);
+    }
+    while (fit.level === 2 && spill() && fit.room < fit.lastRoom) {
+      fit.room = Math.min(fit.lastRoom, fit.room + 4);
+      this.applyFit(fit);
+    }
+    if (fit.level < 3 && spill()) {
+      fit.level = 3;
+      this.applyFit(fit);
+    }
+    this.fitStore.set(key, fit);
+  }
+
+  private applyFit(fit: { level: number; room: number }): void {
+    for (const n of [1, 2, 3]) this.el.classList.toggle(`fit-${n}`, fit.level >= n);
+    this.el.style.setProperty('--seat-room', `${fit.room}px`);
+    this.fitNames(fit.level);
+  }
+
+  /**
+   * Both names at one size, whole, by one rule: the name shares its line with the token count and
+   * the score down to 80% (58% in tight seats); then the count and score go to the line below and
+   * the name has the line to itself, down to 58%; then it wraps onto two lines, breaking inside a
+   * word if it must, and finally three. Only a name that fits none of these would be cut short; the
+   * sweep shows none is.
+   */
+  private fitNames(level: number): void {
+    const names = [1, 2].map((p) => this.seats[p as Player].querySelector<HTMLElement>('.seat-name')).filter((n): n is HTMLElement => !!n);
+    // Measured with the clamp lifted, where the name is laid out in full: a clamped box in Chromium
+    // draws an ellipsis while reporting neither a scroll overflow nor text past its edge. Too wide
+    // (with a pixel to spare: text widths differ by fractions from one screen to another), or more
+    // lines than the box shows.
+    const over = () => {
+      const allowed = names.map((n) => {
+        const cs = getComputedStyle(n);
+        const clamp = parseInt(cs.getPropertyValue('-webkit-line-clamp'), 10);
+        return cs.whiteSpace === 'nowrap' ? 1 : Number.isFinite(clamp) ? clamp : 1;
+      });
+      this.el.classList.add('names-measuring');
+      const result = names.some((n, i) => {
+        const cs = getComputedStyle(n);
+        const b = n.getBoundingClientRect();
+        const left = b.left + parseFloat(cs.paddingLeft);
+        const right = b.right - parseFloat(cs.paddingRight);
+        const range = document.createRange();
+        range.selectNodeContents(n);
+        const rects = [...range.getClientRects()].filter((r) => r.width > 0);
+        const lines = new Set(rects.map((r) => Math.round(r.top))).size;
+        // A line past either edge (a right-to-left name overflows on the left), or within a pixel
+        // of the whole width.
+        return lines > allowed[i] || rects.some((r) => r.right > right || r.left < left || r.width > right - left - 1);
+      });
+      this.el.classList.remove('names-measuring');
+      return result;
+    };
+    // Tight seats (the type has already stepped down) cannot spare a line for the count and
+    // score: the name shrinks further beside them first.
+    const shared: number[] = level >= 2 ? [1, 0.9, 0.8, 0.72, 0.64, 0.58] : [1, 0.9, 0.8];
+    const steps: [string, number][] = [
+      ...shared.map((k): [string, number] => ['', k]),
+      ['ids-stacked', 1], ['ids-stacked', 0.9], ['ids-stacked', 0.8], ['ids-stacked', 0.72], ['ids-stacked', 0.64], ['ids-stacked', 0.58],
+      ['ids-stacked names-wrap', 0.72], ['ids-stacked names-wrap', 0.64], ['ids-stacked names-wrap', 0.58],
+      ['ids-stacked names-wrap names-wrap-3', 0.58],
+    ];
+    for (const [cls, scale] of steps) {
+      this.el.classList.remove('ids-stacked', 'names-wrap', 'names-wrap-3');
+      if (cls) this.el.classList.add(...cls.split(' '));
+      this.el.style.setProperty('--name-scale', String(scale));
+      if (!over()) return;
     }
   }
+
 
   private renderSeat(p: Player): void {
     const el = this.seats[p];
@@ -419,7 +533,8 @@ export class GameScreen {
     const idLine = `
       <div class="seat-id">
         <span class="seat-chip">${tokenSvg(p)}</span>
-        <h2 class="seat-name">${escape(name)}</h2>
+        <h2 class="seat-name" dir="auto">${escape(name)}</h2>
+        <i class="seat-break" aria-hidden="true"></i>
         <span class="seat-count" aria-hidden="true">${left}<span class="seat-count-of">/${TOKENS_PER_PLAYER}</span></span>
         ${this.scoreHtml(p)}
       </div>
@@ -451,12 +566,12 @@ export class GameScreen {
       const denied = this.deniedIndex !== null && !computer;
       const nope = `<b class="nope-word">Not that tile</b>: `;
       if (!g.lastTile) {
-        const who = computer ? 'The computer opens' : verb(name, 'You open', `${escape(name)} opens`);
+        // The name is just above the card, so the card speaks to the player, as on later turns.
         const what = computer
-          ? `${who}<span class="dots" aria-hidden="true"></span>`
+          ? `The computer opens<span class="dots" aria-hidden="true"></span>`
           : denied
             ? `${nope}take any tile on the <b>outer ring</b>`
-            : `${who}: take any tile on the <b>outer ring</b>`;
+            : `Take any tile on the <b>outer ring</b>`;
         return `<div class="say-order${computer ? ' thinking' : ''}">
             <span class="say-tile ring" aria-hidden="true">${ringIcon()}</span>
             <p class="say-what">${what}</p>
@@ -487,15 +602,15 @@ export class GameScreen {
     let quiet = false;
     if (state === 'won') {
       result = matchOver ? verb(name, 'You win the match', 'Wins the match') : verb(name, 'You win', 'Wins');
-      reason = reasonWords(r.reason, loserName);
-      if (setup.mode.startsWith('points')) reason += ` · <b class="say-points">+${r.tilesRemaining} ${r.tilesRemaining === 1 ? 'point' : 'points'}</b>`;
+      reason = reasonWords(r.reason, loserName, nameHtml);
+      if (setup.mode.startsWith('points')) reason += ` · <b class="say-points">+${r.tilesRemaining}&nbsp;${r.tilesRemaining === 1 ? 'point' : 'points'}</b>`;
     } else if (state === 'lost') {
       quiet = true;
       result = matchOver ? verb(name, 'You lose the match', 'Loses the match') : verb(name, 'You lose', 'Loses');
-      reason = m.over ? '' : verb(name, 'You open the next game', 'Opens the next game');
+      reason = m.over ? '' : verb(name, 'You open the next&nbsp;game', 'Opens the next&nbsp;game');
     } else {
       result = 'Tie';
-      reason = reasonWords('full', '') + (!m.over && m.nextFirst === p ? ` · ${verb(name, 'you open next', 'opens next')}` : '');
+      reason = reasonWords('full', '') + (!m.over && m.nextFirst === p ? ` · ${verb(name, 'you open&nbsp;next', 'opens&nbsp;next')}` : '');
     }
     const actions = this.actionSeat() === p ? this.actionsHtml() : '';
     return `<div class="say-over${m.over ? ' match-over' : ''}">
@@ -579,10 +694,19 @@ function escape(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 }
 
+/** A player's name inside a sentence: escaped, and isolated so a right-to-left name keeps the
+ *  sentence's own order and punctuation. */
+function nameHtml(name: string): string {
+  return `<bdi>${escape(name)}</bdi>`;
+}
+
 /** True when any part of a seat's content reaches outside the seat's own box. */
 function spills(seat: HTMLElement): boolean {
-  const box = seat.getBoundingClientRect();
-  if (box.height === 0) return false;
+  const outer = seat.getBoundingClientRect();
+  if (outer.height === 0) return false;
+  // The seat's padding is breathing room at the screen's edge, not room for content.
+  const cs = getComputedStyle(seat);
+  const box = { top: outer.top + parseFloat(cs.paddingTop), bottom: outer.bottom - parseFloat(cs.paddingBottom) };
   for (const child of seat.querySelectorAll('.seat-id, .seat-pips, .seat-say > *')) {
     const r = child.getBoundingClientRect();
     if (r.height === 0) continue;

@@ -28,7 +28,9 @@ export default defineConfig({
     { name: 'android-360', use: { browserName: 'chromium', viewport: { width: 360, height: 640 }, deviceScaleFactor: 3, ...phone } },
     { name: 'ipad-portrait', use: { ...devices['iPad (gen 7)'], browserName: 'webkit' } },
     { name: 'ipad-landscape', use: { ...devices['iPad (gen 7) landscape'], browserName: 'webkit' } },
-    { name: 'desktop-chrome', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } } },
+    // A high-density laptop screen: text widths differ by fractions of a pixel from scale 1, which
+    // is where a clipped name once hid (Firefox keeps scale 1).
+    { name: 'desktop-chrome', use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 } },
     { name: 'desktop-firefox', use: { ...devices['Desktop Firefox'], viewport: { width: 1280, height: 800 } } },
     { name: 'desktop-safari', use: { ...devices['Desktop Safari'], viewport: { width: 1920, height: 1080 } } },
   ],

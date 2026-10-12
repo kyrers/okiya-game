@@ -136,11 +136,11 @@ export class App {
     if (!g) return;
     const items: MenuItem[] = [
       { id: 'resume', label: 'Back to the game', icon: 'play' },
-      { id: 'undo', label: 'Undo', icon: 'undo', disabled: !g.canUndo },
+      ...(g.hasUndo ? [{ id: 'undo', label: 'Undo', icon: 'undo', disabled: !g.canUndo } as MenuItem] : []),
       { id: 'rules', label: 'How to play', icon: 'book' },
       { id: 'settings', label: 'Settings', icon: 'sliders' },
       { id: 'restart', label: 'Restart the match', icon: 'restart' },
-      { id: 'home', label: 'Home (the match is saved)', icon: 'home' },
+      { id: 'home', label: 'Home', icon: 'home' },
     ];
     const list = menuList(items, async (id) => {
       if (id === 'resume') return this.closeSheet();

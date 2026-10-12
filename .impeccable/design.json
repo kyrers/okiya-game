@@ -719,7 +719,7 @@
       "**Do** split every screen into the vermilion and indigo halves with the paper garden on the seam, stacked in portrait, side by side from aspect 5/4.",
       "**Do** light only the half of the player to move, with the lit dye and a radial light brightest at the seam, animating opacity alone.",
       "**Do** put cream type on the dyes and ink type on paper, and swap a control's material when it moves from cloth to paper.",
-      "**Do** size the garden first and let short screens drop pips and notes before the garden shrinks.",
+      "**Do** size the garden first; let short screens drop the pips before the garden gives way, and let it give a tenth, 15% as a last resort (tiles never below 44px), rather than drop an instruction or note.",
       "**Do** keep every touch target at least 44px.",
       "**Do** blend the cloth and paper texture tiles (256px, soft-light) under any new cloth or paper surface.",
       "**Do** draw new icons as SVG on the 24px grid with a 1.8 stroke, round caps and joins, in currentColor.",

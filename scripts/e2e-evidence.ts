@@ -55,7 +55,7 @@ function section(title: string, path: string): { text: string; start: string } {
 
 const [mainPath, sweepPath, perfPath] = process.argv.slice(2);
 const main = section('main (npx playwright test --grep-invert "@perf|@sweep", 6 workers)', mainPath);
-const sweep = section('sweep (npx playwright test --grep @sweep --workers=3): the layout rules at about 190 sizes per state in WebKit (iphone-15) and Chromium (pixel-7) and 7 desktop sizes (desktop-chrome); every control reached by a real tap through two whole matches at 11 phone and tablet sizes (iphone-15, pixel-7) and 3 desktop sizes (the three desktop browsers)', sweepPath);
+const sweep = section('sweep (npx playwright test --grep @sweep --workers=6): the layout rules on 13 screen states at about 190 sizes each in WebKit (iphone-15) and Chromium as a phone (pixel-7), and at those sizes plus 7 desktop sizes in desktop Chrome at scale 2 and Firefox at scale 1 windows (desktop-chrome, desktop-firefox); every control reached by a real tap through two whole matches at 11 phone and tablet sizes (iphone-15, pixel-7, desktop-chrome) and 3 desktop sizes (the three desktop browsers)', sweepPath);
 const perf = section('perf (npx playwright test --grep @perf --workers=1)', perfPath);
 const when = new Date(main.start).toISOString().slice(0, 16).replace('T', ' ');
 console.log(`End-to-end results of the final run on the production build (${when} UTC), 11 device profiles.

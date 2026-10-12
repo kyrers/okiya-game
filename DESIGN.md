@@ -186,7 +186,7 @@ components:
 
 **Creative North Star: "The Shared Table"**
 
-The game is a table shared by two people. Every screen is the same object seen from above: a vermilion cloth half and an indigo cloth half, meeting at a seam, with a warm paper garden board lying across that seam. The half whose turn it is lights up; the waiting half sinks to a darker, muted dye. Nothing floats on a neutral page. A thin top bar carries only the match label and two icon buttons; everything about a player (their name, tokens in hand, the tile they must answer, the result) sits in their own half of the cloth.
+The game is a table shared by two people. Every screen is the same object seen from above: a vermilion cloth half and an indigo cloth half, meeting at a seam, with a warm paper garden board lying across that seam. The half whose turn it is lights up; the waiting half sinks to a darker, muted dye. Nothing floats on a neutral page. A thin top bar carries only the match label and its icon buttons (Menu, and Undo against the computer); everything about a player (their name, tokens in hand, the tile they must answer, the result) sits in their own half of the cloth.
 
 The world is made of a few real materials. The dyes and the paper carry raster texture (a plain-weave cloth tile and a fibre paper tile, both 256px seamless tiles, soft-light blended onto flat colour). Tokens are lacquered discs with a radial sheen. The garden's sixteen tiles are the client's own SVG art, kept as drawn; the system frames them and never redraws them. Paper surfaces (the order card, the sheets) are the only places interface text sits on light; everything else is cream type on dye.
 
@@ -247,7 +247,7 @@ Two saturated dyes, each with a lit and a sunk state, over a warm paper-and-ink 
 ### Hierarchy
 - **Display** (800, clamp(3rem, 15vw, 6rem) portrait, clamp(3rem, 7vw, 6rem) landscape, 0.95, 0.04em tracking): the Okiya wordmark on home only, with a soft 0 4px 24px shadow.
 - **Headline** (800, 1.5rem, 1.2): sheet titles. Rules section heads use the same face at 1.3rem; the about heading at 1.2rem.
-- **Title** (800, 1.375em of the seat size, 1.15): player names in the seats. Game results use the display face at 1.6em (1.3em for a quiet result such as a tie). Points totals use it at 1.45em.
+- **Title** (800, 1.375em of the seat size, 1.5): player names in the seats, the line tall enough for Shippori's descenders. A long name shrinks to fit one line (down to 58%), then wraps onto two or three lines, both names always at one size; an ellipsis (the Latin one, on the baseline) is a last resort no tested screen reaches. Game results use the display face at 1.6em (1.3em for a quiet result such as a tie). Points totals use it at 1.45em.
 - **Body** (400, 1rem, 1.45): default text. Rules prose runs at 1.55 line height with a 62ch measure; the order card's instruction at 1.0625em, 1.3, balanced.
 - **Strong** (700): button labels, tile names inside instructions, choice and toggle titles, legends.
 - **Label** (600, 0.9375rem, 1.2, 0.01em): the match label in the top bar, link buttons, menu items (1.0625rem).
@@ -266,18 +266,18 @@ The screen is fixed to the visual viewport (100dvh where supported) and never sc
 
 **Portrait (aspect below 5/4):** a single column grid of top bar, indigo seat, garden, vermilion seat, bottom inset. The garden takes the smaller of the full width minus gutters, the height left after the top bar and two minimum seat heights, and 640px. The two dyes meet at the garden's centre line, computed from the top bar and insets (home measures it live). The indigo seat aligns its contents to the garden's top edge, the vermilion seat to its bottom edge, so each player's information sits against the garden on their side.
 
-**Landscape (aspect 5/4 and wider):** vermilion seat left, garden centre, indigo seat right, the top bar spanning above. Seats are clamp(12.5rem, 22vw, 23.75rem) wide; the garden takes what remains up to 760px. Both seats start level with the garden's top edge so the two names share a line.
+**Landscape (aspect 5/4 and wider):** vermilion seat left, garden centre, indigo seat right, the top bar spanning above. Seats are clamp(9.5rem, 22vw, 23.75rem) wide; the garden takes what remains up to 760px. Both seats start level with the garden's top edge so the two names share a line.
 
 **Home** repeats the same composition: wordmark in the indigo half, a freshly dealt garden on the seam, the actions in the vermilion half (side by side in landscape, up to 600px garden).
 
 **Rhythm:** gutters are clamp(12px, 3.6vw, 32px) in portrait and clamp(12px, 1.6vw, 28px) in landscape. The garden keeps a 10px gap to the halves (6px on very short landscape screens). Component spacing uses 4, 8, 10, 12, 16 and 20px; inside seats spacing is in em.
 
-**Short screens** step the layout down rather than scrolling: at 760px tall and 620px tall (portrait) the top bar and minimum seat height shrink, the seat font steps down, and the row of token pips gives way to a numeric count. A finished game raises the minimum seat height so the result and its buttons fit; the garden steps back a little to make room.
+**Short screens** step the layout down rather than scrolling: at 760px tall and 620px tall (portrait) the top bar and minimum seat height shrink and the seat font steps down. Beyond that the seats fit themselves by measurement, both together: the row of token pips gives way to a numeric count; then the seats take room from the garden, at most a tenth of it and never below 44px tiles; then the seat type steps down a size, and as a last resort the seats may take up to 15% of the garden. What a player must read (the instruction, the opener's note, the result) is never dropped. The steps are kept per screen size, so the garden holds its size through a game. A finished game raises the minimum seat height so the result and its buttons fit; the garden steps back a little to make room.
 
 **Layout reserves are in rem**, so a larger default text size shrinks the garden, never the seats.
 
 ### Named Rules
-**The Garden First Rule.** The garden is sized first and is the largest element at every viewport; seats, bars and cards fit around it, and short screens drop secondary detail before the garden shrinks further.
+**The Garden First Rule.** The garden is sized first and is the largest element at every viewport; seats, bars and cards fit around it. Short screens drop decoration (the pips) before the garden gives way, and the garden gives a tenth of itself (15% as a last resort), never below 44px tiles, so that no instruction is lost. It never changes size during a game.
 
 ## Elevation & Depth
 
@@ -333,7 +333,7 @@ Dialogs are paper sheets: docked to the bottom with 20px top corners on phones, 
 ### Inputs / Fields
 - **Segmented control:** paper-tray with 4px padding and 12px radius; options 44px tall, bold, ink-2; the selected option becomes paper with a sunk-vermilion label, a small shadow and a 2px vermilion underline inset.
 - **Choice card:** paper, 12px radius, warm hairline inset; a 26px circular mark on the right fills vermilion with a cream check when selected, and the card gains a 2px vermilion inset ring.
-- **Name field:** paper, 12px radius, warm hairline inset, the player's token chip and an ink-3 label at the left; focus thickens the inset ring to 2px vermilion.
+- **Name field:** paper, 12px radius, warm hairline inset; the player's token chip at the left, the ink-3 colour label above the input, so the input has the field's whole width (16px text, which iOS does not zoom); focus thickens the inset ring to 2px vermilion.
 - **Switch:** 50 x 30px pill, warm tan off, vermilion on, white 24px knob sliding 20px.
 - **Menu item:** 52px row, 600 weight, ink text, vermilion icon, warm hairline between rows; disabled at 40% ink.
 

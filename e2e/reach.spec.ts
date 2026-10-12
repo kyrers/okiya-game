@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { boardCodes } from './helpers';
+import { LONG_NAMES, boardCodes } from './helpers';
 
 /**
  * Every control a player needs, reached with a real tap (or click) at the sizes most at risk: no
@@ -16,7 +16,9 @@ const DESKTOPS: [number, number][] = [[1024, 640], [1440, 900], [1920, 1080]];
 
 function sizesFor(project: string): [number, number][] {
   if (project === 'iphone-15' || project === 'pixel-7') return PHONES_AND_TABLETS;
-  if (project === 'desktop-chrome' || project === 'desktop-firefox' || project === 'desktop-safari') return DESKTOPS;
+  // A desktop browser window made as small as a phone, with a mouse.
+  if (project === 'desktop-chrome') return [...DESKTOPS, ...PHONES_AND_TABLETS];
+  if (project === 'desktop-firefox' || project === 'desktop-safari') return DESKTOPS;
   return [];
 }
 
@@ -46,7 +48,7 @@ test.describe('every control reachable by a real tap @sweep', () => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
   });
 
-  for (let i = 0; i < Math.max(PHONES_AND_TABLETS.length, DESKTOPS.length); i++) {
+  for (let i = 0; i < DESKTOPS.length + PHONES_AND_TABLETS.length; i++) {
     test(`size ${i + 1}: set up, play two whole matches, menu, rules, home, restart`, async ({ page, hasTouch }, info) => {
       const size = sizesFor(info.project.name)[i];
       test.skip(!size, 'phones and tablets in one WebKit and one Chromium project; desktops in the three desktop browsers');
@@ -84,12 +86,16 @@ test.describe('every control reachable by a real tap @sweep', () => {
       await name1.fill('Diogo');
       const name2 = setup.locator('input[name="name2"]');
       await act(name2);
-      await name2.fill('Margarida Gyllenhaal');
+      // The longest name the form takes, with no space to break at.
+      await name2.fill(LONG_NAMES[1]);
       await act(setup.getByText('Victory points'));
       await act(setup.getByText('10 points'));
       await act(page.getByRole('button', { name: 'Start' }));
       await expect(page.locator('.game')).toBeVisible();
       await expect(page.locator('.seat-1 .seat-name')).toHaveText('Diogo');
+      await expect(page.locator('.seat-2 .seat-name')).toHaveText(LONG_NAMES[1]);
+      // Between two people at one screen there is no undo.
+      await expect(page.getByRole('button', { name: 'Undo' })).toBeHidden();
 
       await playToEnd();
       const next = page.locator('.say-actions [data-action="next"]');

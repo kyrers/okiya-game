@@ -115,11 +115,25 @@ export function tileSvg(t: Tile): string {
 }
 
 /** Small glyph of a single vegetation or symbol, used in the constraint legend. */
+/**
+ * Each small glyph's box is cropped across to its own drawing (measured with getBBox, plus room for
+ * strokes), keeping the shared 100-unit height so the glyphs stay in proportion to one another. Set
+ * in a line of text, a glyph is then as wide as what it draws: the cherry branch, which runs past
+ * the tile's edges, cannot touch the word before it, and the narrow poem slip leaves no gap.
+ */
+const GLYPH_X: Record<Vegetation | Symbol, [number, number]> = {
+  maple: [1, 105], cherry: [-6, 108], pine: [20, 92], iris: [26, 82],
+  sun: [22, 78], poem: [22, 65], bird: [18, 86], rain: [3, 97],
+};
+function glyphBox(k: Vegetation | Symbol): string {
+  const [x0, x1] = GLYPH_X[k];
+  return `${x0} 0 ${x1 - x0} 100`;
+}
 export function vegGlyph(v: Vegetation): string {
-  return `<svg viewBox="0 0 100 100" class="glyph glyph-${v}" aria-hidden="true"><g transform="translate(0 -30)">${VEG_ART[v]()}</g></svg>`;
+  return `<svg viewBox="${glyphBox(v)}" class="glyph glyph-${v}" aria-hidden="true"><g transform="translate(0 -30)">${VEG_ART[v]()}</g></svg>`;
 }
 export function symGlyph(s: Symbol): string {
-  return `<svg viewBox="0 0 100 100" class="glyph glyph-${s}" aria-hidden="true"><g transform="translate(0 14)">${SYM_ART[s]()}</g></svg>`;
+  return `<svg viewBox="${glyphBox(s)}" class="glyph glyph-${s}" aria-hidden="true"><g transform="translate(0 14)">${SYM_ART[s]()}</g></svg>`;
 }
 
 /** Small inline blossom used as the petal unit. */

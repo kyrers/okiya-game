@@ -41,7 +41,14 @@ export function article(word: string): string {
 /** "Take an iris or bird tile", with the two glyphs, as HTML. */
 export function orderHtml(t: Tile): string {
   const v = VEG_WORD[t.veg];
-  return `Take ${article(v)} <span class="w">${vegGlyph(t.veg)}${v}</span> or <span class="w">${symGlyph(t.sym)}${SYM_WORD[t.sym]}</span> tile`;
+  return `Take ${article(v)} ${glyphWords(vegGlyph(t.veg), v)} or ${glyphWords(symGlyph(t.sym), SYM_WORD[t.sym])} tile`;
+}
+
+/** A tile word in bold after its glyph; only the glyph and the first word never part ("rising sun"
+ *  may still break before "sun" in a narrow card). */
+function glyphWords(glyph: string, words: string): string {
+  const [first, ...rest] = words.split(' ');
+  return `<b class="w-words"><span class="w">${glyph}${first}</span>${rest.length ? ` ${rest.join(' ')}` : ''}</b>`;
 }
 
 export function orderText(t: Tile): string {
@@ -62,13 +69,14 @@ export function verb(name: string, you: string, other: string): string {
   return name === 'You' ? you : other;
 }
 
-export function reasonWords(reason: EndReason, loser: string): string {
+/** `show` turns the loser's name into what is printed: plain for speech, escaped markup on screen. */
+export function reasonWords(reason: EndReason, loser: string, show: (name: string) => string = (n) => n): string {
   switch (reason) {
     case 'row': return 'Four in a row';
     case 'column': return 'Four in a column';
     case 'diagonal': return 'Four on a diagonal';
     case 'square': return 'A square of four';
-    case 'blocked': return loser === 'You' ? 'You have no tile you may take' : `${loser} has no tile to take`;
+    case 'blocked': return loser === 'You' ? 'You have no tile you may take' : `${show(loser)} has no tile to take`;
     case 'full': return 'The garden is full';
   }
 }

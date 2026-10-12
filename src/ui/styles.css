@@ -2,6 +2,17 @@
    Okiya: two dyed halves, a paper garden on the seam.
    ========================================================================== */
 
+/* Shippori's ellipsis is the Japanese one, centred on the line; a Latin name cut short wants its
+   dots on the baseline. This face lends Source Sans 3's ellipsis (the file already shipped) to the
+   display stack, for that one character only. */
+@font-face {
+  font-family: 'Okiya Ellipsis';
+  src: url('@fontsource/source-sans-3/files/source-sans-3-latin-700-normal.woff2') format('woff2');
+  unicode-range: U+2026;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 :root {
   /* Dyes: lit for the player to move, sunk for the player waiting. */
   --verm: #b4381e;
@@ -35,7 +46,7 @@
   --cloth: url('./textures/cloth.webp');
   --paper-grain: url('./textures/paper.webp');
 
-  --font-display: 'Shippori Mincho B1', 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
+  --font-display: 'Okiya Ellipsis', 'Shippori Mincho B1', 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
   /* Source Sans 3 for everything that is not display: clean at small sizes on every system.
      Shippori Mincho B1 is used only at 18px and above, where it renders cleanly. */
   --font-ui: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -112,7 +123,7 @@ button:disabled { cursor: default; }
 .game {
   --board: min(
     calc(100vw - 2 * var(--gutter) - var(--sal) - var(--sar)),
-    calc(var(--vh) - var(--topbar) - var(--sat) - var(--sab) - 2 * var(--seat-min) - 2 * var(--board-gap)),
+    calc(var(--vh) - var(--topbar) - var(--sat) - var(--sab) - 2 * (var(--seat-min) + var(--seat-room, 0px)) - 2 * var(--board-gap)),
     640px
   );
   --seam: calc(50% + (var(--topbar) + var(--sat) - var(--sab)) / 2);
@@ -325,28 +336,34 @@ button:disabled { cursor: default; }
 
 .seat {
   --seat-fs: 1rem;
-  font-size: var(--seat-fs);
+  font-size: calc(var(--seat-fs) * var(--seat-scale, 1));
   display: flex;
   flex-direction: column;
   gap: 0.5em;
   min-width: 0;
   min-height: 0;
-  padding: 6px calc(var(--gutter) + var(--sar)) 6px calc(var(--gutter) + var(--sal));
+  padding: 10px calc(var(--gutter) + var(--sar)) 10px calc(var(--gutter) + var(--sal));
   color: var(--cream);
 }
-.seat > * { width: min(100%, max(var(--board), 22rem)); margin-inline: auto; flex-shrink: 0; }
+/* As wide as the garden would be without the room the seats may borrow (game.ts fitSeats), so
+   borrowing never narrows the text and makes it need still more room. */
+.seat > * { width: min(100%, max(var(--board) + 2 * var(--seat-room, 0px), 22rem)); margin-inline: auto; flex-shrink: 0; }
 .seat-2 { grid-area: s2; justify-content: flex-end; }
 .seat-1 { grid-area: s1; justify-content: flex-start; }
 
-.seat-id { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25em 0.625em; min-width: 0; }
+.seat-id { display: flex; flex-wrap: nowrap; align-items: center; gap: 0.25em 0.625em; min-width: 0; }
 .seat-chip { width: 1.9em; height: 1.9em; flex: none; }
 .seat-chip .token-svg { width: 100%; height: 100%; display: block; }
 .seat-name {
   font-family: var(--font-display);
-  font-size: 1.375em;
-  /* The name clips (ellipsis), so its line box must hold the font's full ascent and descent:
-     Shippori's deep descenders (g, j, p, q, y) and accents need 1.5. */
+  font-size: calc(1.375em * var(--name-scale, 1));
+  /* The name clips (ellipsis, only as a last resort), so its line box must hold the font's full
+     ascent and descent: Shippori's deep descenders (g, j, p, q, y) and accents need 1.5. Other
+     scripts fall back to fonts that reach further (Arabic, in Firefox), so the box keeps 0.3em of
+     room above and below for ink, which the negative margins take back out of the layout. */
   line-height: 1.5;
+  padding-block: 0.3em;
+  margin-block: -0.3em;
   letter-spacing: 0.01em;
   min-width: 0;
   flex: 1 1 5em;
@@ -362,13 +379,14 @@ button:disabled { cursor: default; }
 .seat-count { display: none; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 0.95em; color: var(--cream-2); flex: none; }
 .seat-count-of { opacity: 0.7; font-weight: 400; }
 .seat-score.points { font-variant-numeric: tabular-nums; font-size: 0.95em; color: var(--cream-2); gap: 1px; align-items: baseline; }
-.seat-score.points b { font-family: var(--font-display); font-size: 1.45em; color: var(--cream); font-weight: 800; }
+/* Two digits' width from the first game, so the header keeps its shape as the score grows. */
+.seat-score.points b { font-family: var(--font-display); font-size: 1.45em; color: var(--cream); font-weight: 800; display: inline-block; min-width: 2ch; text-align: right; }
 
 .seat-pips { display: flex; flex-wrap: wrap; gap: 0.22em; align-items: center; min-height: 1em; }
 .pip { width: 0.95em; height: 0.95em; flex: none; display: block; overflow: visible; }
 .pip.used { border-radius: 50%; width: 0.7em; height: 0.7em; margin: 0 0.125em; box-shadow: inset 0 0 0 1.5px rgba(251, 243, 228, 0.35); }
 
-.seat-say { display: flex; flex-direction: column; gap: 0.4em; min-height: 0; container-type: inline-size; }
+.seat-say { display: flex; flex-direction: column; gap: 0.4em; min-height: 0; container-type: inline-size; overflow-wrap: anywhere; }
 /* A narrow seat keeps the card in one row with a smaller tile. */
 @container (max-width: 250px) {
   .say-order { gap: 0.55em; padding: 0.4em 0.65em 0.4em 0.4em; }
@@ -408,7 +426,7 @@ button:disabled { cursor: default; }
 .ring-on { fill: var(--gold); stroke: var(--gold-2); stroke-width: 1; }
 .ring-off { fill: none; stroke: rgba(31, 27, 24, 0.35); stroke-width: 1; stroke-dasharray: 2 2; }
 .w { white-space: nowrap; font-weight: 700; }
-.w .glyph { width: 1.35em; height: 1.35em; vertical-align: -0.35em; margin-right: 0.12em; }
+.w .glyph { width: auto; height: 1.35em; vertical-align: -0.35em; margin-right: 0.2em; }
 .say-note { font-size: 0.875em; color: var(--cream-2); }
 .nope-word { color: var(--verm); font-weight: 700; }
 .say-wait { font-size: 0.9375em; color: var(--cream-2); }
@@ -423,12 +441,24 @@ button:disabled { cursor: default; }
 .say-actions .btn .icon { width: 1.25em; height: 1.25em; }
 .seat .btn { font-size: 1em; min-height: max(44px, 3em); }
 
-/* What a seat sheds when it does not fit (game.ts fitSeats measures and sets these). */
-.seat.fit-1 .say-note { display: none; }
-.seat.fit-2 .seat-pips { display: none; }
-.seat.fit-2 .seat-count { display: inline; }
-.seat.fit-3 { --seat-fs: 0.8125rem; }
-.seat.fit-3 .say-tile { width: 2.6em; height: 2.6em; }
+/* What the seats do when they do not fit (game.ts fitSeats measures and sets these). */
+.game.fit-1 .seat-pips { display: none; }
+.game.fit-1 .seat-count { display: inline; }
+.game.fit-2 { --seat-scale: 0.9; }
+.game.fit-2 .seat { gap: 0.3em; }
+.game.fit-2 .say-tile { width: 2.6em; height: 2.6em; }
+.game.fit-3 .say-note { display: none; }
+/* A name too long for one line even at its smallest wraps, anywhere if it must, onto two. */
+.game.names-wrap .seat-name { white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.game.names-wrap-3 .seat-name { -webkit-line-clamp: 3; }
+/* While game.ts measures the names: every line laid out and nothing clipped. */
+.game.names-measuring .seat-name { display: block; -webkit-line-clamp: none; overflow: visible; text-overflow: clip; }
+/* A long name takes the whole line beside its token; the count and score go below it, after an
+   empty full-width break (so the token never ends up alone on a line above the name). */
+.seat-break { display: none; }
+.game.ids-stacked .seat-id { flex-wrap: wrap; row-gap: 0.125em; }
+.game.ids-stacked .seat-name { flex: 1 1 0; }
+.game.ids-stacked .seat-break { display: block; flex: 0 0 100%; height: 0; }
 
 /* ---------- buttons ---------- */
 
@@ -464,7 +494,8 @@ button:disabled { cursor: default; }
 .btn .btn-title { display: block; font-size: 1.0625em; }
 .btn .btn-sub { display: block; font-weight: 400; font-size: 0.875em; opacity: 0.8; margin-top: 2px; }
 .btn.big > span { min-width: 0; }
-.btn.big .btn-sub { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.45; }
+/* The Continue summary is shown whole: long names break where they must. */
+.btn.big .btn-sub { line-height: 1.45; overflow-wrap: anywhere; }
 
 /* ==========================================================================
    Home
@@ -543,7 +574,7 @@ button:disabled { cursor: default; }
 @media (min-aspect-ratio: 5/4) {
   :root { --gutter: clamp(12px, 1.6vw, 28px); }
   .game {
-    --seat-w: clamp(9.5rem, 22vw, 23.75rem);
+    --seat-w: calc(clamp(9.5rem, 22vw, 23.75rem) + var(--seat-room, 0px));
     --board: min(
       calc(var(--vh) - var(--topbar) - var(--sat) - var(--sab) - 2 * var(--board-gap)),
       calc(100vw - 2 * var(--seat-w) - var(--sal) - var(--sar) - 4 * var(--board-gap)),
@@ -566,7 +597,7 @@ button:disabled { cursor: default; }
     justify-content: flex-start;
     padding: calc((var(--vh) - var(--topbar) - var(--sat) - var(--sab) - var(--board)) / 2) var(--gutter) 12px;
   }
-  .seat > * { width: min(100%, 20em); }
+  .seat > * { width: min(100%, calc(20em + var(--seat-room, 0px))); }
   .seat-name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-wrap: balance; }
   .seat-1, .seat-2 { justify-content: flex-start; }
   .match-label { font-size: clamp(0.875rem, 0.55rem + 0.5vw, 1.125rem); }
@@ -616,6 +647,12 @@ button:disabled { cursor: default; }
   .btn.big { min-height: 54px; padding: 0.45em 1em; }
   .home-actions { gap: 6px; padding: 8px 0; font-size: 1rem; }
   .home-title { gap: 6px; }
+  /* Room for a long Continue summary: New game's hint repeats what its sheet shows. */
+  .btn.big .btn-sub { font-size: 0.8125em; }
+  .btn.big.secondary .btn-sub { display: none; }
+}
+@media (max-height: 340px) and (min-aspect-ratio: 5/4) {
+  .home-actions { padding: 2px 0; }
 }
 @media (min-width: 1100px) and (min-height: 760px) {
   :root { --topbar: 4.25rem; }
@@ -761,12 +798,14 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 .choice:has(input:focus-visible) { outline: 3px solid var(--verm); outline-offset: 2px; }
 
 .names { display: flex; flex-direction: column; gap: 8px; }
-.name-field { display: flex; align-items: center; gap: 10px; padding: 6px 6px 6px 10px; border-radius: var(--radius); background: var(--paper); box-shadow: inset 0 0 0 1px rgba(80, 60, 30, 0.22); }
+/* The colour sits above the name, so the input has the field's whole width: the longest name the
+   form takes (16 wide letters) shows whole on a 320 px phone. */
+.name-field { display: grid; grid-template-columns: 28px minmax(0, 1fr); grid-template-areas: 'chip label' 'chip input'; align-items: center; column-gap: 10px; padding: 6px 6px 4px 10px; border-radius: var(--radius); background: var(--paper); box-shadow: inset 0 0 0 1px rgba(80, 60, 30, 0.22); }
 .name-field:focus-within { box-shadow: inset 0 0 0 2px var(--verm); }
-.name-chip { width: 28px; height: 28px; flex: none; }
+.name-chip { grid-area: chip; width: 28px; height: 28px; }
 .name-chip .token-svg { width: 100%; height: 100%; display: block; }
-.name-label { font-size: 0.8125rem; font-weight: 700; color: var(--ink-3); width: 6.2em; flex: none; }
-.name-field input { flex: 1; min-width: 0; min-height: 40px; border: 0; background: transparent; font-size: 1rem; padding: 0 6px; outline: none; color: var(--ink); }
+.name-label { grid-area: label; font-size: 0.8125rem; font-weight: 700; line-height: 1.2; color: var(--ink-3); padding-left: 6px; }
+.name-field input { grid-area: input; width: 100%; min-width: 0; min-height: 40px; border: 0; background: transparent; font-size: 1rem; padding: 0 6px; outline: none; color: var(--ink); }
 .name-field input::placeholder { color: var(--ink-3); }
 .setup-note { font-size: 0.875rem; color: var(--ink-3); }
 .start-btn { justify-content: center; width: 100%; min-height: 56px; }
@@ -793,6 +832,11 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
   .choice { padding: 7px 12px; gap: 10px; }
   .choice-detail { font-size: 0.8125rem; line-height: 1.3; }
   .choices { gap: 6px; }
+}
+/* The narrowest phones held sideways: the column with the name fields takes the larger share, so
+   the longest name the form takes shows whole. */
+@media (max-height: 520px) and (min-aspect-ratio: 5/4) and (max-width: 620px) {
+  .setup { grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); }
 }
 
 /* ---------- settings ---------- */
@@ -908,7 +952,11 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
    Reduced motion: every move still happens, nothing flies.
    ========================================================================== */
 
+/* Transitions go to zero, not to a sliver: a near-zero duration on every element would turn on a
+   transition of every property (transition-property defaults to all), and while one runs, WebKit
+   reports the old value, so anything measured right after a change (the seats' fit) would read
+   the layout from before it. Nothing here waits for a transition to end. */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; transition-delay: 0s !important; }
 }
-.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; transition-delay: 0s !important; }

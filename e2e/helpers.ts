@@ -49,6 +49,8 @@ export function saved(setup: MatchSetup, games: { tiles: Tile[]; first: Player; 
 
 export const HOT_SEAT: MatchSetup = { opponent: 'human', difficulty: 'medium', mode: 'single', names: ['Aki', 'Ren'] };
 export const VS_EASY: MatchSetup = { opponent: 'computer', difficulty: 'easy', mode: 'single', names: ['You', 'Computer'] };
+/** The longest names the form accepts (NAME_MAX), in wide letters with no space to break at. */
+export const LONG_NAMES: [string, string] = ['Wmmmmmmmmmmmmmmm', 'WWWWWWWWWWWWWWWW'];
 
 export async function openHome(page: Page): Promise<void> {
   await page.goto('/');
@@ -161,12 +163,61 @@ export async function layoutProblems(page: Page): Promise<string[]> {
       const b = el.getBoundingClientRect();
       if (b.width < 43.5 || b.height < 39.5) out.push(`${name(el)} is a small target: ${Math.round(b.width)}x${Math.round(b.height)}`);
     }
-    for (const el of document.querySelectorAll('.say-order p, .say-result, .say-reason, .btn, .home-sub, .match-label, .sheet-title')) {
-      if (!visible(el)) continue;
-      const h = el as HTMLElement;
-      const ellipsis = getComputedStyle(h).textOverflow === 'ellipsis';
-      if (!ellipsis && h.scrollWidth > h.clientWidth + 2) out.push(`${name(el)} text overflows its box`);
+    // No text runs outside its box: every line of every visible text stays within the block that
+    // holds it (a long word, such as a 16-letter name, must break or shrink, not spill).
+    const roots = dialog ? [dialog] : [...document.querySelectorAll('.screen')];
+    for (const root of roots) {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        const text = n.nodeValue ?? '';
+        if (!text.trim()) continue;
+        const el = n.parentElement!;
+        if (!visible(el) || el.closest('svg, .sr-only')) continue;
+        let box: Element = el;
+        while (box.parentElement && ['inline', 'contents'].includes(getComputedStyle(box).display)) box = box.parentElement;
+        const cs = getComputedStyle(box);
+        const clamp = cs.getPropertyValue('-webkit-line-clamp');
+        // Truncation on purpose (an ellipsis, a line clamp) is checked below instead.
+        if (cs.textOverflow === 'ellipsis' || (clamp && clamp !== 'none')) continue;
+        const b = box.getBoundingClientRect();
+        const range = document.createRange();
+        range.selectNodeContents(n);
+        for (const r of range.getClientRects()) {
+          if (r.width > 0 && (r.left < b.left - 1 || r.right > b.right + 1)) {
+            out.push(`text "${text.trim().slice(0, 20)}" runs outside ${name(box)} (${Math.round(r.left)}-${Math.round(r.right)} in ${Math.round(b.left)}-${Math.round(b.right)})`);
+            break;
+          }
+        }
+      }
     }
+    // Names and the Continue summary are never cut short. Measured with any clamp lifted, where the
+    // text is laid out in full: a clamped box in Chromium draws an ellipsis while reporting neither
+    // a scroll overflow nor text past its edge. Cut short: a line runs past the box, or there are
+    // more lines than the box shows (its line clamp, or one line when it does not wrap).
+    const shown = (h: HTMLElement) => {
+      const cs = getComputedStyle(h);
+      const clamp = parseInt(cs.getPropertyValue('-webkit-line-clamp'), 10);
+      return cs.whiteSpace === 'nowrap' ? 1 : Number.isFinite(clamp) ? clamp : Infinity;
+    };
+    const texts = [...document.querySelectorAll<HTMLElement>('.seat-name, .btn.big .btn-sub')].filter((el) => visible(el) && (!dialog || dialog.contains(el)));
+    const allowed = texts.map(shown);
+    const lift = document.createElement('style');
+    lift.textContent = '.seat-name, .btn.big .btn-sub { display: block !important; -webkit-line-clamp: none !important; overflow: visible !important; text-overflow: clip !important; }';
+    document.head.append(lift);
+    texts.forEach((h, i) => {
+      const cs = getComputedStyle(h);
+      const b = h.getBoundingClientRect();
+      const left = b.left + parseFloat(cs.paddingLeft);
+      const right = b.right - parseFloat(cs.paddingRight);
+      const range = document.createRange();
+      range.selectNodeContents(h);
+      const rects = [...range.getClientRects()].filter((r) => r.width > 0);
+      const lines = new Set(rects.map((r) => Math.round(r.top))).size;
+      // Strict: a clipping box ellipsises any overflow, even a fraction of a pixel.
+      const wide = rects.some((r) => r.right > right + 0.05 || r.left < left - 0.05);
+      if (wide || lines > allowed[i]) out.push(`${name(h)} is cut short: "${(h.textContent ?? '').trim().slice(0, 30)}" (${lines} lines of ${allowed[i]}${wide ? ', too wide' : ''})`);
+    });
+    lift.remove();
     return out;
   });
 }
