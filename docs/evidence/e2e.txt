@@ -1,0 +1,31 @@
+End-to-end results of the final run on the production build (2026-10-12 15:55 UTC), 11 device profiles.
+
+== main (npx playwright test --grep-invert @perf, 6 workers)
+  iphone-se              passed  22  skipped  3  failed 0
+  iphone-15              passed  22  skipped  3  failed 0
+  iphone-15-landscape    passed  22  skipped  3  failed 0
+  pixel-7                passed  24  skipped  1  failed 0
+  iphone-se-3            passed  22  skipped  3  failed 0
+  android-360            passed  24  skipped  1  failed 0
+  ipad-portrait          passed  22  skipped  3  failed 0
+  ipad-landscape         passed  22  skipped  3  failed 0
+  desktop-chrome         passed  25  skipped  0  failed 0
+  desktop-firefox        passed  22  skipped  3  failed 0
+  desktop-safari         passed  23  skipped  2  failed 0
+  total                  passed 250  skipped 25  failed 0
+
+== perf (npx playwright test --grep @perf --workers=1)
+  iphone-se              passed   1  skipped  0  failed 0
+  iphone-15              passed   1  skipped  0  failed 0
+  iphone-15-landscape    passed   1  skipped  0  failed 0
+  pixel-7                passed   1  skipped  0  failed 0
+  iphone-se-3            passed   1  skipped  0  failed 0
+  android-360            passed   1  skipped  0  failed 0
+  ipad-portrait          passed   1  skipped  0  failed 0
+  ipad-landscape         passed   1  skipped  0  failed 0
+  desktop-chrome         passed   1  skipped  0  failed 0
+  desktop-firefox        passed   1  skipped  0  failed 0
+  desktop-safari         passed   1  skipped  0  failed 0
+  total                  passed 11  skipped 0  failed 0
+
+Skipped tests are engine-scoped by design: keyboard play on touch profiles, offline/axe/CSP checks run in one or two engines.

@@ -33,7 +33,7 @@ npm install
 npm run dev          # http://localhost:5173
 npm test             # unit tests: rules engine, AI, match flow, rules-page diagrams
 npm run build        # type-check, production build into dist/, service worker
-npm run e2e          # end-to-end tests on 10 device profiles (needs `npx playwright install`)
+npm run e2e          # end-to-end tests on 11 device profiles (needs `npx playwright install`)
 ```
 
 Other scripts:

@@ -18,7 +18,15 @@ test('large default text (20px root) still fits', async ({ page }) => {
   const a = await check();
   await page.locator(`.cell[data-index="${g.moves[g.moves.length - 1]}"]`).click();
   await expect(page.locator('.game.is-over')).toBeVisible();
-  await page.waitForTimeout(500);
+  // Settle: fonts, a style recalc, then the garden's size stops changing (it steps back at the end).
+  await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  for (let i = 0, prev = -1; i < 20; i++) {
+    const now = await page.evaluate(() => document.querySelector('.board')!.getBoundingClientRect().width);
+    if (now === prev) break;
+    prev = now;
+    await page.waitForTimeout(120);
+  }
   const b = await check();
   expect(b.board).toBeGreaterThan(90);
   expect([...a.out, ...b.out]).toEqual([]);

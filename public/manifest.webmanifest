@@ -7,7 +7,7 @@
   "display": "standalone",
   "orientation": "any",
   "background_color": "#1b2347",
-  "theme_color": "#24305f",
+  "theme_color": "#1b2347",
   "categories": ["games", "board"],
   "icons": [
     { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

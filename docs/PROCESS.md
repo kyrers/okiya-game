@@ -39,7 +39,7 @@ Answers the client gave during the session (structured questions):
 | 5 | Engine and match layer: nullable winner, ties in all match formats, opener after a tie, a match saved as facts and re-derived by replaying the engine, undo. | 56 → 69 unit tests. |
 | 6 | AI: calibrated three levels by simulation against three player models; solved random gardens exactly; moved the search to a Web Worker. | `docs/evidence/difficulty.txt`, `perfect-play.txt`, `think-time.txt`. |
 | 7 | UI built framework-free: home, setup, game, results, rules with diagrams, settings, menu; synthesised sounds; PWA (manifest, icons, generated service worker); `vercel.json`. | First build. |
-| 8 | End-to-end suite on 10 device profiles in WebKit, Chromium and Firefox; layout invariants checked by script on every screen state. | Found and fixed the defects listed below. |
+| 8 | End-to-end suite on 11 device profiles in WebKit, Chromium and Firefox; layout invariants checked by script on every screen state. | Found and fixed the defects listed below. |
 | 9 | Ship checks: offline play, axe-core, Lighthouse, `vercel.json` against Vercel's schema, the page served under the exact Vercel headers and CSP. | All green after two fixes (below). |
 | 10 | Independent rules audit by a fresh agent. | "Faithful to the official rules: yes, with caveats" (labelling only); caveats fixed. |
 | 11 | Impeccable finish review by a fresh agent; fix batch; verdict pass. | See "Finish review". |
@@ -95,6 +95,8 @@ Answers the client gave during the session (structured questions):
 | Registered custom-property (`@property`) transitions applied late in WebKit | Layout check timing | Removed; the lit half is an opacity cross-fade. |
 | The rules sheet's scroll area was not **keyboard-reachable** | axe-core | Sheet bodies are focusable labelled regions. |
 | Larger default text could push seats over the garden | 20 px root-size e2e on every profile | Layout reserves in rem; garden shrinks instead. |
+| Gold focus ring on paper (sheets) at 1.6:1, placeholder text at 3.4:1 | The impeccable documenter, deriving DESIGN.md from the build | Focus is vermilion on paper and ink on the garden (both above 3:1); placeholder in ink-3 (5.3:1). |
+| The UI face mis-spaced letters at about 14 px | Screenshots, then a font specimen | Source Sans 3 replaces Zen Kaku Gothic New (see Decisions). |
 
 ## Verification (final run)
 
@@ -102,21 +104,36 @@ Answers the client gave during the session (structured questions):
 |---|---|---|
 | Unit tests (engine, AI, match flow, rules-page diagrams) | `npm test` | 4 files, 69 tests, all passing |
 | Type-check and production build | `npm run build` | passes; service worker generated |
-| End-to-end, 10 device profiles (iPhone SE 320 × 568, iPhone SE 3 375 × 553, iPhone 15 393 × 659 and landscape 734 × 343, Pixel 7, Android 360 × 640, iPad portrait and landscape, desktop Chrome 1440 × 900, Firefox 1280 × 800, Safari 1920 × 1080) | `npm run e2e` | FINAL_E2E |
+| End-to-end, 11 device profiles: iPhone SE 320 × 568, iPhone SE (3rd gen) 375 × 553, iPhone 15 393 × 659 and landscape 734 × 343 (WebKit, Safari's visible area); Pixel 7 412 × 839 and Android 360 × 640 (Chromium); iPad 810 × 1080 and 1080 × 810 (WebKit); desktop Chrome 1440 × 900, Firefox 1280 × 800, Safari 1920 × 1080 | `npm run e2e` | **250 passed, 0 failed**, 25 skipped by design (engine-scoped checks); perf pass 11 of 11. Per profile: `docs/evidence/e2e.txt` |
 | Layout invariants on every screen state and profile: no page scroll, nothing off-screen, seats never on the garden or the top bar, targets ≥ 44 px, no overflowing text | `e2e/layout.spec.ts` | included above |
 | Large default text (20 px root) on every profile | `e2e/bigtext.spec.ts` | included above |
 | Offline: after one visit a game against the computer plays with the network off | `e2e/ship.spec.ts` | passes (Chromium) |
 | Accessibility, axe-core WCAG 2.2 AA rules on home, setup, rules, settings, game, menu | `e2e/ship.spec.ts` | 0 violations |
-| Lighthouse 12.6, mobile and desktop, production build | see `docs/evidence/lighthouse.txt` | 100 / 100 / 100 / 100 on both |
+| Lighthouse 12.6, mobile and desktop, production build | see `docs/evidence/lighthouse.txt` | mobile 99 / 100 / 100 / 100 (performance, accessibility, best practices, SEO; first paint 1.7 s on simulated slow 4G, 147 KB transferred); desktop 100 / 100 / 100 / 100 |
 | `vercel.json` against Vercel's published schema (with a negative control) | ajv, draft-07 | valid; the broken copy is rejected |
 | The page under the exact `vercel.json` headers and CSP | `e2e/vercel.spec.ts` + `scripts/serve-vercel.ts` | no CSP violation in Chromium or WebKit; hashed assets `immutable` |
 | Independent rules audit (fresh agent) | its own scripts | 2,948,961 states of 200,000 random games and 250,037,632 nodes of 4 full game trees compared with an independent model: 0 mismatches; 48,862 of 48,862 forged saves rejected; Hard optimal in all 617 endgames of ≤ 5 tiles; UI: 204 turns, 191 illegal taps, 19 endings all correct |
-| Impeccable detector | `impeccable detect --json` | clean |
+| Impeccable detector | `impeccable detect --json` on the UI files | 0 errors, 0 warnings (one layout-transition warning and one inline-font warning fixed); 62 advisories that only note values not yet named in DESIGN.md: the tile-art pigments, shadow and highlight tints, a few one-off radii and type sizes |
 | Raster provenance | `impeccable embed-prompt --scan public src/ui/textures` | 8 rasters, 0 missing |
 
 ## Finish review
 
-FINISH_REVIEW
+A fresh `impeccable-finish-reviewer` judged the build against the direction contract (code-led,
+so no comp) from 15 screenshots plus the per-profile captures.
+
+- **First review: fix.** Eight material fixes: the UI typeface had silently become each system's
+  own font; the cloth and paper materials were invisible; "Take a iris"; a "Your turn" eyebrow
+  label; token pips and match wins drawn as look-alike dots; seats at different heights on
+  desktop and not aligned with the garden on tablet; orphaned words and a truncated label; raster
+  provenance and the credit line. It kept, explicitly: the vermilion/indigo split with the garden
+  on the seam, the lit-versus-sunk turn signal, the tile art, the brushed formations.
+- **Fix batch** (commit `5ffd660`): Source Sans 3; procedural cloth and paper textures; articles;
+  the order sentence leads; token-shaped pips, gold seals, a compact count; seats pinned to the
+  garden's top edge; balanced wrapping; vermilion in the sheets; "Game design by"; provenance in
+  every raster.
+- **Verdict pass: all 8 resolved**, two regressions found (the new font's licence notice was not
+  shipped; a separator could start a line). Both fixed (commits `ce957e8`, `329fa79`).
+- **Second verdict pass: ship** (scoped by the reviewer to the listed fixes and regressions).
 
 ## Agents used
 
@@ -124,7 +141,7 @@ FINISH_REVIEW
 |---|---|---|
 | Rules auditor (fresh, general-purpose) | the PDF text, the BGG ruling, the code | Verdict "yes, with caveats"; findings: stale docs, unlabelled tie-opener choice, the "rain or cloud" name; all fixed |
 | Impeccable finish reviewer (fresh) | the request, answers, contract, screenshots | Disposition and material fixes, then a verdict pass (above) |
-| Impeccable documenter | the finished build | `DESIGN.md` and `.impeccable/design.json` |
+| Impeccable documenter (fresh) | the finished build, the contract, PRODUCT.md | `DESIGN.md` and `.impeccable/design.json`; flagged two contrast defects and token drift, fixed afterwards |
 
 Everything else (engine, AI, UI, tests, scripts, docs) was written in the main session.
 
@@ -145,3 +162,9 @@ Everything else (engine, AI, UI, tests, scripts, docs) was written in the main s
   and Android phone before launch is recommended (sound with the silent switch, the home-screen
   install, the wake lock).
 - **Sound on iOS** follows the ringer switch, as Web Audio does in Safari.
+- **Font licences.** Both typefaces are OFL and their licence texts ship with the site. Source Sans
+  3 carries the Reserved Font Name "Source"; the files are the unmodified Google Fonts web subsets
+  distributed by Fontsource under that name.
+- **Advisory design-system notes.** The detector lists 62 values not yet named in DESIGN.md (tile
+  pigments, shadow tints, a few radii and sizes). They are intentional; naming them is
+  housekeeping, not a defect.

@@ -1,0 +1,737 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-12T15:49:02+00:00",
+  "title": "Design System: Okiya",
+  "extensions": {
+    "colorMeta": {
+      "verm": {
+        "role": "primary",
+        "displayName": "Vermilion Dye",
+        "canonical": "oklch(52.0% 0.165 33.5)",
+        "tonalRamp": [
+          "oklch(15% 0.079 33.5)",
+          "oklch(26% 0.105 33.5)",
+          "oklch(37% 0.130 33.5)",
+          "oklch(48% 0.155 33.5)",
+          "oklch(59% 0.149 33.5)",
+          "oklch(70% 0.123 33.5)",
+          "oklch(82% 0.096 33.5)",
+          "oklch(95% 0.066 33.5)"
+        ]
+      },
+      "verm-dim": {
+        "role": "primary",
+        "displayName": "Sunk Vermilion",
+        "canonical": "oklch(36.6% 0.105 33.1)",
+        "tonalRamp": [
+          "oklch(15% 0.073 33.1)",
+          "oklch(26% 0.089 33.1)",
+          "oklch(37% 0.104 33.1)",
+          "oklch(48% 0.088 33.1)",
+          "oklch(59% 0.072 33.1)",
+          "oklch(70% 0.056 33.1)",
+          "oklch(82% 0.038 33.1)",
+          "oklch(95% 0.019 33.1)"
+        ]
+      },
+      "verm-press": {
+        "role": "primary",
+        "displayName": "Pressed Vermilion",
+        "canonical": "oklch(47.3% 0.150 33.5)",
+        "tonalRamp": [
+          "oklch(15% 0.082 33.5)",
+          "oklch(26% 0.105 33.5)",
+          "oklch(37% 0.128 33.5)",
+          "oklch(48% 0.148 33.5)",
+          "oklch(59% 0.125 33.5)",
+          "oklch(70% 0.102 33.5)",
+          "oklch(82% 0.077 33.5)",
+          "oklch(95% 0.050 33.5)"
+        ]
+      },
+      "indi": {
+        "role": "secondary",
+        "displayName": "Indigo Dye",
+        "canonical": "oklch(37.6% 0.108 270.4)",
+        "tonalRamp": [
+          "oklch(15% 0.074 270.4)",
+          "oklch(26% 0.091 270.4)",
+          "oklch(37% 0.108 270.4)",
+          "oklch(48% 0.093 270.4)",
+          "oklch(59% 0.076 270.4)",
+          "oklch(70% 0.059 270.4)",
+          "oklch(82% 0.041 270.4)",
+          "oklch(95% 0.021 270.4)"
+        ]
+      },
+      "indi-dim": {
+        "role": "secondary",
+        "displayName": "Sunk Indigo",
+        "canonical": "oklch(27.0% 0.068 271.8)",
+        "tonalRamp": [
+          "oklch(15% 0.056 271.8)",
+          "oklch(26% 0.067 271.8)",
+          "oklch(37% 0.058 271.8)",
+          "oklch(48% 0.048 271.8)",
+          "oklch(59% 0.037 271.8)",
+          "oklch(70% 0.027 271.8)",
+          "oklch(82% 0.016 271.8)",
+          "oklch(95% 0.008 271.8)"
+        ]
+      },
+      "gold": {
+        "role": "tertiary",
+        "displayName": "Seal Gold",
+        "canonical": "oklch(80.8% 0.137 83.9)",
+        "tonalRamp": [
+          "oklch(15% 0.011 83.9)",
+          "oklch(26% 0.032 83.9)",
+          "oklch(37% 0.053 83.9)",
+          "oklch(48% 0.074 83.9)",
+          "oklch(59% 0.095 83.9)",
+          "oklch(70% 0.116 83.9)",
+          "oklch(82% 0.135 83.9)",
+          "oklch(95% 0.110 83.9)"
+        ]
+      },
+      "gold-2": {
+        "role": "tertiary",
+        "displayName": "Deep Gold",
+        "canonical": "oklch(54.3% 0.098 84.4)",
+        "tonalRamp": [
+          "oklch(15% 0.044 84.4)",
+          "oklch(26% 0.059 84.4)",
+          "oklch(37% 0.075 84.4)",
+          "oklch(48% 0.090 84.4)",
+          "oklch(59% 0.092 84.4)",
+          "oklch(70% 0.077 84.4)",
+          "oklch(82% 0.060 84.4)",
+          "oklch(95% 0.042 84.4)"
+        ]
+      },
+      "maple": {
+        "role": "tertiary",
+        "displayName": "Maple (tile art)",
+        "canonical": "oklch(54.0% 0.150 33.0)",
+        "tonalRamp": [
+          "oklch(15% 0.068 33.0)",
+          "oklch(26% 0.091 33.0)",
+          "oklch(37% 0.115 33.0)",
+          "oklch(48% 0.138 33.0)",
+          "oklch(59% 0.140 33.0)",
+          "oklch(70% 0.116 33.0)",
+          "oklch(82% 0.091 33.0)",
+          "oklch(95% 0.064 33.0)"
+        ]
+      },
+      "cherry": {
+        "role": "tertiary",
+        "displayName": "Cherry (tile art)",
+        "canonical": "oklch(72.1% 0.100 1.8)",
+        "tonalRamp": [
+          "oklch(15% 0.020 1.8)",
+          "oklch(26% 0.035 1.8)",
+          "oklch(37% 0.051 1.8)",
+          "oklch(48% 0.066 1.8)",
+          "oklch(59% 0.081 1.8)",
+          "oklch(70% 0.097 1.8)",
+          "oklch(82% 0.086 1.8)",
+          "oklch(95% 0.068 1.8)"
+        ]
+      },
+      "cherry-2": {
+        "role": "tertiary",
+        "displayName": "Cherry Blossom (tile art)",
+        "canonical": "oklch(86.0% 0.058 359.0)",
+        "tonalRamp": [
+          "oklch(15% 0.008 359.0)",
+          "oklch(26% 0.009 359.0)",
+          "oklch(37% 0.018 359.0)",
+          "oklch(48% 0.027 359.0)",
+          "oklch(59% 0.036 359.0)",
+          "oklch(70% 0.045 359.0)",
+          "oklch(82% 0.054 359.0)",
+          "oklch(95% 0.050 359.0)"
+        ]
+      },
+      "pine": {
+        "role": "tertiary",
+        "displayName": "Pine (tile art)",
+        "canonical": "oklch(48.7% 0.068 155.6)",
+        "tonalRamp": [
+          "oklch(15% 0.036 155.6)",
+          "oklch(26% 0.046 155.6)",
+          "oklch(37% 0.057 155.6)",
+          "oklch(48% 0.067 155.6)",
+          "oklch(59% 0.058 155.6)",
+          "oklch(70% 0.047 155.6)",
+          "oklch(82% 0.036 155.6)",
+          "oklch(95% 0.024 155.6)"
+        ]
+      },
+      "iris": {
+        "role": "tertiary",
+        "displayName": "Iris (tile art)",
+        "canonical": "oklch(52.9% 0.112 288.9)",
+        "tonalRamp": [
+          "oklch(15% 0.053 288.9)",
+          "oklch(26% 0.070 288.9)",
+          "oklch(37% 0.087 288.9)",
+          "oklch(48% 0.105 288.9)",
+          "oklch(59% 0.103 288.9)",
+          "oklch(70% 0.086 288.9)",
+          "oklch(82% 0.067 288.9)",
+          "oklch(95% 0.046 288.9)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Garden Paper",
+        "canonical": "oklch(94.8% 0.024 85.8)",
+        "tonalRamp": [
+          "oklch(15% 0.008 85.8)",
+          "oklch(26% 0.008 85.8)",
+          "oklch(37% 0.008 85.8)",
+          "oklch(48% 0.008 85.8)",
+          "oklch(59% 0.012 85.8)",
+          "oklch(70% 0.016 85.8)",
+          "oklch(82% 0.020 85.8)",
+          "oklch(95% 0.024 85.8)"
+        ]
+      },
+      "paper-lit": {
+        "role": "neutral",
+        "displayName": "Lit Paper",
+        "canonical": "oklch(98.1% 0.020 84.6)",
+        "tonalRamp": [
+          "oklch(15% 0.008 84.6)",
+          "oklch(26% 0.008 84.6)",
+          "oklch(37% 0.008 84.6)",
+          "oklch(48% 0.008 84.6)",
+          "oklch(59% 0.009 84.6)",
+          "oklch(70% 0.012 84.6)",
+          "oklch(82% 0.015 84.6)",
+          "oklch(95% 0.019 84.6)"
+        ]
+      },
+      "paper-2": {
+        "role": "neutral",
+        "displayName": "Paper Tray",
+        "canonical": "oklch(90.7% 0.036 85.4)",
+        "tonalRamp": [
+          "oklch(15% 0.008 85.4)",
+          "oklch(26% 0.008 85.4)",
+          "oklch(37% 0.009 85.4)",
+          "oklch(48% 0.014 85.4)",
+          "oklch(59% 0.020 85.4)",
+          "oklch(70% 0.025 85.4)",
+          "oklch(82% 0.031 85.4)",
+          "oklch(95% 0.034 85.4)"
+        ]
+      },
+      "paper-3": {
+        "role": "neutral",
+        "displayName": "Board Paper",
+        "canonical": "oklch(83.3% 0.055 84.5)",
+        "tonalRamp": [
+          "oklch(15% 0.008 84.5)",
+          "oklch(26% 0.011 84.5)",
+          "oklch(37% 0.019 84.5)",
+          "oklch(48% 0.028 84.5)",
+          "oklch(59% 0.036 84.5)",
+          "oklch(70% 0.045 84.5)",
+          "oklch(82% 0.054 84.5)",
+          "oklch(95% 0.046 84.5)"
+        ]
+      },
+      "tile-face": {
+        "role": "neutral",
+        "displayName": "Tile Face",
+        "canonical": "oklch(96.0% 0.021 85.9)",
+        "tonalRamp": [
+          "oklch(15% 0.008 85.9)",
+          "oklch(26% 0.008 85.9)",
+          "oklch(37% 0.008 85.9)",
+          "oklch(48% 0.008 85.9)",
+          "oklch(59% 0.010 85.9)",
+          "oklch(70% 0.014 85.9)",
+          "oklch(82% 0.017 85.9)",
+          "oklch(95% 0.021 85.9)"
+        ]
+      },
+      "token-well": {
+        "role": "neutral",
+        "displayName": "Token Well",
+        "canonical": "oklch(87.7% 0.043 86.0)",
+        "tonalRamp": [
+          "oklch(15% 0.008 86.0)",
+          "oklch(26% 0.008 86.0)",
+          "oklch(37% 0.012 86.0)",
+          "oklch(48% 0.019 86.0)",
+          "oklch(59% 0.026 86.0)",
+          "oklch(70% 0.032 86.0)",
+          "oklch(82% 0.039 86.0)",
+          "oklch(95% 0.038 86.0)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(22.6% 0.008 59.2)",
+        "tonalRamp": [
+          "oklch(15% 0.008 59.2)",
+          "oklch(26% 0.008 59.2)",
+          "oklch(37% 0.008 59.2)",
+          "oklch(48% 0.008 59.2)",
+          "oklch(59% 0.008 59.2)",
+          "oklch(70% 0.008 59.2)",
+          "oklch(82% 0.008 59.2)",
+          "oklch(95% 0.008 59.2)"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Ink 2",
+        "canonical": "oklch(39.4% 0.021 67.1)",
+        "tonalRamp": [
+          "oklch(15% 0.014 67.1)",
+          "oklch(26% 0.017 67.1)",
+          "oklch(37% 0.021 67.1)",
+          "oklch(48% 0.019 67.1)",
+          "oklch(59% 0.015 67.1)",
+          "oklch(70% 0.012 67.1)",
+          "oklch(82% 0.009 67.1)",
+          "oklch(95% 0.008 67.1)"
+        ]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Ink 3",
+        "canonical": "oklch(48.7% 0.026 67.1)",
+        "tonalRamp": [
+          "oklch(15% 0.014 67.1)",
+          "oklch(26% 0.018 67.1)",
+          "oklch(37% 0.022 67.1)",
+          "oklch(48% 0.026 67.1)",
+          "oklch(59% 0.022 67.1)",
+          "oklch(70% 0.018 67.1)",
+          "oklch(82% 0.014 67.1)",
+          "oklch(95% 0.009 67.1)"
+        ]
+      },
+      "brush-ink": {
+        "role": "neutral",
+        "displayName": "Brush Ink",
+        "canonical": "oklch(20.7% 0.014 51.4)",
+        "tonalRamp": [
+          "oklch(15% 0.013 51.4)",
+          "oklch(26% 0.013 51.4)",
+          "oklch(37% 0.011 51.4)",
+          "oklch(48% 0.009 51.4)",
+          "oklch(59% 0.008 51.4)",
+          "oklch(70% 0.008 51.4)",
+          "oklch(82% 0.008 51.4)",
+          "oklch(95% 0.008 51.4)"
+        ]
+      },
+      "cream": {
+        "role": "neutral",
+        "displayName": "Cream",
+        "canonical": "oklch(96.6% 0.022 83.3)",
+        "tonalRamp": [
+          "oklch(15% 0.008 83.3)",
+          "oklch(26% 0.008 83.3)",
+          "oklch(37% 0.008 83.3)",
+          "oklch(48% 0.008 83.3)",
+          "oklch(59% 0.010 83.3)",
+          "oklch(70% 0.014 83.3)",
+          "oklch(82% 0.017 83.3)",
+          "oklch(95% 0.021 83.3)"
+        ]
+      },
+      "cream-2": {
+        "role": "neutral",
+        "displayName": "Cream 2",
+        "canonical": "oklch(90.7% 0.029 82.6)",
+        "tonalRamp": [
+          "oklch(15% 0.008 82.6)",
+          "oklch(26% 0.008 82.6)",
+          "oklch(37% 0.008 82.6)",
+          "oklch(48% 0.012 82.6)",
+          "oklch(59% 0.016 82.6)",
+          "oklch(70% 0.021 82.6)",
+          "oklch(82% 0.026 82.6)",
+          "oklch(95% 0.028 82.6)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The Okiya wordmark on home only."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Sheet titles; rules section heads at 1.3rem."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Player names in the seats; results and points use the same face larger."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Default text; rules prose at 1.55 line height, 62ch."
+      },
+      "body-strong": {
+        "displayName": "Strong",
+        "purpose": "Button labels, tile names in instructions, choice and toggle titles."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Match label, link buttons, menu items."
+      },
+      "caption": {
+        "displayName": "Caption",
+        "purpose": "Details, figure captions, credits, button sub-lines."
+      }
+    },
+    "shadows": [
+      {
+        "name": "board-on-cloth",
+        "value": "0 calc(var(--board) * 0.05) calc(var(--board) * 0.09) calc(var(--board) * -0.03) rgba(8, 6, 14, 0.65), 0 2px 4px rgba(8, 6, 14, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -2px 0 rgba(90, 64, 30, 0.25)",
+        "purpose": "The garden board lying on the cloth."
+      },
+      {
+        "name": "raised-tile",
+        "value": "0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 0 0 1px rgba(80, 60, 30, 0.14) inset, 0 2px 3px rgba(60, 40, 15, 0.22)",
+        "purpose": "Every tile cell at rest."
+      },
+      {
+        "name": "pressed-well",
+        "value": "inset 0 2px 5px rgba(70, 50, 20, 0.35), inset 0 0 0 1px rgba(80, 60, 30, 0.16)",
+        "purpose": "A cell holding a token."
+      },
+      {
+        "name": "lifted-tile",
+        "value": "0 0 0 calc(var(--board) * 0.006 + 1.5px) var(--gold), 0 calc(var(--board) * 0.02) calc(var(--board) * 0.035) rgba(40, 25, 5, 0.42)",
+        "purpose": "A tile that may be taken (with translateY(-4%))."
+      },
+      {
+        "name": "card-on-cloth",
+        "value": "0 6px 16px -8px rgba(0, 0, 0, 0.55)",
+        "purpose": "The order card in the mover's half."
+      },
+      {
+        "name": "paper-button-on-cloth",
+        "value": "0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 8px 18px -8px rgba(0, 0, 0, 0.6)",
+        "purpose": "Primary paper button on the dyes."
+      },
+      {
+        "name": "vermilion-button-on-paper",
+        "value": "0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 8px 18px -10px rgba(90, 20, 5, 0.7)",
+        "purpose": "Primary vermilion button on a sheet."
+      },
+      {
+        "name": "sheet-docked",
+        "value": "0 -12px 40px rgba(0, 0, 0, 0.35)",
+        "purpose": "Bottom sheet on phones."
+      },
+      {
+        "name": "sheet-centred",
+        "value": "0 30px 80px rgba(0, 0, 0, 0.45)",
+        "purpose": "Centred sheet from 640x560."
+      },
+      {
+        "name": "wordmark-text",
+        "value": "text-shadow: 0 4px 24px rgba(0, 0, 0, 0.35)",
+        "purpose": "The wordmark on the indigo half."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "The system ease: turn light, tile lift, token set-down, sheets, switch knob."
+      },
+      {
+        "name": "turn-light",
+        "value": "opacity 0.45s var(--ease-out)",
+        "purpose": "The lit half crossing the seam; opacity only."
+      },
+      {
+        "name": "tile-lift",
+        "value": "transform 0.22s var(--ease-out), box-shadow 0.22s var(--ease-out)",
+        "purpose": "Tiles that may be taken lifting."
+      },
+      {
+        "name": "token-set-down",
+        "value": "0.42s var(--ease-out)",
+        "purpose": "A token dropping into its cell with a small settle."
+      },
+      {
+        "name": "tile-flight",
+        "value": "520ms (360ms without a target) cubic-bezier(.22, .8, .24, 1)",
+        "purpose": "A taken tile flying to the mover's order card."
+      },
+      {
+        "name": "brush-stroke",
+        "value": "650ms, 180ms delay, cubic-bezier(.2, .7, .2, 1)",
+        "purpose": "The brush drawn through a winning formation."
+      },
+      {
+        "name": "sheet-up",
+        "value": "0.32s var(--ease-out)",
+        "purpose": "A sheet rising 24px and fading in."
+      },
+      {
+        "name": "refusal-shake",
+        "value": "0.32s ease",
+        "purpose": "A tap on a tile that may not be taken."
+      },
+      {
+        "name": "thinking-breathe",
+        "value": "1.2s ease-in-out infinite",
+        "purpose": "The computer's thinking ellipsis, opacity only."
+      },
+      {
+        "name": "control-state",
+        "value": "0.15s",
+        "purpose": "Hover and press on buttons and controls."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "all durations 0.001ms",
+        "purpose": "System preference or in-app setting; every state still changes."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "landscape",
+        "value": "(min-aspect-ratio: 5/4)"
+      },
+      {
+        "name": "narrow",
+        "value": "(max-width: 420px)"
+      },
+      {
+        "name": "sheet-centred",
+        "value": "(min-width: 640px) and (min-height: 560px)"
+      },
+      {
+        "name": "portrait-short",
+        "value": "(max-height: 760px) and (max-aspect-ratio: 5/4)"
+      },
+      {
+        "name": "portrait-shorter",
+        "value": "(max-height: 620px) and (max-aspect-ratio: 5/4)"
+      },
+      {
+        "name": "landscape-short",
+        "value": "(max-height: 500px) and (min-aspect-ratio: 5/4)"
+      },
+      {
+        "name": "desktop-roomy",
+        "value": "(min-width: 1100px) and (min-height: 760px)"
+      },
+      {
+        "name": "seat-narrow",
+        "value": "@container (max-width: 250px)"
+      }
+    ],
+    "textures": [
+      {
+        "name": "cloth",
+        "value": "url('./textures/cloth.webp') 0 0 / 256px 256px, soft-light",
+        "purpose": "Plain-weave cloth tile over both dyes; procedural (scripts/render-textures.ts), provenance in cloth.webp.json."
+      },
+      {
+        "name": "paper-grain",
+        "value": "url('./textures/paper.webp') 0 0 / 256px 256px, soft-light",
+        "purpose": "Fibre paper tile over the board, order card and sheets; procedural, provenance in paper.webp.json."
+      }
+    ],
+    "lacquer": [
+      {
+        "name": "token-1",
+        "value": "radial-gradient at 36% 30%: #ea7558, #c63d24, #8a2615; five-petal cream crest",
+        "purpose": "Player 1 (vermilion), patterned."
+      },
+      {
+        "name": "token-2",
+        "value": "radial-gradient at 36% 30%: #6375b8, #2e3d78, #171f45; plain",
+        "purpose": "Player 2 (indigo), plain."
+      }
+    ],
+    "turnLight": [
+      {
+        "name": "glow-indigo",
+        "value": "radial-gradient(120% 70% at 50% 100%, rgba(150, 170, 255, 0.36), transparent 72%) over var(--indi)",
+        "purpose": "Lit indigo half, brightest at the seam (portrait)."
+      },
+      {
+        "name": "glow-vermilion",
+        "value": "radial-gradient(120% 70% at 50% 0%, rgba(255, 180, 125, 0.38), transparent 72%) over var(--verm)",
+        "purpose": "Lit vermilion half, brightest at the seam (portrait)."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button (on the dyes)",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Paper button on cloth: the main action in a seat or on home.",
+      "html": "<div class=\"ds-dye\"><button class=\"ds-btn ds-btn-primary\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M8 5.5v13l10-6.5z\"/></svg> Play again</button></div>",
+      "css": ".ds-dye{background:#b4381e;padding:24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:0 20px;border-radius:12px;border:1px solid transparent;font:700 1rem/1.2 'Source Sans 3',system-ui,sans-serif;cursor:pointer;transition:background-color .15s,transform .15s;} .ds-btn-primary{background:#f5eddc;color:#1f1b18;box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 8px 18px -8px rgba(0,0,0,.6);} .ds-btn-primary:hover{background:#fff8ea;} .ds-btn:active{transform:translateY(1px);} .ds-btn:focus-visible{outline:3px solid #eab84a;outline-offset:2px;}"
+    },
+    {
+      "name": "Ghost Button (on the dyes)",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Translucent cream secondary action on cloth.",
+      "html": "<div class=\"ds-dye\"><button class=\"ds-btn ds-btn-ghost\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 11l8-6.5 8 6.5\"/><path d=\"M6.5 9.5V19h11V9.5\"/><path d=\"M10 19v-5h4v5\"/></svg> Home</button></div>",
+      "css": ".ds-dye{background:#b4381e;padding:24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:0 20px;border-radius:12px;border:1px solid transparent;font:700 1rem/1.2 'Source Sans 3',system-ui,sans-serif;cursor:pointer;transition:background-color .15s,transform .15s;} .ds-btn-ghost{background:rgba(251,243,228,.08);border-color:rgba(251,243,228,.4);color:#fbf3e4;} .ds-btn-ghost:hover{background:rgba(251,243,228,.16);} .ds-btn:active{transform:translateY(1px);} .ds-btn:focus-visible{outline:3px solid #eab84a;outline-offset:2px;}"
+    },
+    {
+      "name": "Primary Button (on paper)",
+      "kind": "button",
+      "refersTo": "button-primary-on-paper",
+      "description": "Vermilion action on a paper sheet.",
+      "html": "<div class=\"ds-paper\"><button class=\"ds-btn ds-btn-pp\">Start game</button><button class=\"ds-btn ds-btn-gp\">Cancel</button></div>",
+      "css": ".ds-paper{background:#f5eddc;padding:24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .ds-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:0 20px;border-radius:12px;border:1px solid transparent;font:700 1rem/1.2 'Source Sans 3',system-ui,sans-serif;cursor:pointer;transition:background-color .15s,transform .15s;} .ds-btn-pp{background:#b4381e;color:#fbf3e4;box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 8px 18px -10px rgba(90,20,5,.7);} .ds-btn-pp:hover{background:#9e3019;} .ds-btn-gp{background:transparent;color:#1f1b18;border-color:rgba(31,27,24,.3);} .ds-btn-gp:hover{background:rgba(31,27,24,.06);} .ds-btn:active{transform:translateY(1px);}"
+    },
+    {
+      "name": "Icon Button and Link Button",
+      "kind": "nav",
+      "refersTo": "icon-button",
+      "description": "Top-bar round icon buttons and home link buttons on cloth.",
+      "html": "<div class=\"ds-indi\"><button class=\"ds-icon-btn\" aria-label=\"Menu\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 7h16M4 12h16M4 17h16\"/></svg></button><button class=\"ds-link-btn\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 5.5C6.5 4.5 9.5 4.5 12 6c2.5-1.5 5.5-1.5 8-.5v13c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z\"/><path d=\"M12 6v13\"/></svg> How to play</button></div>",
+      "css": ".ds-indi{background:#2c3b7a;padding:24px;display:flex;gap:12px;align-items:center;} .ds-icon-btn{width:44px;height:44px;display:inline-grid;place-items:center;border-radius:50%;border:1px solid rgba(251,243,228,.28);background:rgba(251,243,228,.08);color:#fbf3e4;padding:0;cursor:pointer;transition:background-color .15s,transform .15s;} .ds-icon-btn:hover{background:rgba(251,243,228,.18);} .ds-icon-btn:active{transform:scale(.94);} .ds-link-btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border:0;border-radius:999px;background:transparent;color:#fbf3e4;font:600 1rem 'Source Sans 3',system-ui,sans-serif;cursor:pointer;} .ds-link-btn svg{width:20px;height:20px;} .ds-link-btn:hover{background:rgba(251,243,228,.12);} .ds-icon-btn:focus-visible,.ds-link-btn:focus-visible{outline:3px solid #eab84a;outline-offset:2px;}"
+    },
+    {
+      "name": "Order Card",
+      "kind": "card",
+      "refersTo": "order-card",
+      "description": "Paper card in the mover's half: the opponent's last tile and what may be taken.",
+      "html": "<div class=\"ds-dye\"><div class=\"ds-order\"><span class=\"ds-order-tile\"><svg viewBox=\"0 0 100 100\"><circle cx=\"34\" cy=\"32\" r=\"18\" fill=\"#d9a441\" stroke=\"#b07f22\" stroke-width=\"2\"/><path d=\"M30 92 L45 46 M56 92 L52 46\" stroke=\"#3e6b4f\" stroke-width=\"4\" fill=\"none\" stroke-linecap=\"round\"/><ellipse cx=\"50\" cy=\"40\" rx=\"8\" ry=\"14\" fill=\"#6a5fa8\"/></svg></span><p class=\"ds-order-what\">Take an <b>iris</b> or a <b>sun</b> tile</p></div></div>",
+      "css": ".ds-dye{background:#b4381e;padding:24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .ds-order{display:flex;align-items:center;gap:.75em;padding:.45em .9em .45em .45em;border-radius:12px;background:#f5eddc;color:#1f1b18;box-shadow:0 6px 16px -8px rgba(0,0,0,.55);font-family:'Source Sans 3',system-ui,sans-serif;width:100%;max-width:22rem;} .ds-order-tile{width:3.4em;height:3.4em;flex:none;border-radius:.5em;background:#f8f1e2;box-shadow:0 0 0 1px rgba(80,60,30,.2),0 2px 4px rgba(60,40,15,.25);overflow:hidden;} .ds-order-tile svg{width:100%;height:100%;display:block;} .ds-order-what{margin:0;font-size:1.0625em;line-height:1.3;} .ds-order-what b{font-weight:700;}"
+    },
+    {
+      "name": "Garden Cells",
+      "kind": "custom",
+      "refersTo": "garden-cell",
+      "description": "Paper board with a tile that may be taken, a shaded tile, and a token well.",
+      "html": "<div class=\"ds-board\"><button class=\"ds-cell ds-legal\" aria-label=\"Tile that may be taken\"></button><button class=\"ds-cell ds-shade\" aria-label=\"Tile that may not be taken\"></button><span class=\"ds-cell ds-well\"><svg viewBox=\"0 0 100 100\"><defs><radialGradient id=\"ds-lq\" cx=\"36%\" cy=\"30%\" r=\"78%\"><stop offset=\"0\" stop-color=\"#6375b8\"/><stop offset=\".5\" stop-color=\"#2e3d78\"/><stop offset=\"1\" stop-color=\"#171f45\"/></radialGradient></defs><circle cx=\"50\" cy=\"50\" r=\"42\" fill=\"url(#ds-lq)\"/></svg></span></div>",
+      "css": ".ds-board{display:grid;grid-template-columns:repeat(3,72px);gap:6px;padding:10px;border-radius:12px;background:linear-gradient(170deg,#d9c6a0,#cdb68a);box-shadow:0 12px 22px -6px rgba(8,6,14,.65),inset 0 1px 0 rgba(255,255,255,.55);} .ds-cell{position:relative;display:grid;place-items:center;width:72px;height:72px;padding:0;border:0;border-radius:6px;background:#f8f1e2;box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 0 0 1px rgba(80,60,30,.14) inset,0 2px 3px rgba(60,40,15,.22);transition:transform .22s cubic-bezier(.16,1,.3,1),box-shadow .22s cubic-bezier(.16,1,.3,1);} .ds-legal{cursor:pointer;transform:translateY(-4%);box-shadow:0 0 0 2.5px #eab84a,0 2px 3px rgba(40,25,5,.42);} .ds-legal:hover{transform:translateY(-6%);} .ds-legal:focus-visible{outline:3px solid #eab84a;outline-offset:3px;} .ds-shade::before{content:'';position:absolute;inset:0;border-radius:inherit;background:rgba(70,54,36,.3);} .ds-well{background:#e3d5b7;box-shadow:inset 0 2px 5px rgba(70,50,20,.35),inset 0 0 0 1px rgba(80,60,30,.16);} .ds-well svg{width:86%;height:86%;}"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "chip",
+      "refersTo": "segmented-control",
+      "description": "Paper-tray choice of mode or level in the setup sheet.",
+      "html": "<div class=\"ds-paper\"><div class=\"ds-seg\"><label class=\"ds-seg-opt\"><input type=\"radio\" name=\"ds-lv\"><span>Easy</span></label><label class=\"ds-seg-opt\"><input type=\"radio\" name=\"ds-lv\" checked><span>Medium</span></label><label class=\"ds-seg-opt\"><input type=\"radio\" name=\"ds-lv\"><span>Hard</span></label></div></div>",
+      "css": ".ds-paper{background:#f5eddc;padding:24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .ds-seg{display:flex;gap:4px;border-radius:12px;background:#ebdfc6;padding:4px;width:100%;font-family:'Source Sans 3',system-ui,sans-serif;} .ds-seg-opt{flex:1 1 0;position:relative;} .ds-seg-opt input{position:absolute;opacity:0;inset:0;margin:0;} .ds-seg-opt span{display:flex;align-items:center;justify-content:center;min-height:44px;padding:6px 12px;border-radius:9px;font-weight:700;font-size:.9375rem;color:#4e443a;cursor:pointer;transition:background-color .15s,color .15s,box-shadow .15s;} .ds-seg-opt input:checked + span{background:#f5eddc;color:#6b2416;box-shadow:0 1px 3px rgba(60,40,15,.25),inset 0 -2px 0 #b4381e;}"
+    },
+    {
+      "name": "Name Field",
+      "kind": "input",
+      "refersTo": "name-field",
+      "description": "A player's name in the setup sheet, with their token chip.",
+      "html": "<div class=\"ds-paper\"><label class=\"ds-name\"><span class=\"ds-name-label\">Vermilion</span><input placeholder=\"Player 1\"></label></div>",
+      "css": ".ds-paper{background:#f5eddc;padding:24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .ds-name{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 10px;border-radius:12px;background:#f5eddc;box-shadow:inset 0 0 0 1px rgba(80,60,30,.22);width:100%;font-family:'Source Sans 3',system-ui,sans-serif;} .ds-name:focus-within{box-shadow:inset 0 0 0 2px #b4381e;} .ds-name-label{font-size:.8125rem;font-weight:700;color:#6a5d50;width:6.2em;} .ds-name input{flex:1;min-width:0;min-height:40px;border:0;background:transparent;font:inherit;font-size:1rem;padding:0 6px;outline:none;color:#1f1b18;}"
+    },
+    {
+      "name": "Switch",
+      "kind": "input",
+      "refersTo": "switch",
+      "description": "Settings toggle on paper.",
+      "html": "<div class=\"ds-paper\"><label class=\"ds-toggle\"><span>Sound</span><input type=\"checkbox\" checked><span class=\"ds-switch\"></span></label></div>",
+      "css": ".ds-paper{background:#f5eddc;padding:24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .ds-toggle{position:relative;display:flex;align-items:center;gap:16px;width:100%;font:700 1rem 'Source Sans 3',system-ui,sans-serif;color:#1f1b18;cursor:pointer;} .ds-toggle > span:first-child{flex:1;} .ds-toggle input{position:absolute;opacity:0;width:1px;height:1px;} .ds-switch{width:50px;height:30px;border-radius:999px;background:#cbbb9c;position:relative;flex:none;transition:background-color .2s;} .ds-switch::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s cubic-bezier(.16,1,.3,1);} .ds-toggle input:checked + .ds-switch{background:#b4381e;} .ds-toggle input:checked + .ds-switch::after{transform:translateX(20px);}"
+    },
+    {
+      "name": "Menu Item",
+      "kind": "nav",
+      "refersTo": "menu-item",
+      "description": "Row in the in-game menu sheet.",
+      "html": "<div class=\"ds-paper\" style=\"display:block\"><button class=\"ds-menu-item\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 11l8-6.5 8 6.5\"/><path d=\"M6.5 9.5V19h11V9.5\"/><path d=\"M10 19v-5h4v5\"/></svg> Home</button><button class=\"ds-menu-item\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 5.5C6.5 4.5 9.5 4.5 12 6c2.5-1.5 5.5-1.5 8-.5v13c-2.5-1-5.5-1-8 .5-2.5-1.5-5.5-1.5-8-.5z\"/><path d=\"M12 6v13\"/></svg> How to play</button></div>",
+      "css": ".ds-paper{background:#f5eddc;padding:24px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;} .ds-menu-item{display:flex;width:100%;align-items:center;gap:14px;min-height:52px;padding:0 8px;border:0;border-bottom:1px solid rgba(80,60,30,.12);background:transparent;text-align:left;font:600 1.0625rem 'Source Sans 3',system-ui,sans-serif;color:#1f1b18;cursor:pointer;} .ds-menu-item:last-child{border-bottom:0;} .ds-menu-item svg{color:#b4381e;} .ds-menu-item:hover{background:rgba(31,27,24,.05);}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Shared Table",
+    "overview": "The game is a table shared by two people. Every screen is the same object seen from above: a vermilion cloth half and an indigo cloth half, meeting at a seam, with a warm paper garden board lying across that seam. The half whose turn it is lights up; the waiting half sinks to a darker, muted dye. Nothing floats on a neutral page. A thin top bar carries only the match label and two icon buttons; everything about a player (their name, tokens in hand, the tile they must answer, the result) sits in their own half of the cloth.\n\nThe world is made of a few real materials. The dyes and the paper carry raster texture (a plain-weave cloth tile and a fibre paper tile, both 256px seamless tiles, soft-light blended onto flat colour). Tokens are lacquered discs with a radial sheen. The garden's sixteen tiles are the client's own SVG art, kept as drawn; the system frames them and never redraws them. Paper surfaces (the order card, the sheets) are the only places interface text sits on light; everything else is cream type on dye.\n\nThe interface recedes. The garden is the largest thing on every screen at every viewport, and every other element is sized from what is left over. Motion belongs to the play itself: the light crossing the seam, a taken tile flying to the mover's card, a token settling into its cell, a brush stroke through a winning formation.",
+    "keyCharacteristics": [
+      "Two dyed halves (vermilion, indigo), stacked in portrait and side by side in landscape, meeting at the garden's centre.",
+      "One paper garden on the seam, as large as the viewport allows (up to 640px portrait, 760px landscape).",
+      "Lit versus sunk dye is the turn indicator; players are also told apart by token pattern (crest versus plain).",
+      "Cream type on cloth, ink type on paper; controls invert their colours when they land on paper.",
+      "A serif display face for names, results and titles only; a humanist sans for everything else.",
+      "Real texture, soft-light blended; authored SVG icons, tokens and diagrams."
+    ],
+    "rules": [
+      {
+        "name": "The Lit Half Rule",
+        "body": "Exactly one half is lit: the half of the player to move. The other sits in its sunk dye. A tie lights both at half strength. No other element may claim the lit dye.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Action Colour Rule",
+        "body": "On paper, vermilion is the only action colour. On the dyes, the primary action is a paper button. Indigo is a player, never a button.",
+        "section": "colors"
+      },
+      {
+        "name": "The Gold Marks Rule",
+        "body": "Gold is for what the game marks (may be taken, last placed, won, scored) and for focus on the dyes. It is never a fill for interface chrome.",
+        "section": "colors"
+      },
+      {
+        "name": "The Eighteen Pixel Rule",
+        "body": "The display face is set at 18px or above only; below that everything is Source Sans 3. The smallest live display use (a seat name on a short phone) computes to about 19px.",
+        "section": "typography"
+      },
+      {
+        "name": "The Seat Scale Rule",
+        "body": "Everything in a seat is sized in em from one seat font size (1rem default; 0.9375rem and 0.875rem on short screens; clamp(0.875rem, 0.25rem + 1.2vw, 1.5rem) in landscape), so a seat scales as a whole.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Count Rule",
+        "body": "Token counts and points use tabular figures.",
+        "section": "typography"
+      },
+      {
+        "name": "The Garden First Rule",
+        "body": "The garden is sized first and is the largest element at every viewport; seats, bars and cards fit around it, and short screens drop secondary detail before the garden shrinks further.",
+        "section": "layout"
+      },
+      {
+        "name": "The Shade Layer Rule",
+        "body": "Tiles that may not be taken sink under a warm shade layer (rgba(70,54,36,.3), .38 once the game is over) drawn as a pseudo-element, never a CSS filter: filters on these SVG-filled buttons crashed WebKit during play.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Texture Rule",
+        "body": "Cloth and paper texture is a 256px seamless tile in grey light and shade, soft-light blended over flat colour. A new surface of cloth or paper uses the same tiles the same way; texture is never a photograph or a gradient imitation.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** split every screen into the vermilion and indigo halves with the paper garden on the seam, stacked in portrait, side by side from aspect 5/4.",
+      "**Do** light only the half of the player to move, with the lit dye and a radial light brightest at the seam, animating opacity alone.",
+      "**Do** put cream type on the dyes and ink type on paper, and swap a control's material when it moves from cloth to paper.",
+      "**Do** size the garden first and let short screens drop pips and notes before the garden shrinks.",
+      "**Do** keep every touch target at least 44px.",
+      "**Do** blend the cloth and paper texture tiles (256px, soft-light) under any new cloth or paper surface.",
+      "**Do** draw new icons as SVG on the 24px grid with a 1.8 stroke, round caps and joins, in currentColor.",
+      "**Do** keep the display face to 18px and above and set everything smaller in Source Sans 3."
+    ],
+    "donts": [
+      "**Don't** redraw, restyle or recolour the garden tile art; frame it only. The rising sun stays a plain disc.",
+      "**Don't** tell players apart by colour alone: player 1's tokens carry the five-petal crest, player 2's stay plain.",
+      "**Don't** put the board on a neutral page or move player information into a status bar or side panel; it lives in that player's half.",
+      "**Don't** use indigo as an action colour or gold as a fill for interface chrome.",
+      "**Don't** apply CSS filters to garden cells; shade them with a layer.",
+      "**Don't** add a motion that has no reduced-motion fallback to an instant state change."
+    ]
+  }
+}
