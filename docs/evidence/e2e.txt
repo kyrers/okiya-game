@@ -14,19 +14,19 @@ End-to-end results of the final run on the production build (2026-10-12 17:47 UT
   desktop-safari         passed  26  skipped  4  failed 0
   total                  passed 289  skipped 41  failed 0
 
-== size sweep (npx playwright test --grep @sweep --workers=3): about 190 sizes per state in WebKit (iphone-15) and Chromium (pixel-7), 7 desktop sizes (desktop-chrome)
-  iphone-se              passed   0  skipped  7  failed 0
-  iphone-15              passed   7  skipped  0  failed 0
-  iphone-15-landscape    passed   0  skipped  7  failed 0
-  pixel-7                passed   7  skipped  0  failed 0
-  iphone-se-3            passed   0  skipped  7  failed 0
-  android-360            passed   0  skipped  7  failed 0
-  ipad-portrait          passed   0  skipped  7  failed 0
-  ipad-landscape         passed   0  skipped  7  failed 0
-  desktop-chrome         passed   7  skipped  0  failed 0
-  desktop-firefox        passed   0  skipped  7  failed 0
-  desktop-safari         passed   0  skipped  7  failed 0
-  total                  passed  21  skipped 56  failed 0
+== sweep (npx playwright test --grep @sweep --workers=3): the layout rules at about 190 sizes per state in WebKit (iphone-15) and Chromium (pixel-7) and 7 desktop sizes (desktop-chrome); every control reached by a real tap through two whole matches at 11 phone and tablet sizes (iphone-15, pixel-7) and 3 desktop sizes (the three desktop browsers)
+  iphone-se              passed   0  skipped 18  failed 0
+  iphone-15              passed  18  skipped  0  failed 0
+  iphone-15-landscape    passed   0  skipped 18  failed 0
+  pixel-7                passed  18  skipped  0  failed 0
+  iphone-se-3            passed   0  skipped 18  failed 0
+  android-360            passed   0  skipped 18  failed 0
+  ipad-portrait          passed   0  skipped 18  failed 0
+  ipad-landscape         passed   0  skipped 18  failed 0
+  desktop-chrome         passed  10  skipped  8  failed 0
+  desktop-firefox        passed   3  skipped 15  failed 0
+  desktop-safari         passed   3  skipped 15  failed 0
+  total                  passed  52  skipped 146  failed 0
 
 == perf (npx playwright test --grep @perf --workers=1)
   iphone-se              passed   1  skipped  0  failed 0
@@ -42,4 +42,4 @@ End-to-end results of the final run on the production build (2026-10-12 17:47 UT
   desktop-safari         passed   1  skipped  0  failed 0
   total                  passed  11  skipped  0  failed 0
 
-Skipped tests are engine-scoped by design: keyboard play on touch profiles; offline, install, wake-lock, axe and CSP checks run in one or two engines; the size sweep runs in iphone-15, pixel-7 and desktop-chrome.
+Skipped tests are engine-scoped by design: keyboard play on touch profiles; offline, install, wake-lock, axe and CSP checks run in one or two engines; the sweep pass runs only where its sizes belong (see its heading).
