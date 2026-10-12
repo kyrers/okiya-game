@@ -21,9 +21,10 @@ game in one or two taps.
 
 ## Product Purpose
 
-A digital edition of Okiya that plays exactly by the official rules, good enough to be sold as a
-real game. Success: a game feels as clear and pleasant as the physical one, on any screen, with no
-rule ever applied wrongly and no layout ever breaking.
+A digital edition of Okiya that plays exactly by the official rules, built to the quality of a
+game sold commercially. It will not be sold (client, 2026-10-12). Success: a game feels as clear
+and pleasant as the physical one, on any screen, with no rule ever applied wrongly and no layout
+ever breaking.
 
 ## Positioning
 
@@ -70,8 +71,8 @@ campaign, progression, charms or other layer on top.
 - Designer ruling on a full garden: BoardGameGeek thread 984327, reply by Bruno Cathala
   ("Bruno des Montagnes", BGG user 25583), 2013-05-30: "in this case, it's a tie !"
 - Tile art: `src/ui/tileArt.ts` (original SVG).
-- Open, not decided here: whether the name "Okiya" may be used commercially needs a licence from
-  the rights holders; no licence or endorsement may be claimed in the product.
+- Not for sale (client, 2026-10-12), so no licence for the name "Okiya" is sought; the product
+  credits the designers and publisher and claims no endorsement.
 
 ## Product Principles
 

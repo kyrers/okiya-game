@@ -163,11 +163,10 @@ Everything else (engine, AI, UI, tests, scripts, docs) was written in the main s
 Nothing known is open in the build itself. These are steps only the client can take; none of them
 changes the code:
 
-- **Licence to sell.** The name Okiya (also sold as Niya) and the published game belong to its
-  publisher and designers. This edition uses no Blue Orange art or marks and claims no
-  endorsement, but selling it under that name needs a licence from the rights holders. This is a
-  business step for the client.
-- **Deployment.** Not published: that needs the client's Vercel account. Deployability is
+- **Not for sale.** Asked about the name licence, the client answered that the game will not be
+  sold; "sold as a real game" is the quality bar. The edition credits the designers and the
+  publisher, uses none of their art or marks and claims no endorsement.
+- **Deployment.** Not published, by the client's choice (asked: "Don't deploy"). Deployability is
   demonstrated: Vercel's own build (`vercel build`, CLI 44.7.3, run locally with no account)
   completes and emits Build Output v3 whose static files are identical to the tested `dist/` and
   whose routes carry the cache rules, security headers and CSP of `vercel.json`. `vercel.json`

@@ -71,8 +71,7 @@ docs/                 rules, process, evidence, screenshots
 
 - **Okiya** (also published as **Niya**) is designed by Bruno Cathala and Cyril Bouquet and
   published by Blue Orange Games. This edition uses its rules; no Blue Orange artwork, logos or
-  trade dress are used. Selling it under the name "Okiya" requires a licence from the rights
-  holders (see docs/PROCESS.md, "Open items").
+  trade dress are used, and no endorsement is claimed. This edition is not for sale.
 - **Art**: the garden tiles, tokens, icons and app icon are original SVG drawn for this project.
 - **Sounds**: synthesised at run time with the Web Audio API; there are no audio files.
 - **Typefaces**, both under the SIL Open Font License 1.1 and self-hosted (the licence texts ship

@@ -24,6 +24,5 @@ Nothing is loaded from another domain at run time: the Content Security Policy i
 allows only the site itself (`default-src 'self'`), and the e2e suite runs a game under that policy
 with no violation.
 
-Not an asset of this build, and not resolved by it: the right to sell the game under the name
-"Okiya". The rules of a game are not what is licensed here; the name and the published game
-belong to the publisher and the designers (see docs/PROCESS.md, "Open items").
+The name "Okiya" and the published game belong to the publisher and the designers; this edition
+credits them, uses none of their art or marks, claims no endorsement, and is not for sale.
