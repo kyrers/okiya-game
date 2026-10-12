@@ -72,7 +72,8 @@ test.describe('the rules on screen', () => {
     const bad = codes.findIndex((c, i) => /^[MCPI][spbr]$/.test(c) && !legal.includes(i));
     test.skip(bad < 0, 'every remaining tile is legal in this position');
     await tap(page, bad, hasTouch);
-    await expect(page.locator('.say-note.warn')).toContainText('shares nothing');
+    await expect(page.locator('.seat.moving .say-what')).toContainText('Not that tile');
+    await expect(page.locator('[aria-live]')).toContainText('shares nothing');
     expect((await boardCodes(page))[bad]).toBe(codes[bad]);
   });
 

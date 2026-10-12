@@ -10,7 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "sim": "tsx scripts/simulate.ts",
-    "e2e": "playwright test --grep-invert @perf && playwright test --grep @perf --workers=1",
+    "e2e": "playwright test --grep-invert \"@perf|@sweep\" && playwright test --grep @sweep --workers=3 && playwright test --grep @perf --workers=1",
     "icons": "tsx scripts/render-icons.ts"
   },
   "devDependencies": {

@@ -55,6 +55,10 @@ export class GameScreen {
   private lastIndex: number | null = null;
   private destroyed = false;
   private deniedTimer = 0;
+  private resizeObserver: ResizeObserver | null = null;
+  private contentObserver: ResizeObserver | null = null;
+  private fitPending = false;
+  private onFonts: (() => void) | null = null;
   private deniedIndex: number | null = null;
 
   constructor(view: MatchView, private readonly deps: GameScreenDeps) {
@@ -94,6 +98,24 @@ export class GameScreen {
     this.render(null);
     this.announceTurn();
     this.maybeComputer();
+    // Refit the seats whenever the screen changes size (rotation, browser bars), when a seat's
+    // content changes size (text reflowing), and when any font finishes loading.
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver(() => this.fitSeats());
+      this.resizeObserver.observe(this.el);
+      this.contentObserver = new ResizeObserver(() => {
+        if (this.fitPending) return;
+        this.fitPending = true;
+        requestAnimationFrame(() => {
+          this.fitPending = false;
+          if (!this.destroyed) this.fitSeats();
+        });
+      });
+      this.observeSeatContent();
+    }
+    this.onFonts = () => !this.destroyed && this.fitSeats();
+    document.fonts?.addEventListener('loadingdone', this.onFonts);
+    void document.fonts?.ready.then(this.onFonts);
   }
 
   /** The current match, for saving and the menu. */
@@ -105,6 +127,15 @@ export class GameScreen {
     this.destroyed = true;
     this.generation++;
     window.clearTimeout(this.deniedTimer);
+    this.resizeObserver?.disconnect();
+    this.contentObserver?.disconnect();
+    if (this.onFonts) document.fonts?.removeEventListener('loadingdone', this.onFonts);
+  }
+
+  private observeSeatContent(): void {
+    if (!this.contentObserver) return;
+    this.contentObserver.disconnect();
+    for (const p of [1, 2] as const) for (const part of this.seats[p].children) this.contentObserver.observe(part);
   }
 
   /** Re-read settings (playable-tile marking) after they change. */
@@ -226,11 +257,15 @@ export class GameScreen {
     const mover = before.current;
     const from = this.board.cell(index).getBoundingClientRect();
     this.animating = true;
-    this.guardUntil = performance.now() + TAP_GUARD_MS;
-    this.el.dataset.busy = '';
-    window.setTimeout(() => {
-      if (performance.now() >= this.guardUntil - 1) delete this.el.dataset.busy;
-    }, TAP_GUARD_MS);
+    // The double-tap guard follows a person's own move only: after the computer's move the
+    // player may answer at once.
+    if (!isComputer(this.setup, mover)) {
+      this.guardUntil = performance.now() + TAP_GUARD_MS;
+      this.el.dataset.busy = '';
+      window.setTimeout(() => {
+        if (performance.now() >= this.guardUntil - 1) delete this.el.dataset.busy;
+      }, TAP_GUARD_MS);
+    }
     this.view = play(this.view, index);
     this.deps.save(this.view);
     this.lastIndex = index;
@@ -347,6 +382,24 @@ export class GameScreen {
 
   private renderSeats(): void {
     for (const p of [1, 2] as const) this.renderSeat(p);
+    this.observeSeatContent();
+    this.fitSeats();
+  }
+
+  /**
+   * A seat never lets its content spill: when it does not fit the room the layout gives it, it
+   * sheds detail in steps until it does (1: the opener's note; 2: the row of small tokens, shown as
+   * a count instead; 3: a size smaller). Measured, so it holds for any screen, text size or name.
+   */
+  private fitSeats(): void {
+    for (const p of [1, 2] as const) {
+      const seat = this.seats[p];
+      seat.classList.remove('fit-1', 'fit-2', 'fit-3');
+      for (const step of ['fit-1', 'fit-2', 'fit-3']) {
+        if (!spills(seat)) break;
+        seat.classList.add(step);
+      }
+    }
   }
 
   private renderSeat(p: Player): void {
@@ -393,21 +446,34 @@ export class GameScreen {
     const name = setup.names[p - 1];
     const computer = isComputer(setup, p);
     if (state === 'moving') {
+      // A refused tap rewrites the card's own line for a moment ("Not that tile: …") instead of
+      // adding one, so the seat never grows; the tile shakes, and screen readers hear the reason.
+      const denied = this.deniedIndex !== null && !computer;
+      const nope = `<b class="nope-word">Not that tile</b>: `;
       if (!g.lastTile) {
         const who = computer ? 'The computer opens' : verb(name, 'You open', `${escape(name)} opens`);
+        const what = computer
+          ? `${who}<span class="dots" aria-hidden="true"></span>`
+          : denied
+            ? `${nope}take any tile on the <b>outer ring</b>`
+            : `${who}: take any tile on the <b>outer ring</b>`;
         return `<div class="say-order${computer ? ' thinking' : ''}">
             <span class="say-tile ring" aria-hidden="true">${ringIcon()}</span>
-            <p class="say-what">${computer ? `${who}<span class="dots" aria-hidden="true"></span>` : `${who}: take any tile on the <b>outer ring</b>`}</p>
+            <p class="say-what">${what}</p>
           </div>
           <p class="say-note">${this.openerNote()}</p>`;
       }
       const opp = setup.names[opponent(p) - 1];
-      const denied = this.deniedIndex !== null && !computer ? this.deniedNote() : '';
-      const what = computer ? `The computer is thinking<span class="dots" aria-hidden="true"></span>` : orderHtml(g.lastTile);
+      const order = orderHtml(g.lastTile);
+      const what = computer
+        ? `The computer is thinking<span class="dots" aria-hidden="true"></span>`
+        : denied
+          ? `${nope}${order.replace(/^Take/, 'take')}`
+          : order;
       return `<div class="say-order${computer ? ' thinking' : ''}">
           <span class="say-tile" role="img" aria-label="${escape(opp)} took ${tileLabel(g.lastTile)}">${tileSvg(g.lastTile)}</span>
           <p class="say-what">${what}</p>
-        </div>${denied}`;
+        </div>`;
     }
     if (state === 'waiting') {
       return `<p class="say-wait">${computer ? 'Waiting' : verb(name, 'Waiting for your turn', 'Waiting')}</p>`;
@@ -436,14 +502,6 @@ export class GameScreen {
         <div class="say-text"><p class="say-result${quiet ? ' quiet' : ''}">${result}</p>${reason ? `<p class="say-reason">${reason}</p>` : ''}</div>
         ${actions}
       </div>`;
-  }
-
-  private deniedNote(): string {
-    const g = this.view.game;
-    const i = this.deniedIndex!;
-    const c = g.board[i];
-    if (c.kind !== 'tile' || !g.lastTile) return '';
-    return `<p class="say-note warn">${tileLabel(c.tile)} shares nothing with ${tileLabel(g.lastTile)}.</p>`;
   }
 
   private openerNote(): string {
@@ -519,4 +577,16 @@ function ringIcon(): string {
 
 function escape(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+}
+
+/** True when any part of a seat's content reaches outside the seat's own box. */
+function spills(seat: HTMLElement): boolean {
+  const box = seat.getBoundingClientRect();
+  if (box.height === 0) return false;
+  for (const child of seat.querySelectorAll('.seat-id, .seat-pips, .seat-say > *')) {
+    const r = child.getBoundingClientRect();
+    if (r.height === 0) continue;
+    if (r.top < box.top - 0.5 || r.bottom > box.bottom + 0.5) return true;
+  }
+  return false;
 }

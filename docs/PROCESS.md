@@ -100,6 +100,13 @@ Answers the client gave during the session (structured questions):
 | The UI face mis-spaced letters at about 14 px | Screenshots, then a font specimen | Source Sans 3 replaces Zen Kaku Gothic New (see Decisions). |
 | The "g" of a player called **Diogo** was cut off | The client, on a real phone | Names end in an ellipsis, so their box clips; its line height (1.15) was shorter than Shippori's ascent plus descent. Clipping boxes now use a line height that holds the whole font box (1.5 for names, 1.45 for button details). A geometric e2e test checks every profile, and a control proves it catches the old value. |
 | **How to play** text not centred in landscape | The client, on a real phone | On short, wide screens the bottom sheet spanned the screen with its text on the left. Sheets are at most 44rem wide and centred; the rules sheet is one reading column (38rem) so title and text share an edge. Checked on every profile by the layout test. |
+| The **New game** sheet in landscape showed one option at a time between its title and its Start button | The client, on a real phone (second pass) | On short, wide screens the sheet takes nearly the full height, Start moves into the title row (close stays at the far right), and the form uses two columns with tighter cards. The layout rules now require a sheet to keep at least 45% of its height for its content. |
+| The two-column form above **never applied**: its rules sat before the form's base rules in the stylesheet, which overrode them, and the size sweep still passed | Looking at a WebKit screenshot of the fix, before handing it back | The block now follows the rules it overrides. A new sweep check requires every section of the form (heading and first option) to be on screen without scrolling on a phone held sideways; run against the old stylesheet it reports "Match" off screen at every landscape size tried, so it would have caught this. |
+| "Chosen at random to open the match" **cut off** in portrait | The client, on a real phone (second pass) | Taller name lines (the descender fix) made seats overflow on phones about 760 to 800 px tall, a band no named profile covered. Seats now fit themselves by measurement: when a seat's content does not fit, it drops the opener's note, then shows the token count instead of the row of tokens, then steps down a size. |
+| A tap right after the **computer's** move was ignored for 260 ms | The size sweep | The double-tap guard now follows only a person's own move. |
+| Text reflowed after the layout was fitted, when a font weight first used at the end of a game arrived late (WebKit) | The size sweep, then a timing probe | All font faces load at start-up; seats refit when their content changes size or a font finishes loading. |
+| Cells under 44 px, buttons off-screen and overflowing text on 568 to 640 px wide landscape phones; home actions off-screen at 520 px tall | The size sweep | Narrower minimum side columns in landscape, home columns with guaranteed minimum widths and a garden sized to what is left, tighter home actions on short screens. |
+| A refused tap added a line under the order card, which tight seats could not hold | The size sweep | The card's own line reads "Not that tile: take an iris or bird tile" for a moment instead; the tile shakes; screen readers still hear the reason. |
 
 ## Verification (final run)
 
@@ -112,6 +119,7 @@ Answers the client gave during the session (structured questions):
 | Large default text (20 px root) on every profile | `e2e/bigtext.spec.ts` | included above |
 | Text in clipping boxes keeps its descenders and accents ("Diogo", "Ágqy Jóy"): every line's font box inside the clip box, with a control that fails on the old line height | `e2e/glyphs.spec.ts` | included above |
 | Every sheet centred, title and text on one edge, on every profile | `e2e/layout.spec.ts` | included above |
+| **Size sweep**: the same layout rules at about 190 sizes per state (every phone width 320 to 430 against heights 520 to 932 in portrait, landscape heights 300 to 430 against widths 568 to 932, six tablets both ways, seven desktops), on home, an opening move with its note, a refused tile, the end of a match, the new-game sheet (both modes, plus the at-a-glance check on phones held sideways) and the rules sheet, in WebKit and Chromium | `e2e/sweep.spec.ts` (`npm run e2e` runs it as its own pass) | 21 of 21 passed |
 | Real phone | the client, on their own phone over the local network | "Looks ok mostly"; two findings, both fixed (below) |
 | Offline: after one visit a game against the computer plays with the network off | `e2e/ship.spec.ts` | passes (desktop Chrome, Pixel 7, Android 360) |
 | Installable to the home screen: Chrome's own installability check | `e2e/ship.spec.ts` (`Page.getInstallabilityErrors`, `Page.getAppManifest`) | no installability errors, no manifest errors (desktop and both Android profiles) |
@@ -184,10 +192,11 @@ changes the code:
 - **Share image URL.** `index.html` points `og:image` at `./og-image.jpg`; social scrapers want an
   absolute URL, so set it to the production domain once it exists.
 - **Physical devices.** No phones are attached to this environment, so the systematic device
-  checks ran in emulation (11 profiles in WebKit, Chromium and Firefox). The client then played
-  the production build on their own phone, served on the local network for the test: "looks ok
-  mostly", with two findings (the clipped "g", the landscape rules sheet), both fixed and now
-  covered by tests. The test host was closed afterwards, as asked. Offline play, the home-screen
+  checks ran in emulation (11 profiles in WebKit, Chromium and Firefox, then the size sweep). The
+  client played the production build on their own phone, served on the local network for the
+  test, twice: the first pass found the clipped "g" and the landscape rules sheet; the second
+  found the cramped landscape New game sheet and the cut-off opener note. All four are fixed and
+  each is now covered by a test that fails on the old code or the old sizes. The test host was closed afterwards, as asked. Offline play, the home-screen
   install and the wake lock need a secure context, which a plain-http LAN address is not; they
   are verified in Chrome on localhost (a secure context) and behave the same on the https site.
 - **Sound on iOS** follows the ringer switch, as Web Audio does in Safari.

@@ -95,3 +95,78 @@ export function expectedLegal(codes: string[], taken: string | null): number[] {
   });
   return out;
 }
+
+
+/**
+ * Every layout rule the app keeps, checked on the page as it stands: no page scroll, nothing off
+ * screen, seats never on the garden or the top bar and never spilling out, touch targets, text
+ * that overflows its box, sheets centred with title and text on one edge and room for content.
+ */
+export async function layoutProblems(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const out: string[] = [];
+    const vw = document.documentElement.clientWidth;
+    const vh = window.innerHeight;
+    const de = document.documentElement;
+    if (de.scrollWidth > vw + 1) out.push(`page scrolls sideways: ${de.scrollWidth} > ${vw}`);
+    if (de.scrollHeight > de.clientHeight + 1) out.push(`page scrolls: ${de.scrollHeight} > ${de.clientHeight}`);
+    const name = (el: Element) => `${el.tagName.toLowerCase()}.${[...el.classList].join('.')}`;
+    const visible = (el: Element) => {
+      const cs = getComputedStyle(el);
+      const b = el.getBoundingClientRect();
+      return cs.display !== 'none' && cs.visibility !== 'hidden' && b.width > 0 && b.height > 0 && !el.closest('.sr-only');
+    };
+    const dialog = document.querySelector('dialog[open]');
+    const scope: Element[] = dialog ? [...dialog.querySelectorAll('.sheet-panel, .sheet-head *, .sheet-foot *')] : [...document.querySelectorAll('.screen *')];
+    for (const el of scope) {
+      if (!visible(el) || el.closest('.board-brush') || el.classList.contains('glow')) continue;
+      const b = el.getBoundingClientRect();
+      if (b.left < -1 || b.top < -1 || b.right > vw + 1 || b.bottom > vh + 1) out.push(`${name(el)} leaves the viewport (${Math.round(b.left)},${Math.round(b.top)},${Math.round(b.right)},${Math.round(b.bottom)} in ${vw}x${vh})`);
+    }
+    if (dialog) {
+      // A sheet sits centred, and its title starts on the same edge as its text.
+      const panel = dialog.querySelector('.sheet-panel')!.getBoundingClientRect();
+      const gap = Math.abs(panel.left - (vw - panel.right));
+      if (gap > 2) out.push(`sheet is off-centre by ${Math.round(gap / 2)}px`);
+      const title = dialog.querySelector('.sheet-title')!.getBoundingClientRect();
+      const first = dialog.querySelector('.sheet-body > *')!.getBoundingClientRect();
+      if (Math.abs(title.left - first.left) > 1) out.push(`sheet title starts at ${Math.round(title.left)}, its text at ${Math.round(first.left)}`);
+      // The content keeps most of the sheet: a title bar and a button may not squeeze it.
+      const sb = dialog.querySelector('.sheet-body')!.getBoundingClientRect();
+      if (sb.height < Math.min(120, vh * 0.3) || sb.height < panel.height * 0.45) out.push(`sheet content is only ${Math.round(sb.height)}px of a ${Math.round(panel.height)}px sheet`);
+    }
+    const board = document.querySelector('.game .board')?.getBoundingClientRect();
+    const hit = (a: DOMRect, b: DOMRect) => a.left < b.right - 1 && a.right > b.left + 1 && a.top < b.bottom - 1 && a.bottom > b.top + 1;
+    if (board && !dialog) {
+      for (const el of document.querySelectorAll('.game .seat-id, .game .seat-pips, .game .seat-say > *, .game .topbar > *')) {
+        if (visible(el) && hit(el.getBoundingClientRect(), board)) out.push(`${name(el)} overlaps the garden`);
+      }
+      const top = document.querySelector('.topbar')!.getBoundingClientRect();
+      for (const el of document.querySelectorAll('.game .seat-id, .game .seat-pips, .game .seat-say > *')) {
+        if (visible(el) && hit(el.getBoundingClientRect(), top)) out.push(`${name(el)} overlaps the top bar`);
+      }
+      for (const seat of document.querySelectorAll('.game .seat')) {
+        const s = seat.getBoundingClientRect();
+        for (const el of seat.querySelectorAll('.seat-id, .seat-pips, .seat-say > *')) {
+          const b = el.getBoundingClientRect();
+          if (visible(el) && (b.top < s.top - 1 || b.bottom > s.bottom + 1)) out.push(`${name(el)} spills out of its seat`);
+        }
+      }
+    }
+    const targets = dialog
+      ? dialog.querySelectorAll('button, .seg-opt, .choice, .toggle-row, .name-field')
+      : document.querySelectorAll('.screen button:not([aria-hidden="true"] *):not([aria-hidden="true"]):not(.is-over .cell)');
+    for (const el of targets) {
+      if (!visible(el)) continue;
+      const b = el.getBoundingClientRect();
+      if (b.width < 43.5 || b.height < 39.5) out.push(`${name(el)} is a small target: ${Math.round(b.width)}x${Math.round(b.height)}`);
+    }
+    for (const el of document.querySelectorAll('.say-order p, .say-result, .say-reason, .btn, .home-sub, .match-label, .sheet-title')) {
+      if (!visible(el)) continue;
+      const h = el as HTMLElement;
+      const ellipsis = getComputedStyle(h).textOverflow === 'ellipsis';
+      if (!ellipsis && h.scrollWidth > h.clientWidth + 2) out.push(`${name(el)} text overflows its box`);
+    }
+    return out;
+  });
+}

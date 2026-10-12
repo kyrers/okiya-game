@@ -5,6 +5,12 @@ import '@fontsource/source-sans-3/latin-700.css';
 import './ui/styles.css';
 import { App } from './ui/app';
 
+// Load every face now, not on first use: a weight first needed at the end of a game would
+// otherwise arrive late and reflow the text after the layout has been fitted.
+for (const face of ['800 1em "Shippori Mincho B1"', '400 1em "Source Sans 3"', '600 1em "Source Sans 3"', '700 1em "Source Sans 3"']) {
+  void document.fonts?.load(face).catch(() => undefined);
+}
+
 const root = document.getElementById('app');
 if (!root) throw new Error('missing #app');
 new App(root).start();

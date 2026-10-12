@@ -30,23 +30,23 @@ export function setupForm(initial: MatchSetup, onStart: (s: MatchSetup) => void)
   const names = initial.names;
   const humanDefaults = defaultNames('human');
   form.innerHTML = `
-    <fieldset>
+    <fieldset class="f-opp">
       <legend>Play against</legend>
       <div class="seg">
         ${seg('opponent', 'computer', 'The computer', initial.opponent === 'computer')}
         ${seg('opponent', 'human', 'A friend, on this device', initial.opponent === 'human')}
       </div>
     </fieldset>
-    <fieldset class="choices" data-for="computer">
+    <fieldset class="choices f-level" data-for="computer">
       <legend>Level</legend>
       ${LEVELS.map((l) => choice('difficulty', l.id, l.title, l.detail, initial.difficulty === l.id)).join('')}
     </fieldset>
-    <fieldset class="names" data-for="human">
+    <fieldset class="names f-names" data-for="human">
       <legend>Names</legend>
       ${nameField(1, names[0] === humanDefaults[0] ? '' : names[0], humanDefaults[0])}
       ${nameField(2, names[1] === humanDefaults[1] ? '' : names[1], humanDefaults[1])}
     </fieldset>
-    <fieldset class="choices">
+    <fieldset class="choices f-match">
       <legend>Match</legend>
       ${choice('match', 'single', 'Single game', 'One game decides it.', matchKind === 'single')}
       ${choice('match', 'sets3', 'First to 3 wins', 'Play on until someone has won three games.', matchKind === 'sets3')}
