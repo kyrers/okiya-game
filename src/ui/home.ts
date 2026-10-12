@@ -55,10 +55,10 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
 function summary(v: MatchView): string {
   const s = v.saved.setup;
   const who = s.opponent === 'computer' ? `vs Computer, ${DIFFICULTY_WORD[s.difficulty]}` : `${esc(s.names[0])} vs ${esc(s.names[1])}`;
-  // Lines break only between items, and never before a separator.
-  const parts = [who, MODE_WORD[s.mode]];
+  // Never break before a separator; the short items stay whole, the players' names may wrap.
+  const parts = [MODE_WORD[s.mode]];
   if (s.mode !== 'single') parts.push(`Game ${v.gameNumber}`);
-  return parts.map((p) => `<span class="nowrap">${p}</span>`).join('\u00a0· ');
+  return [who, ...parts.map((p) => `<span class="nowrap">${p}</span>`)].join('\u00a0· ');
 }
 
 function esc(s: string): string {
