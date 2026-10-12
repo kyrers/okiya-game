@@ -36,7 +36,7 @@ Answers the client gave during the session (structured questions):
 | 2 | Researched that case: the garden emptied without a winner. | Bruno Cathala ruled it a **tie** on BoardGameGeek (thread 984327, 2013-05-30, verified through the BGG API). The old engine ruled it a win for the last mover; corrected. |
 | 3 | Product context (impeccable `init`): asked the client three questions; wrote `PRODUCT.md`. | Formats, hot-seat model and difficulty count settled. |
 | 4 | Layout (impeccable surface round): three structures dealt by the skill's roll, shown on its decision page with wireframes; the client re-rolled once, then chose **Two halves**. | Direction contract in `.impeccable/surfaces/src-ui-game-ts.md`. |
-| 5 | Engine and match layer: nullable winner, ties in all match formats, opener after a tie, a match saved as facts and re-derived by replaying the engine, undo. | 56 → 69 unit tests. |
+| 5 | Engine and match layer: nullable winner, ties in all match formats, opener after a tie, a match saved as facts and re-derived by replaying the engine, undo. | The engine's 56 tests (after removing the campaign's) updated for ties; 69 unit tests in the end. |
 | 6 | AI: calibrated three levels by simulation against three player models; solved random gardens exactly; moved the search to a Web Worker. | `docs/evidence/difficulty.txt`, `perfect-play.txt`, `think-time.txt`. |
 | 7 | UI built framework-free: home, setup, game, results, rules with diagrams, settings, menu; synthesised sounds; PWA (manifest, icons, generated service worker); `vercel.json`. | First build. |
 | 8 | End-to-end suite on 11 device profiles in WebKit, Chromium and Firefox; layout invariants checked by script on every screen state. | Found and fixed the defects listed below. |
@@ -70,7 +70,8 @@ Answers the client gave during the session (structured questions):
   Think time: 12 ms at most for Hard (`docs/evidence/think-time.txt`); the computer still waits
   700 ms so its move can be followed, and its search runs in a Web Worker.
 - **No framework.** A 4 × 4 board and a handful of sheets do not need one; persistent DOM nodes
-  make moves animate and keep keyboard focus. The whole first load is about 63 KB.
+  make moves animate and keep keyboard focus. The whole first load is 147 KB, fonts and textures
+  included (Lighthouse).
 - **Saved matches are facts, not state.** Only the setup, each garden, its opener and its moves
   are stored; scores, openers and results are re-derived by replaying the engine, so a tampered
   save is rejected rather than trusted.
@@ -154,9 +155,13 @@ Everything else (engine, AI, UI, tests, scripts, docs) was written in the main s
 
 ## Open items (not resolved here)
 
-- **Licence to sell.** Okiya's name and rules are Blue Orange Games' and the designers' property.
-  This edition uses no Blue Orange art or marks and claims no endorsement, but selling it as
-  "Okiya" needs a licence from the rights holders. This is a business step for the client.
+- **Licence to sell.** The name Okiya (also sold as Niya) and the published game belong to its
+  publisher and designers. This edition uses no Blue Orange art or marks and claims no
+  endorsement, but selling it under that name needs a licence from the rights holders. This is a
+  business step for the client.
+- **Deployment.** Not deployed: publishing to Vercel needs the client's account. `vercel.json`
+  validates against Vercel's schema and the build was tested under its exact headers; importing
+  the repository in Vercel (or `vercel --prod`) is the remaining step.
 - **Real devices.** Every device check here ran in emulation (Playwright WebKit, Chromium and
   Firefox with phone and tablet profiles), not on physical phones. A short pass on a real iPhone
   and Android phone before launch is recommended (sound with the silent switch, the home-screen
