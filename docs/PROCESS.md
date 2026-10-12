@@ -160,8 +160,12 @@ Everything else (engine, AI, UI, tests, scripts, docs) was written in the main s
   endorsement, but selling it under that name needs a licence from the rights holders. This is a
   business step for the client.
 - **Deployment.** Not deployed: publishing to Vercel needs the client's account. `vercel.json`
-  validates against Vercel's schema and the build was tested under its exact headers; importing
-  the repository in Vercel (or `vercel --prod`) is the remaining step.
+  validates against Vercel's schema, the build was tested under its exact headers, and a clean
+  clone builds with `npm ci && npm run build` (the build type-checks the tests too, so it needs the
+  devDependencies, which Vercel installs by default; no package downloads browsers on install).
+  Importing the repository in Vercel (or `vercel --prod`) is the remaining step.
+- **Share image URL.** `index.html` points `og:image` at `./og-image.png`; social scrapers want an
+  absolute URL, so set it to the production domain once it exists.
 - **Real devices.** Every device check here ran in emulation (Playwright WebKit, Chromium and
   Firefox with phone and tablet profiles), not on physical phones. A short pass on a real iPhone
   and Android phone before launch is recommended (sound with the silent switch, the home-screen
