@@ -33,6 +33,11 @@ export interface GameScreenDeps {
 
 /** The computer never answers faster than this, so its move can be followed. */
 const MIN_THINK_MS = 700;
+/**
+ * After a move, taps are ignored this long: enough to swallow an accidental double tap (which in
+ * a two-player game could take a tile for the other player), short enough not to be noticed.
+ */
+const TAP_GUARD_MS = 260;
 
 export class GameScreen {
   readonly el: HTMLElement;
@@ -44,6 +49,7 @@ export class GameScreen {
   private readonly live: HTMLElement;
   private animating = false;
   private thinking = false;
+  private guardUntil = 0;
   /** Bumped whenever a pending computer move must be ignored (undo, new game, leaving). */
   private generation = 0;
   private lastIndex: number | null = null;
@@ -167,7 +173,7 @@ export class GameScreen {
 
   private humanCanMove(): boolean {
     const g = this.view.game;
-    return !g.result && !this.animating && !this.thinking && !isComputer(this.setup, g.current);
+    return !g.result && !this.thinking && performance.now() >= this.guardUntil && !isComputer(this.setup, g.current);
   }
 
   private humanTake(index: number): void {
@@ -220,6 +226,11 @@ export class GameScreen {
     const mover = before.current;
     const from = this.board.cell(index).getBoundingClientRect();
     this.animating = true;
+    this.guardUntil = performance.now() + TAP_GUARD_MS;
+    this.el.dataset.busy = '';
+    window.setTimeout(() => {
+      if (performance.now() >= this.guardUntil - 1) delete this.el.dataset.busy;
+    }, TAP_GUARD_MS);
     this.view = play(this.view, index);
     this.deps.save(this.view);
     this.lastIndex = index;
@@ -379,21 +390,21 @@ export class GameScreen {
     const name = setup.names[p - 1];
     const computer = isComputer(setup, p);
     if (state === 'moving') {
-      const head = computer ? `<p class="say-head thinking">Thinking<span class="dots" aria-hidden="true"></span></p>` : `<p class="say-head">${possessive(name)} turn</p>`;
+      const head = computer
+        ? `<p class="say-head thinking">Thinking<span class="dots" aria-hidden="true"></span></p>`
+        : `<p class="say-head">${possessive(name)} turn</p>`;
       if (!g.lastTile) {
-        return `${head}
-          <div class="say-order">
+        return `<div class="say-order">
             <span class="say-tile ring" aria-hidden="true">${ringIcon()}</span>
-            <p>${computer ? 'Opens' : verb(name, 'You open', 'Opens')}: take any tile on the <b>outer ring</b></p>
+            <div class="say-text">${head}<p class="say-what">${computer ? 'Opens' : verb(name, 'You open', 'Opens')}: any tile on the <b>outer ring</b></p></div>
           </div>
           <p class="say-note">${this.openerNote()}</p>`;
       }
       const opp = setup.names[opponent(p) - 1];
       const denied = this.deniedIndex !== null && !computer ? this.deniedNote() : '';
-      return `${head}
-        <div class="say-order">
+      return `<div class="say-order">
           <span class="say-tile" role="img" aria-label="${escape(opp)} took ${tileLabel(g.lastTile)}">${tileSvg(g.lastTile)}</span>
-          <p>${orderHtml(g.lastTile)}</p>
+          <div class="say-text">${head}<p class="say-what">${orderHtml(g.lastTile)}</p></div>
         </div>${denied}`;
     }
     if (state === 'waiting') {
@@ -401,22 +412,28 @@ export class GameScreen {
     }
     const r = g.result!;
     const m = this.view.match;
+    const matchOver = m.over && setup.mode !== 'single';
     const loserName = r.winner ? setup.names[opponent(r.winner) - 1] : '';
-    let html = '';
+    let result = '';
+    let reason = '';
+    let quiet = false;
     if (state === 'won') {
-      const pts = setup.mode.startsWith('points') ? `<p class="say-points">+${r.tilesRemaining} ${r.tilesRemaining === 1 ? 'point' : 'points'}</p>` : '';
-      const head = m.over && setup.mode !== 'single' ? verb(name, 'You win the match', 'Wins the match') : verb(name, 'You win', 'Wins');
-      html = `<p class="say-result">${head}</p><p class="say-reason">${reasonWords(r.reason, loserName)}</p>${pts}`;
+      result = matchOver ? verb(name, 'You win the match', 'Wins the match') : verb(name, 'You win', 'Wins');
+      reason = reasonWords(r.reason, loserName);
+      if (setup.mode.startsWith('points')) reason += ` · <b class="say-points">+${r.tilesRemaining} ${r.tilesRemaining === 1 ? 'point' : 'points'}</b>`;
     } else if (state === 'lost') {
-      const head = m.over && setup.mode !== 'single' ? verb(name, 'You lose the match', 'Loses the match') : verb(name, 'You lose', 'Loses');
-      const opens = !m.over ? `<p class="say-reason">${verb(name, 'You open the next game', 'Opens the next game')}</p>` : '';
-      html = `<p class="say-result quiet">${head}</p>${opens}`;
+      quiet = true;
+      result = matchOver ? verb(name, 'You lose the match', 'Loses the match') : verb(name, 'You lose', 'Loses');
+      reason = m.over ? '' : verb(name, 'You open the next game', 'Opens the next game');
     } else {
-      const opens = !m.over && m.nextFirst === p ? `<p class="say-reason">${verb(name, 'You open the next game', 'Opens the next game')}</p>` : '';
-      html = `<p class="say-result">Tie</p><p class="say-reason">${reasonWords('full', '')}</p>${opens}`;
+      result = 'Tie';
+      reason = reasonWords('full', '') + (!m.over && m.nextFirst === p ? ` · ${verb(name, 'you open next', 'opens next')}` : '');
     }
-    if (this.actionSeat() === p) html += this.actionsHtml();
-    return html;
+    const actions = this.actionSeat() === p ? this.actionsHtml() : '';
+    return `<div class="say-over${m.over ? ' match-over' : ''}">
+        <div class="say-text"><p class="say-result${quiet ? ' quiet' : ''}">${result}</p>${reason ? `<p class="say-reason">${reason}</p>` : ''}</div>
+        ${actions}
+      </div>`;
   }
 
   private deniedNote(): string {
@@ -424,7 +441,7 @@ export class GameScreen {
     const i = this.deniedIndex!;
     const c = g.board[i];
     if (c.kind !== 'tile' || !g.lastTile) return '';
-    return `<p class="say-note warn">That ${tileWords(c.tile)} tile shares nothing with it.</p>`;
+    return `<p class="say-note warn">${tileLabel(c.tile)} shares nothing with ${tileLabel(g.lastTile)}.</p>`;
   }
 
   private openerNote(): string {
@@ -451,7 +468,7 @@ export class GameScreen {
 
   private actionsHtml(): string {
     const m = this.view.match;
-    if (!m.over) return `<div class="say-actions"><button type="button" class="btn primary" data-action="next">Next game ${icon('arrow')}</button></div>`;
+    if (!m.over) return `<div class="say-actions"><button type="button" class="btn primary" data-action="next">Next game${icon('arrow')}</button></div>`;
     return `<div class="say-actions">
       <button type="button" class="btn primary" data-action="again">${icon('restart')} Play again</button>
       <button type="button" class="btn ghost" data-action="home">${icon('home')} Home</button>

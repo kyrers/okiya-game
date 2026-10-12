@@ -6,3 +6,7 @@ dist
 .impeccable/hook.cache.json
 .impeccable/review/
 .vercel
+test-results/
+test-screens/
+playwright-report/
+.scratch/

@@ -85,6 +85,7 @@ export class BoardView {
       const key = c.kind === 'tile' ? `t${tileCode(c.tile)}` : `p${c.player}`;
       if (key !== this.keys[i]) {
         b.innerHTML = c.kind === 'tile' ? tileSvg(c.tile) : `<span class="token">${tokenSvg(c.player)}</span>`;
+        b.dataset.cell = key.slice(1);
         this.keys[i] = key;
       }
       const legal = r.legal.has(i);

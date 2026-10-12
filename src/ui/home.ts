@@ -22,14 +22,14 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
       <p class="home-sub">The garden game by Bruno Cathala &amp; Cyril Bouquet</p>
     </section>
     <div class="seam home-seam"></div>
-    <section class="home-actions">
+    <div class="home-actions-wrap"><section class="home-actions">
       ${resumable ? `<button type="button" class="btn primary big" data-go="continue">${icon('play')}<span><span class="btn-title">Continue</span><span class="btn-sub">${summary(saved!)}</span></span></button>` : ''}
       <button type="button" class="btn ${resumable ? 'secondary' : 'primary'} big" data-go="new">${resumable ? icon('restart') : icon('play')}<span><span class="btn-title">New game</span><span class="btn-sub">Against the computer or a friend</span></span></button>
       <nav class="home-links" aria-label="More">
         <button type="button" class="link-btn" data-go="rules">${icon('book')} How to play</button>
         <button type="button" class="link-btn" data-go="settings">${icon('sliders')} Settings</button>
       </nav>
-    </section>`;
+    </section></div>`;
   // A different garden each visit, all sixteen tiles face up.
   el.querySelector('.home-seam')!.append(staticGarden(newGame(Math.floor(Math.random() * 2 ** 31))));
   el.addEventListener('click', (ev) => {
