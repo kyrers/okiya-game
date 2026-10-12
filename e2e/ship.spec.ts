@@ -23,6 +23,58 @@ test.describe('installable and offline', () => {
     expect(fonts.join(',')).toContain('Shippori Mincho B1');
   });
 
+  test('Chrome considers the game installable to the home screen', async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'installability is reported by Chromium');
+    await page.goto('/');
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+    const cdp = await page.context().newCDPSession(page);
+    const { installabilityErrors } = await cdp.send('Page.getInstallabilityErrors');
+    expect(installabilityErrors).toEqual([]);
+    const manifest = await cdp.send('Page.getAppManifest');
+    expect(manifest.errors).toEqual([]);
+  });
+
+  test('the screen is kept awake during a game and released on the home screen', async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'Screen Wake Lock is checked in Chromium');
+    // Record every lock the page takes and releases, passing the calls through to the browser.
+    await page.addInitScript(() => {
+      const w = window as unknown as { locks: string[] };
+      w.locks = [];
+      const wl = (navigator as unknown as { wakeLock?: { request(t: string): Promise<{ release(): Promise<void>; released: boolean }> } }).wakeLock;
+      if (!wl) return;
+      const request = wl.request.bind(wl);
+      wl.request = async (t: string) => {
+        const lock = await request(t);
+        w.locks.push('acquired');
+        const release = lock.release.bind(lock);
+        lock.release = async () => {
+          w.locks.push('released');
+          return release();
+        };
+        return lock;
+      };
+    });
+    // Real Chrome grants the screen wake lock to a visible page; headless Chrome leaves it at
+    // "prompt" and refuses, so grant it as a real browser would.
+    const cdp = await page.context().newCDPSession(page);
+    const { targetInfo } = await cdp.send('Target.getTargetInfo');
+    await cdp.send('Browser.setPermission', {
+      permission: { name: 'screen-wake-lock' },
+      setting: 'granted',
+      origin: 'http://localhost:4173',
+      browserContextId: targetInfo.browserContextId,
+    });
+    await page.goto('/');
+    await page.getByRole('button', { name: /New game/ }).click();
+    await page.getByRole('dialog', { name: 'New game' }).getByText('A friend, on this device').click();
+    await page.getByRole('button', { name: 'Start' }).click();
+    await expect.poll(() => page.evaluate(() => (window as unknown as { locks: string[] }).locks.join(','))).toBe('acquired');
+    await page.getByRole('button', { name: 'Menu' }).click();
+    await page.getByRole('button', { name: /^Home/ }).click();
+    await expect.poll(() => page.evaluate(() => (window as unknown as { locks: string[] }).locks.join(','))).toBe('acquired,released');
+  });
+
   test('the manifest and icons are served', async ({ request }) => {
     const m = await (await request.get('/manifest.webmanifest')).json();
     expect(m.name).toBe('Okiya');
