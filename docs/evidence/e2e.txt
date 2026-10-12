@@ -1,4 +1,4 @@
-End-to-end results of the final run on the production build (2026-10-12 21:42 UTC), 11 device profiles.
+End-to-end results of the final run on the production build (2026-10-12 22:12 UTC), 11 device profiles.
 
 == main (npx playwright test --grep-invert "@perf|@sweep", 6 workers)
   iphone-se              passed  27  skipped  8  failed 0

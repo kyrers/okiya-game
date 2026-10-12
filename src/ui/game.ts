@@ -459,17 +459,16 @@ export class GameScreen {
   private applyFit(fit: { level: number; room: number }): void {
     for (const n of [1, 2, 3]) this.el.classList.toggle(`fit-${n}`, fit.level >= n);
     this.el.style.setProperty('--seat-room', `${fit.room}px`);
-    this.fitNames(fit.level);
+    this.fitNames();
   }
 
   /**
    * Both names at one size, whole, by one rule: the name shares its line with the token count and
-   * the score down to 80% (58% in tight seats); then the count and score go to the line below and
-   * the name has the line to itself, down to 58%; then it wraps onto two lines, breaking inside a
-   * word if it must, and finally three. Only a name that fits none of these would be cut short; the
-   * sweep shows none is.
+   * the score down to 58%; then the count and score go to the line below and the name has the line
+   * to itself, down to 58%; then it wraps onto two lines, breaking inside a word if it must, and
+   * finally three. Only a name that fits none of these would be cut short; the sweep shows none is.
    */
-  private fitNames(level: number): void {
+  private fitNames(): void {
     const names = [1, 2].map((p) => this.seats[p as Player].querySelector<HTMLElement>('.seat-name')).filter((n): n is HTMLElement => !!n);
     // Measured with the clamp lifted, where the name is laid out in full: a clamped box in Chromium
     // draws an ellipsis while reporting neither a scroll overflow nor text past its edge. Too wide
@@ -498,11 +497,10 @@ export class GameScreen {
       this.el.classList.remove('names-measuring');
       return result;
     };
-    // Tight seats (the type has already stepped down) cannot spare a line for the count and
-    // score: the name shrinks further beside them first.
-    const shared: number[] = level >= 2 ? [1, 0.9, 0.8, 0.72, 0.64, 0.58] : [1, 0.9, 0.8];
+    // One rule in every phase and on every screen, so the header keeps its shape through a match:
+    // the name shrinks beside the count and score before they move to a line of their own.
     const steps: [string, number][] = [
-      ...shared.map((k): [string, number] => ['', k]),
+      ['', 1], ['', 0.9], ['', 0.8], ['', 0.72], ['', 0.64], ['', 0.58],
       ['ids-stacked', 1], ['ids-stacked', 0.9], ['ids-stacked', 0.8], ['ids-stacked', 0.72], ['ids-stacked', 0.64], ['ids-stacked', 0.58],
       ['ids-stacked names-wrap', 0.72], ['ids-stacked names-wrap', 0.64], ['ids-stacked names-wrap', 0.58],
       ['ids-stacked names-wrap names-wrap-3', 0.58],

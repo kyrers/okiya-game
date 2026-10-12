@@ -247,7 +247,7 @@ Two saturated dyes, each with a lit and a sunk state, over a warm paper-and-ink 
 ### Hierarchy
 - **Display** (800, clamp(3rem, 15vw, 6rem) portrait, clamp(3rem, 7vw, 6rem) landscape, 0.95, 0.04em tracking): the Okiya wordmark on home only, with a soft 0 4px 24px shadow.
 - **Headline** (800, 1.5rem, 1.2): sheet titles. Rules section heads use the same face at 1.3rem; the about heading at 1.2rem.
-- **Title** (800, 1.375em of the seat size, 1.5): player names in the seats, the line tall enough for Shippori's descenders. A long name shrinks to fit one line (down to 58%), then wraps onto two or three lines, both names always at one size; an ellipsis (the Latin one, on the baseline) is a last resort no tested screen reaches. Game results use the display face at 1.6em (1.3em for a quiet result such as a tie). Points totals use it at 1.45em.
+- **Title** (800, 1.375em of the seat size, 1.5): player names in the seats, the line tall enough for Shippori's descenders. A long name shrinks to fit one line beside its token count and score (down to 58%); then the count and score move below it; then it wraps onto two or three lines; both names are always at one size; an ellipsis (the Latin one, on the baseline) is a last resort no tested screen reaches. Game results use the display face at 1.6em (1.3em for a quiet result such as a tie). Points totals use it at 1.45em.
 - **Body** (400, 1rem, 1.45): default text. Rules prose runs at 1.55 line height with a 62ch measure; the order card's instruction at 1.0625em, 1.3, balanced.
 - **Strong** (700): button labels, tile names inside instructions, choice and toggle titles, legends.
 - **Label** (600, 0.9375rem, 1.2, 0.01em): the match label in the top bar, link buttons, menu items (1.0625rem).
