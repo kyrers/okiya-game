@@ -765,8 +765,11 @@ button:disabled { cursor: default; }
 /* Home: option A, one column on every screen */
 /* Wider screens: Continue and New game side by side, one row on the garden's edge. */
 @media (min-width: 600px) and (min-height: 501px) {
+  /* New game alone. With a match to resume, Continue stays above New game, as on phones: its
+     summary (names, format, game) needs the whole width, and side by side a long one wrapped to
+     nine lines and squeezed New game's line a word at a time. */
   .home-buttons { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
-  .home:has([data-go="continue"]) { --act-h: calc(5.8 * var(--act-fs)); }
+  .home:has([data-go="continue"]) .home-buttons { grid-auto-flow: row; }
 }
 /* A phone held sideways: the garden on the right, everything else beside it. */
 @media (max-height: 500px) and (min-aspect-ratio: 5/4) {
