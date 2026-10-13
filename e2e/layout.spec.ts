@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { HOT_SEAT, MATCH_KEY, VS_EASY, continueMatch, findGame, layoutProblems, openHome, saved, seatWordBreaks, seedMatch } from './helpers';
+import type { SavedMatch } from '../src/game/match';
+import { HOT_SEAT, LONG_NAMES, MATCH_KEY, VS_EASY, continueMatch, findGame, layoutProblems, openHome, saved, seatWordBreaks, seedMatch } from './helpers';
 
 /**
  * Layout invariants at every device size: nothing scrolls the page, nothing leaves the viewport,
@@ -125,3 +126,91 @@ test('the end of a match against the computer', async ({ page }) => {
   await expect(page.locator('.seat-1 .say-result')).toHaveText('You win the match');
   await checkLayout(page, '12-match-won');
 });
+
+/**
+ * Why a game was won (or that the garden is full) is always there to read: in the slip over the
+ * garden and in each half, the winner's and the loser's, on a phone held sideways at its shortest
+ * and on a small phone upright. Not hidden, not covered, not clipped, not off screen; the slip, seal
+ * included, inside the garden, its buttons still 44px tall.
+ */
+const REASON_SIZES: [number, number][] = [[568, 300], [568, 320], [320, 568]];
+for (const [w, h] of REASON_SIZES) {
+  test(`the reason a game ended is always shown, ${w}x${h}`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: w, height: h });
+    const row = findGame((s) => s.result?.reason === 'row');
+    const blocked = findGame((s) => s.result?.reason === 'blocked' && s.result.winner === 2, 4);
+    const tie = findGame((s) => s.result !== null && s.result.winner === null, 6);
+    const long = findGame((s) => s.result?.reason === 'blocked' && s.result.winner === 2, 91);
+    const game = (g: typeof row) => [{ tiles: g.tiles, first: g.first, moves: g.moves }];
+    const cases: { label: string; match: SavedMatch; why: string; won: string | null; lost: string }[] = [
+      { label: 'four in a row', match: saved({ ...HOT_SEAT, mode: 'sets3' }, game(row)), why: 'Four in a row', won: 'Four in a row', lost: 'Four in a row · opens next' },
+      // Against the computer, the person lost: their own half says why too.
+      { label: 'no tile to take', match: saved({ ...VS_EASY, mode: 'sets3' }, game(blocked)), why: 'You have no tile you may take', won: 'You have no tile you may take', lost: 'You have no tile you may take · you open next' },
+      { label: 'a tie', match: saved({ ...HOT_SEAT, mode: 'sets3' }, game(tie)), why: 'The garden is full', won: null, lost: 'The garden is full' },
+      { label: 'long names, points', match: saved({ ...HOT_SEAT, mode: 'points20', names: LONG_NAMES }, game(long)), why: `${LONG_NAMES[0]} has no tile to take`, won: `${LONG_NAMES[0]} has no tile to take · +`, lost: `${LONG_NAMES[0]} has no tile to take · opens next` },
+    ];
+    for (const c of cases) {
+      const label = `${c.label} @ ${w}x${h}`;
+      await page.goto('/');
+      await page.evaluate(([key, value]) => localStorage.setItem(key, value), [MATCH_KEY, JSON.stringify(c.match)] as const);
+      await continueMatch(page);
+      await expect(page.locator('.end-card:not(.arriving)')).toBeVisible();
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      const norm = (s: string) => s.replace(/\s+/g, ' ').trim();
+      await expect(page.locator('.end-card .card-why'), label).toHaveText(c.why);
+      if (c.won) expect(norm(await page.locator('.seat.won .say-reason').innerText()), label).toContain(c.won);
+      const others = page.locator(c.won ? '.seat.lost .say-reason' : '.seat.tie .say-reason');
+      await expect(others, label).toHaveCount(c.won ? 1 : 2);
+      for (const t of await others.allInnerTexts()) expect(norm(t), label).toContain(c.lost);
+      expect(await reasonProblems(page), label).toEqual([]);
+      expect(await layoutProblems(page), label).toEqual([]);
+    }
+  });
+}
+
+/** Each reason line, and the slip itself, where it can be read. */
+async function reasonProblems(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const out: string[] = [];
+    const vw = document.documentElement.clientWidth;
+    const vh = window.innerHeight;
+    type Box = { left: number; top: number; right: number; bottom: number };
+    const inside = (a: Box, b: Box) => a.left >= b.left - 1 && a.top >= b.top - 1 && a.right <= b.right + 1 && a.bottom <= b.bottom + 1;
+    const board = document.querySelector('.board')!.getBoundingClientRect();
+    const card = document.querySelector<HTMLElement>('.end-card')!;
+    const seal = card.querySelector('.card-seal')!.getBoundingClientRect();
+    if (!inside(card.getBoundingClientRect(), board)) out.push('the slip leaves the garden');
+    if (!inside(seal, board)) out.push('the seal leaves the garden');
+    if (card.scrollHeight > card.clientHeight + 1) out.push('the slip spills its content');
+    for (const b of card.querySelectorAll('.btn')) if (b.getBoundingClientRect().height < 44) out.push(`a button is ${Math.round(b.getBoundingClientRect().height)}px tall`);
+    const seats = [...document.querySelectorAll('.seat')];
+    const lines: [Element, Element][] = [[card.querySelector('.card-why') ?? card, card], ...seats.map((s): [Element, Element] => [s.querySelector('.say-reason') ?? s, s])];
+    for (const [el, box] of lines) {
+      const what = `${box.className.split(' ').slice(0, 3).join('.')} ${el.className}`;
+      if (el === box) {
+        out.push(`${what}: no reason line`);
+        continue;
+      }
+      const r = el.getBoundingClientRect();
+      for (let a: Element | null = el; a; a = a.parentElement) {
+        const cs = getComputedStyle(a);
+        if (cs.display === 'none' || cs.visibility !== 'visible' || parseFloat(cs.opacity) < 0.99) out.push(`${what}: hidden by ${a.tagName.toLowerCase()}.${a.className}`);
+        if (a !== el && cs.overflow !== 'visible' && !inside(r, a.getBoundingClientRect())) out.push(`${what}: clipped by ${a.tagName.toLowerCase()}.${a.className}`);
+      }
+      if (r.height === 0 || !(el.textContent ?? '').trim()) out.push(`${what}: empty`);
+      if (!inside(r, { left: 0, top: 0, right: vw, bottom: vh })) out.push(`${what}: off screen`);
+      if (!inside(r, box.getBoundingClientRect())) out.push(`${what}: outside its ${box === card ? 'slip' : 'half'}`);
+      // Every line of it drawn on top where it stands: nothing (the slip, its seal) lies over it.
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      for (const line of range.getClientRects()) {
+        if (line.width === 0) continue;
+        if (!inside(line, r)) out.push(`${what}: text runs outside its box`);
+        const hit = document.elementFromPoint(line.left + line.width / 2, line.top + line.height / 2);
+        if (!hit || !el.contains(hit)) out.push(`${what}: covered by ${hit ? `${hit.tagName.toLowerCase()}.${hit.className}` : 'nothing'}`);
+      }
+    }
+    return out;
+  });
+}

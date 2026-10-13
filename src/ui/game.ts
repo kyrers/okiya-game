@@ -775,9 +775,11 @@ export class GameScreen {
       reason = reasonWords(r.reason, loserName, nameHtml);
       if (setup.mode.startsWith('points')) reason += `&nbsp;· <b class="say-points">+${r.tilesRemaining}&nbsp;${r.tilesRemaining === 1 ? 'point' : 'points'}</b>`;
     } else if (state === 'lost') {
+      // The same reason as the winner's half: a player who lost (against the computer, the person)
+      // reads why in their own half too. Then who opens the next game, as after a tie.
       quiet = true;
       result = matchOver ? verb(name, 'You lose the match', 'Loses the match') : verb(name, 'You lose', 'Loses');
-      reason = m.over ? '' : verb(name, 'You open the next&nbsp;game', 'Opens the next&nbsp;game');
+      reason = reasonWords(r.reason, name, nameHtml) + (m.over ? '' : `&nbsp;· ${verb(name, 'you open&nbsp;next', 'opens&nbsp;next')}`);
     } else {
       result = 'Tie';
       reason = reasonWords('full', '') + (!m.over && m.nextFirst === p ? `&nbsp;· ${verb(name, 'you open&nbsp;next', 'opens&nbsp;next')}` : '');
