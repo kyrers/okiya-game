@@ -18,6 +18,8 @@ import {
 /** The brush must actually paint: the garden looks different with the stroke hidden. */
 async function expectBrushPainted(page: import('@playwright/test').Page): Promise<void> {
   await page.waitForTimeout(1000);
+  // The end card lies over the garden's middle, where a square of four is drawn: set it aside.
+  await page.addStyleTag({ content: '.end-card { visibility: hidden !important; }' });
   const board = page.locator('.game .board');
   const withBrush = await board.screenshot({ animations: 'disabled' });
   await page.addStyleTag({ content: '.board-brush { visibility: hidden !important; }' });

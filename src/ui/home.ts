@@ -34,9 +34,24 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
   // A different garden each visit, all sixteen tiles face up.
   const garden = staticGarden(newGame(Math.floor(Math.random() * 2 ** 31)));
   el.querySelector('.home-seam')!.append(garden);
+  // The garden takes what the title, the buttons and the links leave. The stylesheet estimates their
+  // height; a long Continue summary (long names) can need more, and then the garden gives the
+  // difference. The buttons are as wide as the garden, so they may grow again: a few passes settle it.
+  const fit = () => {
+    el.style.removeProperty('--home-board-fit');
+    if (matchMedia('(max-height: 500px) and (min-aspect-ratio: 5/4)').matches) return;
+    for (let pass = 0; pass < 4; pass++) {
+      const rows = getComputedStyle(el).gridTemplateRows.split(' ').map(parseFloat);
+      const over = rows.reduce((a, b) => a + b, 0) - el.clientHeight;
+      if (!(over > 0.5)) return;
+      const board = garden.getBoundingClientRect().width;
+      el.style.setProperty('--home-board-fit', `${Math.max(96, Math.floor(board - over))}px`);
+    }
+  };
   // The two dyes meet at the garden's centre line (portrait), wherever the layout puts it.
   if (typeof ResizeObserver !== 'undefined') {
     const place = () => {
+      fit();
       const g = garden.getBoundingClientRect();
       const h = el.getBoundingClientRect();
       if (g.height === 0) return;
@@ -44,6 +59,8 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
       el.style.setProperty('--home-seam-x', `${Math.round(g.left - h.left + g.width / 2)}px`);
     };
     new ResizeObserver(place).observe(el);
+    // The buttons' text changes size when the fonts arrive; the screen itself does not.
+    void document.fonts?.ready.then(() => el.isConnected && place());
   }
   el.addEventListener('click', (ev) => {
     const go = (ev.target as Element).closest<HTMLElement>('[data-go]')?.dataset.go;
