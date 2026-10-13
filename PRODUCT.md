@@ -8,8 +8,8 @@ web
 
 ## Users
 
-People who want to play Okiya, the two-player abstract board game by Bruno Cathala and Cyril
-Bouquet, on a screen instead of a table:
+People who want to play the two-player abstract garden game designed by Bruno Cathala on a
+screen instead of a table:
 
 - **Two people sharing one device** (a phone or tablet passed back and forth or laid between them,
   or a laptop), playing a quick game or a short match.
@@ -21,17 +21,17 @@ game in one or two taps.
 
 ## Product Purpose
 
-A digital edition of Okiya that plays exactly by the official rules, built to the quality of a
-game sold commercially. It will not be sold (client, 2026-10-12). Success: a game feels as clear
+**Paper Garden**: a digital edition of that game, playing exactly by its official rules, built to
+the quality of a game sold commercially. It will not be sold (client, 2026-10-12). Success: a game feels as clear
 and pleasant as the physical one, on any screen, with no rule ever applied wrongly and no layout
 ever breaking.
 
 ## Positioning
 
-The rules are the official ones and nothing else: the Blue Orange print-and-play rules sheet
-(https://blueorangegames.eu/wp-content/uploads/2020/04/Okiya-PnP-EN.pdf), plus the designer's own
-ruling for the one case the sheet leaves open (a full garden with no formation is a tie). No
-campaign, progression, charms or other layer on top.
+The rules are the official ones and nothing else: the publisher's print-and-play rules sheet
+(cited in docs/RULES.md), plus the designer's own ruling for the one case the sheet leaves open
+(a full garden with no formation is a tie). No campaign, progression, charms or other layer on
+top.
 
 ## Operating Context
 
@@ -62,17 +62,20 @@ campaign, progression, charms or other layer on top.
   visual anchor. The rising sun stays a plain disc (no rays).
 - The campaign layer of the previous attempt ("Hanamichi": stations, charms, petals, Firefly) is
   not wanted and is removed.
-- Credit Okiya to its designers, Bruno Cathala and Cyril Bouquet. No Blue Orange artwork, logos or
-  trade dress are used.
+- **The product is called Paper Garden.** The client ruled (2026-10-13) that it cannot be called by
+  the published game's name; they chose "Paper Garden" from a vetted shortlist (no game of that
+  name was found). The product credits the game's designer, Bruno Cathala, by name only (the
+  published game's illustrator, Cyril Bouquet, is not credited: none of his art is used): no
+  published title, publisher name, artwork, logos or trade dress, and no endorsement claimed.
 
 ## Evidence on Hand
 
-- Official rules: the PnP PDF above (read 2026-10-12).
+- Official rules: the print-and-play PDF cited in docs/RULES.md (read 2026-10-12).
 - Designer ruling on a full garden: BoardGameGeek thread 984327, reply by Bruno Cathala
   ("Bruno des Montagnes", BGG user 25583), 2013-05-30: "in this case, it's a tie !"
 - Tile art: `src/ui/tileArt.ts` (original SVG).
-- Not for sale (client, 2026-10-12), so no licence for the name "Okiya" is sought; the product
-  credits the designers and publisher and claims no endorsement.
+- Not for sale (client, 2026-10-12). The published game's name is not used anywhere players see
+  (client, 2026-10-13); it appears only in source citations of the rules (docs/RULES.md).
 
 ## Product Principles
 

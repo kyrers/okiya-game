@@ -1,17 +1,21 @@
-# Okiya: the rules this game plays by
+# Paper Garden: the rules this game plays by
+
+Paper Garden plays by the rules of an abstract game designed by Bruno Cathala, illustrated by
+Cyril Bouquet and published by Blue Orange Games as *Okiya* (and as *Niya*). The published name
+is not used in the product (client, 2026-10-13); it appears here only to cite the sources.
 
 Sources:
 
-1. **The official rules**: Blue Orange Games, *Okiya Print & Play*, by Bruno Cathala and Cyril
-   Bouquet, <https://blueorangegames.eu/wp-content/uploads/2020/04/Okiya-PnP-EN.pdf> (4 pages; read
-   2026-10-12). Summarised below in our own words.
+1. **The official rules**: Blue Orange Games, *Okiya Print & Play*, design by Bruno Cathala,
+   art by Cyril Bouquet, <https://blueorangegames.eu/wp-content/uploads/2020/04/Okiya-PnP-EN.pdf>
+   (4 pages; read 2026-10-12). Summarised below in our own words.
 2. **The designer's ruling for the one case the sheet leaves open** (a garden emptied without a
    winner): BoardGameGeek thread 984327, *All pieces played: is it a tie? or a loss for the first
    player?*, reply by Bruno Cathala (BGG user "Bruno des Montagnes", id 25583) on 2013-05-30:
    "in this case, it's a tie !". The thread can be read through the BGG API:
    `https://api.geekdo.com/api/articles?threadid=984327&pageid=1`.
 
-Where the code implements each rule: `src/engine/okiya.ts` (one game, match formats) and
+Where the code implements each rule: `src/engine/garden.ts` (one game, match formats) and
 `src/game/match.ts` (a match as the app plays it). The in-game "How to play" sheet
 (`src/ui/rules.ts`) says the same things to players.
 

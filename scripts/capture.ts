@@ -5,9 +5,9 @@
  *   npm run build && npx vite preview --port 4173 &
  *   npx tsx scripts/capture.ts [baseUrl]
  */
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium, webkit, type Browser, type Page } from 'playwright';
-import { applyMove, legalMoves, mulberry32, newGame, type GameState, type Player, type Tile } from '../src/engine/okiya';
+import { applyMove, legalMoves, mulberry32, newGame, type GameState, type Player, type Tile } from '../src/engine/garden';
 import type { MatchSetup, SavedMatch } from '../src/game/match';
 
 const base = process.argv[2] ?? 'http://localhost:4173/';
@@ -32,6 +32,20 @@ function findGame(want: (g: GameState) => boolean, seed: number): { tiles: Tile[
   throw new Error('no game found');
 }
 
+/** Where the share image comes from, written into the file itself (docs/ASSETS.md). */
+const OG_ORIGIN =
+  "impeccable:prompt\u0000Origin: screenshot of this game's own home screen at 1200x630, captured by scripts/capture.ts (Playwright Chromium) from the production build. Everything in it (tiles, textures, type set in the OFL Shippori Mincho B1 and Source Sans 3) is original or OFL-licensed. No external, stock or generated imagery.";
+
+/** The JPEG with a comment (COM) segment holding `text`, after the JFIF header when there is one. */
+function withComment(jpeg: Buffer, text: string): Buffer {
+  const body = Buffer.from(text, 'utf8');
+  const head = Buffer.alloc(4);
+  head.writeUInt16BE(0xfffe, 0);
+  head.writeUInt16BE(body.length + 2, 2);
+  const at = jpeg.readUInt16BE(2) === 0xffe0 ? 4 + jpeg.readUInt16BE(4) : 2;
+  return Buffer.concat([jpeg.subarray(0, at), head, body, jpeg.subarray(at)]);
+}
+
 const VS: MatchSetup = { opponent: 'computer', difficulty: 'medium', mode: 'sets3', names: ['You', 'Computer'] };
 const FRIENDS: MatchSetup = { opponent: 'human', difficulty: 'medium', mode: 'points10', names: ['Aki', 'Ren'] };
 
@@ -46,7 +60,7 @@ async function open(page: Page, saved: SavedMatch | null): Promise<void> {
   await page.goto(base);
   await page.evaluate((s) => {
     localStorage.clear();
-    if (s) localStorage.setItem('okiya.match.v1', s);
+    if (s) localStorage.setItem('paper-garden.match.v1', s);
   }, saved ? JSON.stringify(saved) : null);
   await page.reload();
   await page.evaluate(() => document.fonts.ready);
@@ -117,7 +131,8 @@ for (const d of DEVICES) {
     await page.setViewportSize({ width: 1200, height: 630 });
     await open(page, null);
     await settle(page);
-    await page.screenshot({ path: `${root}public/og-image.jpg`, scale: 'css', type: 'jpeg', quality: 85 });
+    const jpeg = await page.screenshot({ scale: 'css', type: 'jpeg', quality: 85 });
+    writeFileSync(`${root}public/og-image.jpg`, withComment(jpeg, OG_ORIGIN));
     console.log('public/og-image.jpg');
   }
   await ctx.close();

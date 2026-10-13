@@ -18,6 +18,8 @@ const LANDSCAPE: [number, number][] = [];
 for (const h of [300, 320, 340, 360, 375, 390, 414, 430]) for (const w of [568, 640, 667, 700, 740, 780, 812, 844, 896, 932]) LANDSCAPE.push([w, h]);
 const TABLETS: [number, number][] = [];
 for (const [w, h] of [[744, 1133], [768, 1024], [810, 1080], [820, 1180], [834, 1194], [1024, 1366]] as [number, number][]) TABLETS.push([w, h], [h, w]);
+/** Portrait screens shorter than the sweep's, where the opener's note moves to the waiting seat. */
+const SHORT: [number, number][] = [[320, 454], [320, 460], [320, 480], [360, 480], [375, 480], [320, 500], [390, 500]];
 const DESKTOPS: [number, number][] = [[1024, 640], [1280, 720], [1366, 768], [1440, 900], [1536, 864], [1920, 1080], [2560, 1440]];
 
 function sizesFor(project: string): [number, number][] {
@@ -77,14 +79,20 @@ async function setupAtAGlance(w: number, h: number, page: Page): Promise<string[
   });
 }
 
-/** The opener's note is shown whole, inside its seat. */
+/**
+ * The opener's note is shown once, whole, inside a seat: the mover's, or on the shortest screens
+ * the waiting player's (game.ts fitSeats, step 3).
+ */
 async function noteShown(page: Page): Promise<string[]> {
   return page.evaluate(() => {
-    const note = document.querySelector<HTMLElement>('.seat .say-note');
-    if (!note) return ['no opener note'];
+    const notes = [...document.querySelectorAll<HTMLElement>('.seat .say-note')];
+    if (!notes.length) return ['no opener note'];
+    const shown = notes.filter((n) => getComputedStyle(n).display !== 'none' && n.getBoundingClientRect().height > 0);
+    if (shown.length > 1) return ['the opener note is shown twice'];
+    if (!shown.length) return [`the opener note "${notes[0].textContent}" is hidden`];
+    const note = shown[0];
     const r = note.getBoundingClientRect();
     const seat = note.closest('.seat')!.getBoundingClientRect();
-    if (getComputedStyle(note).display === 'none' || r.height === 0) return [`the opener note "${note.textContent}" is hidden`];
     if (r.top < seat.top - 1 || r.bottom > seat.bottom + 1) return ['the opener note spills out of its seat'];
     return [];
   });
@@ -99,7 +107,8 @@ async function finish(page: Page, index: number): Promise<void> {
 test.describe('size sweep @sweep', () => {
   test.beforeEach(async ({ page }, info) => {
     test.skip(sizesFor(info.project.name).length === 0, 'the sweep runs in one WebKit and one Chromium phone project, desktop Chrome and Firefox');
-    // About 190 sizes per state (desktop Chrome: about 200); WebKit resizes slowly.
+    // 176 sizes per state on phones, 183 on desktops (plus 7 short ones in the note test); WebKit
+    // resizes slowly.
     test.setTimeout(15 * 60_000);
     await page.emulateMedia({ reducedMotion: 'reduce' });
   });
@@ -235,7 +244,7 @@ test.describe('size sweep @sweep', () => {
     // Every load starts from the same opening, whatever the page saved as it left.
     await page.addInitScript(([key, v]) => localStorage.setItem(key, v), [MATCH_KEY, value] as const);
     const out: string[] = [];
-    for (const [w, h] of sizesFor(info.project.name)) {
+    for (const [w, h] of [...SHORT, ...sizesFor(info.project.name)]) {
       await page.setViewportSize({ width: w, height: h });
       await continueMatch(page);
       await expect(page.locator('.game .cell.legal').first()).toBeVisible();

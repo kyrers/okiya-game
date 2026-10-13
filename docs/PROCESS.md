@@ -1,7 +1,10 @@
 # Process
 
-How the earlier attempt in this repository (a campaign game called *Hanamichi* built around
-Okiya) became a digital edition of Okiya itself. Work done on 2026-10-12 on branch `fix/classic`.
+How the earlier attempt in this repository (a campaign game called *Hanamichi*) became **Paper
+Garden**, a digital edition of a two-player abstract game designed by Bruno Cathala, played by its
+official rules. The client's brief named the published game; at the end they ruled that the
+product cannot carry that name, and it was renamed (see "The rename"). Work done on 2026-10-12 and
+2026-10-13 on branch `fix/classic`.
 
 ## The brief
 
@@ -24,7 +27,7 @@ Answers the client gave during the session (structured questions):
 
 | Kept | Removed |
 |---|---|
-| The rules engine (`src/engine/okiya.ts`) and its tests, corrected for ties | The campaign: stations, charms, petals, Firefly, run state machine, their tests and sims |
+| The rules engine (`src/engine/garden.ts`, then `okiya.ts`) and its tests, corrected for ties | The campaign: stations, charms, petals, Firefly, run state machine, their tests and sims |
 | The negamax AI (`src/engine/ai.ts`), re-tuned | The campaign UI (`app.ts`, charm art, rules panel) and its stylesheet |
 | The 16 liked SVG tiles (`src/ui/tileArt.ts`), unchanged in drawing and colour | `docs/ideas`, `docs/judging`, `docs/reviews`, `docs/sim`, the old screenshots, the old DESIGN.md |
 
@@ -44,6 +47,9 @@ Answers the client gave during the session (structured questions):
 | 10 | Independent rules audit by a fresh agent. | "Faithful to the official rules: yes, with caveats" (labelling only); caveats fixed. |
 | 11 | Impeccable finish review by a fresh agent; fix batch; verdict pass. | See "Finish review". |
 | 12 | Documentation: README, RULES, this file, DESIGN.md (impeccable documenter). | |
+| 13 | A read-only audit of the finished build by 170 agents: 15 finders (rules, game flow, AI, layout fitting, accessibility, offline and deploy, evidence, phones, tablets both ways, two players on one tablet, desktop), each finding checked by three adversarial verifiers, then a critic listing what nobody tested. | Rules engine and AI clean (an independent model agreed on 100,000 games and 20,000 matches). 46 findings confirmed (5 major, 28 minor, 13 trivial), 5 dropped, 17 untested areas named. Fixed in the fourth pass (below). |
+| 14 | The rename: the client ruled that the product cannot carry the published game's name. | Renamed **Paper Garden** (see "The rename"). |
+| 15 | A provenance check by four fresh agents: the tile art against the published tiles, the rules text against the PDF, every shipped file and the overall look, and the whole git history. | Nothing copied; three corrections (see "The rename"). |
 
 ## Decisions and why
 
@@ -70,7 +76,7 @@ Answers the client gave during the session (structured questions):
   Think time: 12 ms at most for Hard (`docs/evidence/think-time.txt`); the computer still waits
   700 ms so its move can be followed, and its search runs in a Web Worker.
 - **No framework.** A 4 × 4 board and a handful of sheets do not need one; persistent DOM nodes
-  make moves animate and keep keyboard focus. The whole first load is 150 KB, fonts and textures
+  make moves animate and keep keyboard focus. The whole first load is 151 KB, fonts and textures
   included (Lighthouse).
 - **Saved matches are facts, not state.** Only the setup, each garden, its opener and its moves
   are stored; scores, openers and results are re-derived by replaying the engine, so a tampered
@@ -79,7 +85,8 @@ Answers the client gave during the session (structured questions):
   Source Sans 3 for everything else, both OFL and self-hosted. Zen Kaku Gothic New was tried first
   and replaced: its Latin "t" and "f" render mis-spaced at about 14 px under FreeType ("Wat anabe",
   "comput er"), found in screenshots and confirmed with a specimen; Shippori shows the same flaw
-  below 18 px, so it is only used at 18 px and above.
+  below 18 px, so it is only used at 18 px and above: a player's name that the fit shrinks below
+  that is set in Source Sans 3 bold (fourth pass).
 - **Material.** The dyed cloth and the paper are real raster tiles drawn procedurally for this
   project (`scripts/render-textures.ts`), WebP, 22 KB and 15 KB, blended onto the colours.
 
@@ -96,7 +103,7 @@ Answers the client gave during the session (structured questions):
 | Registered custom-property (`@property`) transitions applied late in WebKit | Layout check timing | Removed; the lit half is an opacity cross-fade. |
 | The rules sheet's scroll area was not **keyboard-reachable** | axe-core | Sheet bodies are focusable labelled regions. |
 | Larger default text could push seats over the garden | 20 px root-size e2e on every profile | Layout reserves in rem; garden shrinks instead. |
-| Gold focus ring on paper (sheets) at 1.6:1, placeholder text at 3.4:1 | The impeccable documenter, deriving DESIGN.md from the build | Focus is vermilion on paper and ink on the garden (both above 3:1); placeholder in ink-3 (5.3:1). |
+| Gold focus ring on paper (sheets) at 1.6:1, placeholder text at 3.4:1 | The impeccable documenter, deriving DESIGN.md from the build | Focus is vermilion on paper and ink on the garden (both above 3:1); placeholder in ink-3 (5.5:1). |
 | The UI face mis-spaced letters at about 14 px | Screenshots, then a font specimen | Source Sans 3 replaces Zen Kaku Gothic New (see Decisions). |
 | The "g" of a player called **Diogo** was cut off | The client, on a real phone | Names end in an ellipsis, so their box clips; its line height (1.15) was shorter than Shippori's ascent plus descent. Clipping boxes now use a line height that holds the whole font box (1.5 for names, 1.45 for button details). A geometric e2e test checks every profile, and a control proves it catches the old value. |
 | **How to play** text not centred in landscape | The client, on a real phone | On short, wide screens the bottom sheet spanned the screen with its text on the left. Sheets are at most 44rem wide and centred; the rules sheet is one reading column (38rem) so title and text share an edge. Checked on every profile by the layout test. |
@@ -106,8 +113,8 @@ Answers the client gave during the session (structured questions):
 | A tap right after the **computer's** move was ignored for 260 ms | The size sweep | The double-tap guard now follows only a person's own move. |
 | Text reflowed after the layout was fitted, when a font weight first used at the end of a game arrived late (WebKit) | The size sweep, then a timing probe | All font faces load at start-up; seats refit when their content changes size or a font finishes loading. |
 | Cells under 44 px, buttons off-screen and overflowing text on 568 to 640 px wide landscape phones; home actions off-screen at 520 px tall | The size sweep | Narrower minimum side columns in landscape, home columns with guaranteed minimum widths and a garden sized to what is left, tighter home actions on short screens. |
-| A refused tap added a line under the order card, which tight seats could not hold | The size sweep | The card's own line reads "Not that tile: take an iris or bird tile" for a moment instead; the tile shakes; screen readers still hear the reason. |
-| The opener's note **did not show** on the client's phone: the second-pass fit hid it | The client, on a real phone (third pass) | The note is never something the seats shed. When seats do not fit, both step together: the row of tokens becomes a count; then they take room from the garden (at most a tenth of it, and never so much that a tile drops under 44 px); then the type steps down a size, and as a last resort they may take up to 15% of the garden. Hiding the note is left only as a last resort that the sweep proves no tested screen reaches. The steps reached are kept per screen size and per phase (playing, over), so the garden never changes size during a game. The sweep now asserts, at every size, that the note shows whole and that the garden neither moves nor resizes after the first move. |
+| A refused tap added a line under the order card, which tight seats could not hold | The size sweep | The card's own line reads "Not that tile: take an iris or bird tile" for a moment instead; the tile shakes; screen readers still hear the reason. (Fourth pass: "Only an iris or bird tile", which is never longer than the order it replaces.) |
+| The opener's note **did not show** on the client's phone: the second-pass fit hid it | The client, on a real phone (third pass) | The note is never something the seats shed. When seats do not fit, both step together: the row of tokens becomes a count; then they take room from the garden (at most a tenth of it, and never so much that a tile drops under 44 px); then the type steps down a size, and as a last resort they may take up to 15% of the garden. Hiding the note is left only as a last resort that the sweep proves no tested screen reaches. (The audit then found it hidden on screens under 500 px tall, below the sweep's sizes, and the garden still able to shrink mid-game: fixed in the fourth pass.) The steps reached are kept per screen size and per phase (playing, over), so the garden never changes size during a game. The sweep now asserts, at every size, that the note shows whole and that the garden neither moves nor resizes after the first move. |
 | **Undo between two players** made no sense | The client (third pass) | Undo exists only against the computer (it takes back your move and its reply). Two players on one device have no Undo button and no Undo in the menu, as at the table. |
 | The menu's **"Home (the match is saved)"** | The client (third pass) | "Home". |
 | A **16-letter name ran out of the instruction card** and over the garden; a name cut short ended in raised dots ("Diogom···"); names were cut short even on a 1440 px desktop | The client, screenshots of a desktop browser window at small and large sizes (third pass) | The card no longer repeats the name (the name is just above it, and later turns never named the player); screen readers still hear it. Names shrink to fit on one line (down to 58%), then wrap onto two or three lines, breaking inside a word if there is no space, and both names share one size; an ellipsis is a last resort the sweep shows is never reached. The raised dots were Shippori's Japanese ellipsis (measured: drawn 10 to 15 px above the baseline at 32 px, where Source Sans 3's sits on it); a one-character face now lends the Latin ellipsis to the display font, from the file already shipped. Long words in sentences break where they must; names are isolated (`<bdi>`) so a right-to-left name keeps the sentence's order. Why no test caught it: every test name had a space. The sweep now uses the longest names the form accepts in wide letters, a new layout rule fails any text that runs outside its box, and another fails any name or summary cut short. |
@@ -127,37 +134,138 @@ Answers the client gave during the session (structured questions):
 | "rising sun" and its glyph ran past a narrow instruction card (640 × 300, 700 × 360, 1133 × 744) | The size sweep, once glyphs took their true widths | Only the glyph and the first word are kept together; "sun" may go to the next line. |
 | With the two-digit score width, the opener's note had no room at 320 × 640 with the longest names | The size sweep | As a last step before a note could be left out, the seats may take up to 15% of the garden (tiles there stay at 58 px). |
 
+## Fourth pass: the audit's findings
+
+The audit (step 13) was read-only; its findings were fixed in the main session, in sequence, as
+most touch the same two files (`game.ts`, `styles.css`). Every fix was probed with the auditors'
+own reproduction scripts; the main ones now have e2e tests that fail on the old code (each was
+checked by putting the old behaviour back for one run).
+
+| Finding | Severity | Fix |
+|---|---|---|
+| The opener's note hidden at the opening move on portrait screens under 500 px tall, and on small phones at 20 px text; the garden able to shrink in the middle of a game with no resize; the seat header changing shape between play and a game's end; a refused tap growing the card and pushing the note down | 2 major, 3 minor | One cause: the seats' fit reacted to what had appeared so far. It is now planned once per screen size from the tallest content a game can show (the opening card with its note, the longest order), put in the seats for a moment between two frames, in both arrangements. Steps: the pips become a count, and the seats take up to a tenth of the garden; the type steps down (90%) and they may take 15%; the opener's note moves to the waiting player's seat, which has room at an opening move; the type steps down again (80%); only then is the note left out. The seats keep their width through a game's end. The refusal reads "Only a cherry or rising sun tile", never longer than the order, and the card keeps its height. The sweep now covers seven portrait sizes from 454 to 500 px tall and accepts the note in either seat. |
+| A font licence opened from Settings › About replaced the cached game: offline, the app opened as a licence text; a first launch after a deploy could leave a blank page offline; offline, pages below the site's root were blank | 1 major, 2 minor | The service worker no longer writes pages into its cache: each version caches its page with its files at install. Offline, a cached file (a licence) opens as itself, a path below the root goes to the game, anything else gets the game's page. On activation every older cache is deleted, whatever its name. e2e: a licence opened from Settings, then the game offline. |
+| Back left the "Restart the match?" confirmation open over Home, where confirming reset the match | minor | Leaving the game closes every open sheet. e2e test. |
+| A double tap on Undo took back two rounds; the menu's Undo froze at the moment the menu opened; Undo enabled during the player's own flight | 2 minor, 1 trivial | A 400 ms guard after an undo (e2e test); the menu follows the game live; flights are counted, so a reply during the computer's flight keeps Undo off until both land. |
+| The match open in two tabs: a move in the stale tab overwrote the other's progress | minor | A tab takes up what another tab saved, rather than overwriting it. |
+| Keyboard focus lost to the page after Start, Continue, Next game, Play again, the last Undo and Home; a finished game continued with a turn instruction; moves made while a sheet was open never announced; the compact token count missing from the accessibility tree; "You's token"; labels on elements without a role; the spoken result lowercasing a name and leaving out the points | 3 minor, 5 trivial | Focus goes to the next useful control (the garden, the result's button, Home's first action); the result is announced on Continue and again when a sheet closes; labelled counts, scores and the garden key have an image role; "Your token"; the result sentence keeps the name as typed and says the points. |
+| Gold "+4 points" on lit vermilion at 3.3:1; "/8" at 70% opacity, 3.1:1; the New game hint on vermilion, 3.7:1 | 3 minor | Points are cream on vermilion (gold stays on indigo); "/8" at full opacity; the hint at 92%. |
+| Windows High Contrast removed the gold ring and shade that tell which tiles may be taken | critic's gap | The garden, the order card's tile, the chips and pips keep their own colours under forced colours. |
+| The Menu and Undo buttons 1 px from the top edge on short screens, their focus ring cut off | minor | A slightly taller top bar there; the ring is drawn inside those buttons. |
+| With "Lift the tiles you may take" off, a mouse hover still lifted only the legal tiles | minor | While a person may move, every tile answers the pointer alike. |
+| Phrases split across lines ("Game / 1", "First to 20 / points", "open the / match.", "this / device", "a / friend"), end buttons on two lines at 700 × 500, the wordmark touching the edge on short landscape screens | 2 minor, 4 trivial | No-break spaces in short phrases, end buttons kept on one line, the wordmark sized from its column. |
+| A press on the backdrop released inside a sheet closed it; a damaged save with names that are not text restored "null" | 2 trivial | Only a press that starts and ends on the backdrop closes a sheet; such names fall back to the defaults. |
+| Documentation and evidence: the share image without its provenance; the Vercel and clean-clone builds run on an earlier commit; verification rows with no evidence file; screenshots from an earlier build; commit hashes that changed when the commits were re-signed; stale sizes, sheet widths, the "Eighteen Pixel Rule", Node 20, the 404 page and sub-paths | 2 major, 9 minor, 2 trivial | `scripts/capture.ts` writes the share image's provenance into it; both builds rerun on the final commit; new evidence files (`rules-oracle.txt` from `scripts/rules-oracle.ts`, the auditor's independent model; `vercel-schema.txt`); screenshots recaptured; commits are cited by subject; README, DESIGN.md and this file corrected. |
+
+Two more, found by the final size sweep after the rename: a refused tap's held card height
+carried over a resize (a desktop window made small within 2.6 s of a refusal kept the card at its
+1440 px height, so it left the screen at 520 px tall, in Chrome and Firefox windows alike), and the
+corrected credit line, now shorter, stayed on one line 2 px wider than its column in WebKit at
+812 × 414 instead of wrapping. The held height is now measured fresh and dropped when the screen
+size changes, and the fit also plans for the refused order; in landscape the credit is two lines
+by design, like the wordmark above it.
+
+A code review of this pass's changes (a fresh agent, reading the diff) then found eight more,
+all fixed:
+
+- The focus fix moved only the garden's tab stop, so after Start, Continue, Next game and the last
+  Undo, focus still fell to the page. It now goes into the garden, for a player using the
+  keyboard only: after a touch, WebKit draws a focus ring on a tile focused by script (a new e2e
+  test on the six WebKit touch profiles caught it on the first try). e2e tests for both.
+- Replanning the fit on a resize rebuilt the seats from their HTML: a rotation or zoom at a game's
+  end dropped focus from Next game, and one during a tile's flight could leave the order card's
+  tile hidden. The seats' own nodes are now set aside and put back, and focus restored. e2e test.
+- A press that began on the backdrop and was released inside a sheet still closed it (the click
+  goes to the dialog, which holds both ends). Release is now checked too. e2e test.
+- The service worker deleted every cache on its origin, which on a shared host (a project page)
+  would include other sites'. It now deletes only this game's, and looks files up in its own
+  version's cache only.
+- At a game's end the seats' type grew back from 80% to 90% on the smallest screens, changing the
+  header; it now keeps its size. Names were fitted at full type size and never revisited when the
+  type stepped down, so a long name could stay stacked when it would fit beside its count; while
+  planning they are now fitted afresh at each step. And the plan's longest note from the other
+  seat said "Computer was chosen…" where the game says "The computer was chosen…".
+
+Accepted, not fixed: on portrait screens under 500 px tall (and on the smallest phones at 20 px
+text) tiles are 37 to 43 px, under the 44 px target. The seats need that room for what a player
+must read, and no smaller layout keeps both; such screens are rare (a phone with its keyboard or a
+split screen). Dropped by the verifiers: five (a WebKit landmark detail; the relative `og:image`
+URL, already listed under "Outside this build"; the tile art's own overlaps, which are the
+client's approved art; a letter gap in one Chromium capture; the longest names drawn smaller on a
+larger iPad than on a smaller one).
+
+## The rename
+
+The client ruled (2026-10-13) that the product cannot be called by the published game's name.
+
+- **Choosing the name.** Agents drafted names from four angles (Japanese words, English, coined
+  words, the mechanics). The four strongest (Paper Garden, Pinewind, Petal & Pine, Bird & Bough)
+  were searched for existing games and apps, with no exact match; the client chose **Paper
+  Garden**, which names the board itself.
+- **Credit.** The client chose to credit the game's designer only, with no published title,
+  publisher or brand. The provenance check then found that the credit line named Cyril Bouquet as
+  co-designer: the official rules sheet credits Bruno Cathala under its design icon and Cyril
+  Bouquet under its art icon, and this edition uses none of the original art. The product now
+  reads "Game design by Bruno Cathala".
+- **Scope.** Everything a player sees (wordmark, page and app titles, manifest, share image, 404
+  page, rules sheet, About), the code (`src/engine/garden.ts`, storage keys, the service worker's
+  cache), tests, scripts and docs. The published name remains only where the sources are cited
+  (`docs/RULES.md`), in the client's brief quoted above, and in the git history. The built site
+  contains neither the old name nor the publisher's (checked by search over `dist/`). Saved
+  matches from the preview builds are not carried over, so nothing in the shipped code names the
+  old keys.
+- **Provenance** (four fresh agents, each trying to refute any suspected copy before reporting it):
+  - *Tile art*: original. Compared motif by motif with the official print-and-play tiles and two
+    retail editions: the product's flat icons (a small sun disc, one swallow silhouette, a weather
+    cloud, an umbrella pine) share only the traditional hanafuda subjects, not composition, line
+    or layout. The art was drawn in code in this repository's first session, after the official
+    PDF had been viewed; its first poem slip shared a hung tanzaku's generic traits, and the slip
+    that ships was redrawn since.
+  - *Rules text*: no sentence of the PDF ships. Fixed: the engine's header comment (not shipped,
+    but public in the repository) used a few of the PDF's phrases, and a test name its word
+    "round"; both reworded. The rules sheet's worked example (cherry with bird) was the PDF's own
+    example, though written and drawn anew; it is now maple with rain. The PDF has no rules
+    diagrams, so the sheet's diagrams have no source to copy.
+  - *Shipped files and look*: every file original or OFL-licensed (fonts byte-identical to the
+    Fontsource packages; textures and icons re-rendered identical from their scripts). No title,
+    publisher name or logo on any screen. The overall look (vermilion and indigo halves, lacquer
+    tokens without figures, a serif wordmark) is not close to the published game's (portrait
+    tokens, full-bleed painted tiles, a hand-lettered logo).
+  - *Git history*: no scan, photo, PDF page, logo, box art or font file was ever committed, and
+    no ignored folder leaked. The old name is in every earlier commit and in three commit
+    subjects.
+
 ## Verification (final run)
 
 | Check | Command | Result |
 |---|---|---|
 | Unit tests (engine, AI, match flow, rules-page diagrams) | `npm test` | 4 files, 69 tests, all passing |
 | Type-check and production build | `npm run build` | passes; service worker generated |
-| End-to-end, 11 device profiles: iPhone SE 320 × 568, iPhone SE (3rd gen) 375 × 553, iPhone 15 393 × 659 and landscape 734 × 343 (WebKit, Safari's visible area); Pixel 7 412 × 839 and Android 360 × 640 (Chromium); iPad 810 × 1080 and 1080 × 810 (WebKit); desktop Chrome 1440 × 900 at scale 2 (a high-density laptop), Firefox 1280 × 800 at scale 1, Safari 1920 × 1080 | `npm run e2e` | **323 passed, 0 failed**, 62 skipped by design (checks that belong to one or two engines); sweep pass 94 of 94; perf pass 11 of 11. Per profile: `docs/evidence/e2e.txt`, written by `scripts/e2e-evidence.ts` from the three passes' JSON reports |
+| End-to-end, 11 device profiles: iPhone SE 320 × 568, iPhone SE (3rd gen) 375 × 553, iPhone 15 393 × 659 and landscape 734 × 343 (WebKit, Safari's visible area); Pixel 7 412 × 839 and Android 360 × 640 (Chromium); iPad 810 × 1080 and 1080 × 810 (WebKit); desktop Chrome 1440 × 900 at scale 2 (a high-density laptop), Firefox 1280 × 800 at scale 1, Safari 1920 × 1080 | `npm run e2e` | **362 passed, 0 failed**, 89 skipped by design (checks that belong to one or two engines, or to touch or mouse); sweep pass 94 of 94; perf pass 11 of 11. Per profile: `docs/evidence/e2e.txt`, written by `scripts/e2e-evidence.ts` from the three passes' JSON reports |
 | Layout invariants on every screen state and profile: no page scroll, nothing off-screen, seats never on the garden or the top bar, targets ≥ 44 px, no text outside its box, no name or summary cut short | `e2e/layout.spec.ts` (rules in `e2e/helpers.ts`) | included above |
 | Large default text (20 px root) on every profile | `e2e/bigtext.spec.ts` | included above |
 | Text in clipping boxes keeps its descenders and accents ("Diogo", "Ágqy Jóy"): every line's font box inside the clip box, with a control that fails on the old line height | `e2e/glyphs.spec.ts` | included above |
 | Every sheet centred, title and text on one edge, on every profile | `e2e/layout.spec.ts` | included above |
-| **Size sweep**: the same layout rules at about 190 sizes per state (every phone width 320 to 430 against heights 520 to 932 in portrait, landscape heights 300 to 430 against widths 568 to 932, six tablets both ways, and seven desktops), on 13 states with the longest names the form accepts: home, the opening (note), game 2's opening, a win by blocking with Next game, a tie, a victory-points match won, a refused tile, a match won against the computer, the new-game sheet both ways (at-a-glance on phones held sideways; whole names in the fields), the rules sheet, and the menu, settings and a confirmation; plus, at every size, a fresh opening checked for the note shown whole and the garden unmoved after the first move. In WebKit, in Chromium as a phone, and in desktop Chrome (scale 2) and Firefox (scale 1) windows made as small as a phone | `e2e/sweep.spec.ts` (`npm run e2e` runs it as its own pass) | 52 of 52 passed |
-| **Real taps everywhere**: two whole matches per size (two players with victory points set up by taps, a whole game, next game, the menu, How to play, home and continue, restart through its confirmation; then a whole game against the computer and home), every step a real tap or click with no `force`, so each control must be visible, steady, enabled and the topmost thing under the finger; 11 phone and tablet sizes (320 × 568 to 1024 × 768, both orientations) in WebKit and Chromium, 3 desktop sizes in Chrome, Firefox and Safari, and the 11 phone and tablet sizes again in a desktop Chrome window (mouse); one player named with 16 wide letters; no Undo between two players | `e2e/reach.spec.ts` (in the sweep pass) | 42 of 42 passed |
+| **Size sweep**: the same layout rules at 176 sizes per state (six phone widths from 320 to 430 against fourteen heights from 520 to 932 in portrait, eight landscape heights from 300 to 430 against ten widths from 568 to 932, six tablets both ways), 183 with seven desktops, on 14 states in 12 tests, the two-player ones with the longest names the form accepts ("You" and "Computer" against the computer): home, the opening (note), game 2's opening, a win by blocking with Next game, a tie, a victory-points match won, a refused tile, a match won against the computer, the new-game sheet both ways (at-a-glance on phones held sideways; whole names in the fields), the rules sheet, and the menu, settings and a confirmation; plus, at every size and at seven shorter portrait sizes (454 to 500 px tall), a fresh opening checked for the opener's note shown once and whole, in either seat, and the garden unmoved after the first move. In WebKit, in Chromium as a phone, and in desktop Chrome (scale 2) and Firefox (scale 1) windows made as small as a phone | `e2e/sweep.spec.ts` (`npm run e2e` runs it as its own pass) | 52 of 52 passed |
+| **Real taps everywhere**: per size, a two-player victory-points match set up by taps (one whole game, the next game, the menu, How to play, home and continue, restart through its confirmation), then a whole single-game match against the computer and home, every step a real tap or click with no `force`, so each control must be visible, steady, enabled and the topmost thing under the finger; 11 phone and tablet sizes (320 × 568 to 1024 × 768, both orientations) in WebKit and Chromium, 3 desktop sizes in Chrome, Firefox and Safari, and the 11 phone and tablet sizes again in a desktop Chrome window (mouse); one player named with 16 wide letters; no Undo between two players | `e2e/reach.spec.ts` (in the sweep pass) | 42 of 42 passed |
 | Names in any script, as typed: Arabic and Japanese, accents and apostrophes, characters that mean something in markup; at phone, phone-sideways and desktop sizes, in game, in the result line and on home | `e2e/names.spec.ts` | included above (WebKit, Chromium phone, desktop Chrome, Firefox) |
 | With Reduce Motion, a style change applies at once and starts no transition | `e2e/names.spec.ts` | included above, every profile |
-| Two players have no Undo, on screen or in the menu; the menu says Home | `e2e/game.spec.ts` | included above |
+| Two players have no Undo, on screen or in the menu; the menu says Home; a double tap on Undo takes back one round; Back from a game closes a confirmation left open and keeps the match; keyboard focus goes into the garden after Start, Continue and Next game and stays on the result's button through a resize, and no focus ring appears after a touch; a press dragged from the backdrop into a sheet does not close it | `e2e/game.spec.ts` | included above |
 | Real phone | the client, on their own phone and a desktop browser over the local network | three passes: "looks ok mostly" (two findings), "found problems" (two), "looks better in general" (the note, undo, the Home label, long names); every finding fixed and covered by a test (Defects, above) |
 | Real phone, final build | the client, on their Android phone, on Vercel's preview of pull request #1 (the same files as the tested build); a shared coworking network blocked the local test host, so the preview replaced it | 1, the opener's note with a 16-letter name in portrait and the header through a game's end: works; 2, rotating mid-game: works (no iPhone to hand, so Safari's toolbars rest on the WebKit tests); 3, the New game sheet held sideways: works; 4, undo against the computer, none between two players, "Home" in the menu: works; 5, reduced motion: works; 6, installed to the home screen (in Brave, Chromium's engine): opens as its own app and stays clear of the status and navigation bars, which Android fills with the game's indigo theme colour; 7, offline after one visit: "seems ok"; 8, the screen kept awake during a game: "seems ok" |
-| Offline: after one visit a game against the computer plays with the network off | `e2e/ship.spec.ts` | passes (desktop Chrome, Pixel 7, Android 360) |
+| Offline: after one visit a game against the computer plays with the network off; a font licence opened from Settings never takes the game's place, and offline a licence opens as itself and a path below the site leads to the game | `e2e/ship.spec.ts` | passes (desktop Chrome, Pixel 7, Android 360) |
 | Installable to the home screen: Chrome's own installability check | `e2e/ship.spec.ts` (`Page.getInstallabilityErrors`, `Page.getAppManifest`) | no installability errors, no manifest errors (desktop and both Android profiles) |
 | Screen kept awake during a game, released on leaving it | `e2e/ship.spec.ts` | lock acquired at game start and released on Home (desktop and both Android profiles) |
 | Accessibility, axe-core WCAG 2.2 AA rules on home, setup, rules, settings, game, menu | `e2e/ship.spec.ts` | 0 violations |
-| Lighthouse 12.6, mobile and desktop, production build | see `docs/evidence/lighthouse.txt` | mobile 99 / 100 / 100 / 100 (performance, accessibility, best practices, SEO; first paint 1.7 s on simulated slow 4G, 150 KB transferred); desktop 100 / 100 / 100 / 100 |
+| Lighthouse 12.6, mobile and desktop, production build | see `docs/evidence/lighthouse.txt` | mobile 99 / 100 / 100 / 100 (performance, accessibility, best practices, SEO; first paint 1.7 s on simulated slow 4G, 151 KB transferred); desktop 100 / 100 / 100 / 100 |
 | Vercel's own build pipeline on the final commit | `npx vercel@44.7.3 build --yes` (local, no account) | Build Completed; Build Output v3 static files identical to the tested `dist/`; routes carry the immutable asset cache, `no-cache` service worker, security headers and CSP (`docs/evidence/vercel-build.txt`) |
 | Clean clone, as a CI or Vercel would build it | `git clone`, `npm ci`, `npm run build` | passes |
-| `vercel.json` against Vercel's published schema (with a negative control) | ajv, draft-07 | valid; the broken copy is rejected |
+| `vercel.json` against Vercel's published schema (with a negative control) | ajv 8, draft-07, schema fetched on the day | valid; the broken copy is rejected (`docs/evidence/vercel-schema.txt`) |
 | Every shipped file accounted for: origin and licence | `docs/ASSETS.md` | all original, or OFL-1.1 (two typefaces, licence texts shipped), or MIT (Vite's preload helper); no file loaded from another domain |
 | The page under the exact `vercel.json` headers and CSP | `e2e/vercel.spec.ts` + `scripts/serve-vercel.ts` | no CSP violation in Chromium or WebKit; hashed assets `immutable` |
-| Independent rules audit (fresh agent) | its own scripts | 2,948,961 states of 200,000 random games and 250,037,632 nodes of 4 full game trees compared with an independent model: 0 mismatches; 48,862 of 48,862 forged saves rejected; Hard optimal in all 617 endgames of ≤ 5 tiles; UI: 204 turns, 191 illegal taps, 19 endings all correct |
-| Impeccable detector | `impeccable detect --json` on the UI files | 0 errors, 0 warnings (one layout-transition warning and one inline-font warning fixed); 62 advisories that only note values not yet named in DESIGN.md: the tile-art pigments, shadow and highlight tints, a few one-off radii and type sizes |
-| Raster provenance | `impeccable embed-prompt --scan public src/ui/textures` | 8 rasters, 0 missing |
+| Independent rules model (the fourth-pass auditor's, own random numbers and formations) | `npx tsx scripts/rules-oracle.ts` | 100,000 random games: every legal set, turn, ending, formation and score agrees with the engine, and the engine refuses every illegal move; 20,000 matches in all five formats: wins, points, ties, openers and the champion agree; tampered saves refused; undo against the computer always returns to the person's turn (2,509 checks): 0 disagreements (`docs/evidence/rules-oracle.txt`). An earlier audit (second pass) reported the same over 200,000 games and 4 full game trees; its scripts were not kept. |
+| Impeccable detector | `impeccable detect --json src/ui index.html` | 0 errors, 0 warnings (earlier: a layout-transition and an inline-font warning; this pass: the renamed ellipsis face, undeclared); 62 advisories that only note values not yet named in DESIGN.md: the tile-art pigments, glow, shade and shadow tints, a few one-off radii and type sizes (`docs/evidence/detector.txt`) |
+| Raster provenance | `impeccable embed-prompt --scan public src/ui/textures` | 8 rasters, 0 missing (the share image's provenance is now written by `scripts/capture.ts` itself) |
 
 ## Finish review
 
@@ -170,12 +278,15 @@ so no comp) from 15 screenshots plus the per-profile captures.
   desktop and not aligned with the garden on tablet; orphaned words and a truncated label; raster
   provenance and the credit line. It kept, explicitly: the vermilion/indigo split with the garden
   on the seam, the lit-versus-sunk turn signal, the tile art, the brushed formations.
-- **Fix batch** (commit `5ffd660`): Source Sans 3; procedural cloth and paper textures; articles;
+- **Fix batch** (commit "Finish-review fixes: material, type, copy, seat marks, composition; rules
+  labelling"): Source Sans 3; procedural cloth and paper textures; articles;
   the order sentence leads; token-shaped pips, gold seals, a compact count; seats pinned to the
   garden's top edge; balanced wrapping; vermilion in the sheets; "Game design by"; provenance in
   every raster.
 - **Verdict pass: all 8 resolved**, two regressions found (the new font's licence notice was not
-  shipped; a separator could start a line). Both fixed (commits `ce957e8`, `329fa79`).
+  shipped; a separator could start a line). Both fixed (commits "Ship the Source Sans 3 licence;
+  keep the Continue summary's items whole" and "Continue summary: names may wrap, short items stay
+  whole"). Commits are cited by subject: their hashes change when they are re-signed.
 - **Second verdict pass: ship** (scoped by the reviewer to the listed fixes and regressions).
 
 ## Agents used
@@ -186,13 +297,18 @@ so no comp) from 15 screenshots plus the per-profile captures.
 | Impeccable finish reviewer (fresh) | the request, answers, contract, screenshots | Disposition and material fixes, then a verdict pass (above) |
 | Impeccable documenter (fresh) | the finished build, the contract, PRODUCT.md | `DESIGN.md` and `.impeccable/design.json`; flagged two contrast defects and token drift, fixed afterwards |
 | Impeccable finish reviewer (fresh), third pass | 60 screenshots of every state at six sizes with the longest names, PRODUCT.md, DESIGN.md | A defect hunt (not a direction review): five findings, all fixed; a verdict pass found three regressions of those fixes (short names ellipsised in Chrome at scale 2, a token stranded above its name, the header changing shape with a two-digit score); a second verdict pass confirmed the first two fixed, no name cut short in any of the 60 captures and no new defect, and found the header still changing shape between a game and its end, fixed by one name rule for every phase; a third found the same at 320 px from the token count; a fourth found that reserving the count's place on screen shrank short names in side columns and indented a lone score, fixed by reserving it only while measuring; the fifth and sixth passes, the last on the final build with the two-player games played by taps from their opening, found no defect in the 60 captures: "ship" (Defects, above) |
+| Audit of the final build: 15 finders, 3 verifiers per finding, a completeness critic (170 agents, one workflow, read-only) | the repository, the production build, the official PDF | 46 confirmed findings, 5 dropped, 17 untested areas (fourth pass, above) |
+| Name drafters (4, stopped once the client asked for a plain name) | the product's look and mechanics | 10 candidate names; the shortlist was checked for existing games in the main session |
+| Provenance checkers (4, fresh): tile art, rules text, shipped files and look, git history | the PDF, published photos of the game, the repository and its history, the build | Nothing copied; three corrections (The rename, above) |
+| Code reviewer (fresh, read-only) | the fourth pass's diff | Eight bugs, all fixed (fourth pass, above); smaller risks noted but left (two tabs both computing the computer's reply, then agreeing; a turn announced twice in some menu flows) |
 
 Everything else (engine, AI, UI, tests, scripts, docs) was written in the main session.
 
 ## Evidence on disk
 
 - `docs/evidence/`: Lighthouse, difficulty ladder, perfect-play solve, think times, e2e summary,
-  Vercel build output summary.
+  Vercel build output summary, `vercel.json` schema check, the independent rules model's run
+  (`rules-oracle.txt`).
 - `docs/ASSETS.md`: every shipped file, its origin and its licence.
 - `docs/screenshots/`: phone, phone landscape, tablet and desktop: home, your turn, a won game,
   the setup sheet, the rules sheet (captured by `scripts/capture.ts` from the production build).
@@ -204,28 +320,36 @@ Nothing known is open in the build itself. These are steps only the client can t
 changes the code:
 
 - **Not for sale.** Asked about the name licence, the client answered that the game will not be
-  sold; "sold as a real game" is the quality bar. The edition credits the designers and the
-  publisher, uses none of their art or marks and claims no endorsement.
-- **Deployment.** Not published, by the client's choice (asked: "Don't deploy"). Deployability is
-  demonstrated: Vercel's own build (`vercel build`, CLI 44.7.3, run locally with no account)
+  sold; "sold as a real game" is the quality bar. The edition is called Paper Garden, credits the
+  game's designer by name only, uses none of the published game's name, art or marks and claims no
+  endorsement.
+- **Names outside the code.** The GitHub repository (`okiya-game`), the Vercel project and its
+  domain, pull request #1 and the git history still carry the old name; renaming them, and whether
+  to rewrite history, is the client's call. An install made from the preview keeps its old name on
+  the home screen until the browser refreshes it from the new manifest, or it is reinstalled; a
+  match saved there is not carried over.
+- **Deployment.** This build is not in production, by the client's choice (asked: "Don't
+  deploy"). The repository is already connected to a Vercel project: production serves `master`,
+  the earlier attempt, and the client checked this branch on the preview of pull request #1. This
+  build goes live when that pull request is merged (or its preview is promoted). Deployability is
+  demonstrated on the final commit: Vercel's own build (`vercel build`, CLI 44.7.3, run locally with no account)
   completes and emits Build Output v3 whose static files are identical to the tested `dist/` and
   whose routes carry the cache rules, security headers and CSP of `vercel.json`. `vercel.json`
   validates against Vercel's schema, the build was tested under its exact headers, and a clean
   clone builds with `npm ci && npm run build` (the build type-checks the tests too, so it needs the
   devDependencies, which Vercel installs by default; no package downloads browsers on install).
-  Importing the repository in Vercel (or `vercel --prod`) is the remaining step.
 - **Share image URL.** `index.html` points `og:image` at `./og-image.jpg`; social scrapers want an
   absolute URL, so set it to the production domain once it exists.
 - **Physical devices.** No phones are attached to this environment, so the systematic device
-  checks ran in emulation (11 profiles in WebKit, Chromium and Firefox, then the size sweep at
-  about 200 sizes, as a phone and as a small desktop window). The client played the production
+  checks ran in emulation (11 profiles in WebKit, Chromium and Firefox, then the size sweep at 176
+  sizes per state, 183 in desktop windows, as a phone and as a small desktop window). The client played the production
   build on their own phone and in a desktop browser, served on the local network only while they
   tested, three times: the first pass found the clipped "g" and the landscape rules sheet; the
   second, the cramped landscape New game sheet and the cut-off opener note; the third, the note
   now hidden, undo between two players, the Home label and long names. All are fixed and each is
   covered by a test that fails on the old code or the old sizes. The final build was then checked
   on the client's Android phone through Vercel's preview of the pull request (eight checks, in
-  the verification table); a tablet check by the person who will play it is still to come. Offline play, the home-screen
+  the verification table), before the fourth pass and the rename; a tablet check by the person who will play it is still to come. Offline play, the home-screen
   install and the wake lock need a secure context, which a plain-http LAN address is not; they
   are verified in Chrome on localhost (a secure context) and behave the same on the https site.
 - **Sound on iOS** follows the ringer switch, as Web Audio does in Safari.
@@ -235,3 +359,10 @@ changes the code:
 - **Advisory design-system notes.** The detector lists 62 values not yet named in DESIGN.md (tile
   pigments, shadow tints, a few radii and sizes). They are intentional; naming them is
   housekeeping, not a defect.
+- **Not tested** (the audit's critic, 17 areas; the ones that matter): a real iPhone or iPad
+  (Safari's toolbars, the home-screen app and offline launch on iOS rest on Playwright's WebKit);
+  real screen readers (VoiceOver, TalkBack, NVDA); Firefox for Android and Samsung Internet; text
+  larger than a 20 px root (Android and iOS text scaling); the app frozen in the background or
+  restored from the back-forward cache mid-move; long sessions (leaks over many games); emoji
+  names; a low-end phone's frame rate during play; two people touching the screen at once; storage
+  blocked (the code never throws on it, but no run checked the screens).

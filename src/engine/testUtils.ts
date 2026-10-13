@@ -1,4 +1,4 @@
-import { type Cell, type GameState, type Player, type Tile, parseTile } from './okiya';
+import { type Cell, type GameState, type Player, type Tile, parseTile } from './garden';
 
 /**
  * Build a game state from a 4x4 picture. Each token is either "1" / "2"

@@ -1,6 +1,6 @@
 /** Every sentence the game says about tiles, turns and results, in one place. */
 import type { Difficulty } from '../engine/ai';
-import type { EndReason, MatchMode, Symbol, Tile, Vegetation } from '../engine/okiya';
+import type { EndReason, MatchMode, Symbol, Tile, Vegetation } from '../engine/garden';
 import { symGlyph, vegGlyph } from './tileArt';
 
 export const VEG_WORD: Record<Vegetation, string> = { maple: 'maple', cherry: 'cherry', pine: 'pine', iris: 'iris' };

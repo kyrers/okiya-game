@@ -1,12 +1,12 @@
 /* ==========================================================================
-   Okiya: two dyed halves, a paper garden on the seam.
+   Paper Garden: two dyed halves, a paper garden on the seam.
    ========================================================================== */
 
 /* Shippori's ellipsis is the Japanese one, centred on the line; a Latin name cut short wants its
    dots on the baseline. This face lends Source Sans 3's ellipsis (the file already shipped) to the
    display stack, for that one character only. */
 @font-face {
-  font-family: 'Okiya Ellipsis';
+  font-family: 'Garden Ellipsis';
   src: url('@fontsource/source-sans-3/files/source-sans-3-latin-700-normal.woff2') format('woff2');
   unicode-range: U+2026;
   font-weight: 100 900;
@@ -46,7 +46,7 @@
   --cloth: url('./textures/cloth.webp');
   --paper-grain: url('./textures/paper.webp');
 
-  --font-display: 'Okiya Ellipsis', 'Shippori Mincho B1', 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
+  --font-display: 'Garden Ellipsis', 'Shippori Mincho B1', 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
   /* Source Sans 3 for everything that is not display: clean at small sizes on every system.
      Shippori Mincho B1 is used only at 18px and above, where it renders cleanly. */
   --font-ui: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -197,6 +197,9 @@ button:disabled { cursor: default; }
 .icon-btn:hover:not(:disabled) { background: rgba(251, 243, 228, 0.18); }
 .icon-btn:active:not(:disabled) { transform: scale(0.94); }
 .icon-btn:disabled { opacity: 0.35; }
+/* The top bar's buttons sit close to the screen's edge on short screens: their focus ring is drawn
+   tight to the button so it is never cut off. */
+.topbar .icon-btn:focus-visible { outline-offset: -1px; }
 
 .seam {
   grid-area: board;
@@ -254,7 +257,7 @@ button:disabled { cursor: default; }
   background: var(--token-well);
   box-shadow: inset 0 2px 5px rgba(70, 50, 20, 0.35), inset 0 0 0 1px rgba(80, 60, 30, 0.16);
 }
-.cell.legal { cursor: pointer; }
+.board.can-take .cell.is-tile { cursor: pointer; }
 .cell.show-legal {
   transform: translateY(-4%);
   box-shadow: 0 0 0 calc(var(--board) * 0.006 + 1.5px) var(--gold), 0 calc(var(--board) * 0.02) calc(var(--board) * 0.035) rgba(40, 25, 5, 0.42);
@@ -273,7 +276,7 @@ button:disabled { cursor: default; }
   z-index: 1;
 }
 .board.has-legal .cell.is-tile:not(.legal)::before { opacity: 1; }
-.cell.legal:hover { transform: translateY(-6%); }
+.cell.show-legal:hover { transform: translateY(-6%); }
 .cell:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; z-index: 2; }
 .cell.dead::before { opacity: 1; background: rgba(70, 54, 36, 0.38); }
 .board.static .cell { cursor: default; }
@@ -346,8 +349,10 @@ button:disabled { cursor: default; }
   color: var(--cream);
 }
 /* As wide as the garden would be without the room the seats may borrow (game.ts fitSeats), so
-   borrowing never narrows the text and makes it need still more room. */
-.seat > * { width: min(100%, max(var(--board) + 2 * var(--seat-room, 0px), 22rem)); margin-inline: auto; flex-shrink: 0; }
+   borrowing never narrows the text and makes it need still more room. game.ts keeps the width it has
+   in play (--seat-content-w) through a game's end, when the garden steps back, so the header keeps
+   its shape. */
+.seat > * { width: min(100%, var(--seat-content-w, max(var(--board) + 2 * var(--seat-room, 0px), 22rem))); margin-inline: auto; flex-shrink: 0; }
 .seat-2 { grid-area: s2; justify-content: flex-end; }
 .seat-1 { grid-area: s1; justify-content: flex-start; }
 
@@ -377,7 +382,7 @@ button:disabled { cursor: default; }
 .seal.won { border-color: #f3d48a; background: linear-gradient(140deg, #f6d98e, var(--gold) 55%, #c99a33); box-shadow: inset 0 0 0 0.12em rgba(120, 82, 20, 0.35), 0 1px 2px rgba(0, 0, 0, 0.35); }
 /* Tokens in hand, as a number: shown where the row of small tokens has no room. */
 .seat-count { display: none; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 0.95em; color: var(--cream-2); flex: none; }
-.seat-count-of { opacity: 0.7; font-weight: 400; }
+.seat-count-of { font-weight: 400; }
 .seat-score.points { font-variant-numeric: tabular-nums; font-size: 0.95em; color: var(--cream-2); gap: 1px; align-items: baseline; }
 .seat-score.points b { font-family: var(--font-display); font-size: 1.45em; color: var(--cream); font-weight: 800; }
 
@@ -427,17 +432,20 @@ button:disabled { cursor: default; }
 .w { white-space: nowrap; font-weight: 700; }
 .w .glyph { width: auto; height: 1.35em; vertical-align: -0.35em; margin-right: 0.2em; }
 .say-note { font-size: 0.875em; color: var(--cream-2); }
-.nope-word { color: var(--verm); font-weight: 700; }
+.nope-word { color: var(--verm); font-weight: 700; white-space: nowrap; }
 .say-wait { font-size: 0.9375em; color: var(--cream-2); }
 .say-over { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5em 1em; }
 .say-over .say-text { flex: 1 1 10em; }
 .say-result { font-family: var(--font-display); font-size: 1.6em; line-height: 1.1; color: var(--cream); text-wrap: balance; }
 .say-result.quiet { font-size: 1.3em; color: var(--cream-2); }
 .say-reason { font-size: 0.9375em; color: var(--cream-2); }
+/* Gold on indigo; on vermilion gold is too faint for text (3.3:1), so cream there. */
 .say-points { color: var(--gold); font-weight: 700; }
+.seat-1 .say-points { color: var(--cream); }
 .say-actions { display: flex; flex-wrap: wrap; gap: 0.5em; }
 .say-over.match-over .say-actions { flex-basis: 100%; }
 .say-actions .btn .icon { width: 1.25em; height: 1.25em; }
+.say-actions .btn { white-space: nowrap; }
 .seat .btn { font-size: 1em; min-height: max(44px, 3em); }
 
 /* What the seats do when they do not fit (game.ts fitSeats measures and sets these). */
@@ -446,10 +454,18 @@ button:disabled { cursor: default; }
 .game.fit-2 { --seat-scale: 0.9; }
 .game.fit-2 .seat { gap: 0.3em; }
 .game.fit-2 .say-tile { width: 2.6em; height: 2.6em; }
-.game.fit-3 .say-note { display: none; }
+/* Step 3: the opener's note moves to the other seat, which has room to spare at an opening move. */
+.say-note-away { display: none; }
+.game.fit-3 .say-order ~ .say-note { display: none; }
+.game.fit-3 .say-note-away { display: block; }
+.game.fit-4 { --seat-scale: 0.8; }
+.game.fit-5 .say-note { display: none; }
 /* A name too long for one line even at its smallest wraps, anywhere if it must, onto two. */
 .game.names-wrap .seat-name { white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .game.names-wrap-3 .seat-name { -webkit-line-clamp: 3; }
+/* Shippori is used at 18 px and above only (it mis-spaces letters below that on FreeType): a name
+   shrunk under 18 px is set in the interface face. */
+.game.names-ui .seat-name { font-family: var(--font-ui); font-weight: 700; letter-spacing: 0; }
 /* While game.ts measures the names: every line laid out and nothing clipped, and the name's line
    as full as it can be in any phase of a match (the token count shown, the score two digits wide),
    so the layout chosen holds through the match while only what is there is drawn. */
@@ -495,7 +511,7 @@ button:disabled { cursor: default; }
 .btn.secondary:hover, .btn.ghost:hover { background: rgba(251, 243, 228, 0.16); }
 .btn.big { min-height: 4em; padding: 0.6em 1.4em; justify-content: flex-start; width: 100%; font-size: inherit; }
 .btn .btn-title { display: block; font-size: 1.0625em; }
-.btn .btn-sub { display: block; font-weight: 400; font-size: 0.875em; opacity: 0.8; margin-top: 2px; }
+.btn .btn-sub { display: block; font-weight: 400; font-size: 0.875em; opacity: 0.92; margin-top: 2px; }
 .btn.big > span { min-width: 0; }
 /* The Continue summary is shown whole: long names break where they must. */
 .btn.big .btn-sub { line-height: 1.45; overflow-wrap: anywhere; }
@@ -529,6 +545,8 @@ button:disabled { cursor: default; }
 .home .board { --board: var(--home-board); }
 .home-title {
   grid-area: top;
+  /* The wordmark is sized from the width the title has (cqi), so it always fits its column. */
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -539,7 +557,8 @@ button:disabled { cursor: default; }
 }
 .wordmark {
   font-family: var(--font-display);
-  font-size: clamp(3rem, 15vw, 6rem);
+  /* One line, "Paper Garden" being about 7.6em wide. */
+  font-size: min(6rem, 100cqi / 7.6);
   line-height: 0.95;
   letter-spacing: 0.04em;
   text-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
@@ -619,8 +638,13 @@ button:disabled { cursor: default; }
   .home .seam { padding: 0 clamp(16px, 3vw, 40px); }
   .home-actions-wrap { align-items: center; }
   .home-title { justify-content: center; padding: 16px var(--gutter); gap: 14px; }
-  .wordmark { font-size: clamp(3rem, 7vw, 6rem); }
+  /* Landscape: "Paper" over "Garden" (about 4.1em wide), as large as the column allows. */
+  .wordmark { font-size: min(5.5rem, 100cqi / 4.1); }
+  .wordmark span { display: block; }
   .home-sub { font-size: clamp(0.9375rem, 0.6rem + 0.5vw, 1.25rem); }
+  /* Two lines, like the wordmark above it: a narrow column cannot be trusted to wrap one line that
+     only just fits (WebKit kept it whole, 2 px too wide, at 812 x 414). */
+  .home-sub .credit-name { display: block; }
   .home-actions { justify-content: center; width: min(100% - 2 * var(--gutter), 24em); padding: 16px 0; font-size: clamp(1rem, 0.7rem + 0.45vw, 1.25rem); }
 }
 
@@ -634,19 +658,19 @@ button:disabled { cursor: default; }
   .say-tile { width: 3.1em; height: 3.1em; }
 }
 @media (max-height: 620px) and (max-aspect-ratio: 5/4) {
-  :root { --topbar: 2.875rem; --seat-min: 6.875rem; }
+  :root { --topbar: 3rem; --seat-min: 6.875rem; }
   .seat { --seat-fs: 0.875rem; }
   .game.is-over { --seat-min: 8.75rem; }
   .say-result { font-size: 1.35em; }
   .home-actions { font-size: 0.9375rem; gap: 8px; }
   .btn.big { min-height: 3.5em; }
-  .wordmark { font-size: 3rem; }
+  .wordmark { font-size: min(3rem, 100cqi / 7.6); }
 }
 @media (max-height: 500px) and (min-aspect-ratio: 5/4) {
-  :root { --topbar: 2.875rem; --board-gap: 6px; }
+  :root { --topbar: 3rem; --board-gap: 6px; }
   .seat { --seat-fs: 0.875rem; gap: 0.4em; padding-bottom: 8px; }
   .say-tile { width: 3em; height: 3em; }
-  .wordmark { font-size: clamp(2.5rem, 9vh, 4rem); }
+  .wordmark { font-size: min(9vh, 4rem, 100cqi / 4.1); }
   .btn.big { min-height: 54px; padding: 0.45em 1em; }
   .home-actions { gap: 6px; padding: 8px 0; font-size: 1rem; }
   .home-title { gap: 6px; }
@@ -726,8 +750,6 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
   dialog.sheet { margin: auto; width: min(560px, 100vw - 48px); }
   .sheet-panel { border-radius: 20px; max-height: min(calc(var(--vh) - 64px), 860px); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45); }
   .sheet-body { padding-bottom: 24px; }
-  .sheet-rules { width: min(38rem, 100vw - 48px); }
-  .sheet-confirm, .sheet-menu { width: min(420px, 100vw - 48px); }
 }
 
 /* Sheet controls are on paper: ink buttons. */
@@ -963,3 +985,11 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; transition-delay: 0s !important; }
 }
 .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; transition-delay: 0s !important; }
+
+/* Forced colours (Windows High Contrast): the garden is a picture, so it keeps its own colours,
+   including the gold ring and shade that tell which tiles may be taken. */
+@media (forced-colors: active) {
+  .board, .board *, .say-tile, .say-tile *, .seat-chip, .seat-chip *, .seat-pips, .seat-pips *, .flyer, .flyer *, .glyph, .glyph * {
+    forced-color-adjust: none;
+  }
+}

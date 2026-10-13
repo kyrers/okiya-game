@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { WIN, chooseMove, evaluate, tactics } from './ai';
-import { applyMove, legalMoves, mulberry32, newGame, newGameFromTiles, parseLayout, parseTile } from './okiya';
+import { applyMove, legalMoves, mulberry32, newGame, newGameFromTiles, parseLayout, parseTile } from './garden';
 import { stateFromPicture } from './testUtils';
 
 describe('AI basics', () => {

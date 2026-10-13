@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 /** Runs the computer player's search off the main thread. */
 import { DIFFICULTY, Searcher, chooseMove } from '../engine/ai';
-import { mulberry32 } from '../engine/okiya';
+import { mulberry32 } from '../engine/garden';
 import type { AiRequest, AiResponse } from './aiClient';
 
 const searcher = new Searcher();

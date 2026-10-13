@@ -12,7 +12,7 @@ end-of-game and end-of-match results, the rules sheet, settings. Visitor mode: E
 game leads; the interface recedes), with Operate rigor for setup, settings and rules.
 
 Audience and job: two people sharing one device, or one person against the computer, playing
-Okiya by the official rules on a phone, tablet or desktop. Constraints: hot-seat on one shared
+Paper Garden by the official rules on a phone, tablet or desktop. Constraints: hot-seat on one shared
 screen in one orientation; the liked SVG tiles are kept; flawless at every viewport.
 
 Chosen structure: Two halves (user locked it on the decision page, round 2).

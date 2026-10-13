@@ -4,7 +4,7 @@
  * return SVG markup strings; colours come from CSS custom properties so the
  * palette can be themed.
  */
-import { SYMBOLS, VEGETATIONS, type Symbol, type Tile, type Vegetation } from '../engine/okiya';
+import { SYMBOLS, VEGETATIONS, type Symbol, type Tile, type Vegetation } from '../engine/garden';
 
 export const VEG_LABEL: Record<Vegetation, string> = { maple: 'Maple', cherry: 'Cherry', pine: 'Pine', iris: 'Iris' };
 export const SYM_LABEL: Record<Symbol, string> = { sun: 'Rising sun', poem: 'Poem', bird: 'Bird', rain: 'Rain' };

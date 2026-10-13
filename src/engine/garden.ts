@@ -1,28 +1,26 @@
 /**
- * Okiya (a.k.a. Niya) — official rules engine.
+ * Paper Garden's rules engine. The rules are those of the original game designed by Bruno
+ * Cathala, as published in the official print-and-play rules (sources in docs/RULES.md).
  *
- * Source: Blue Orange "Okiya Print & Play" rules (Bruno Cathala, Cyril Bouquet),
- * https://blueorangegames.eu/wp-content/uploads/2020/04/Okiya-PnP-EN.pdf
- *
- * Rules implemented here (verbatim summary of the PDF):
- *  - 16 garden tiles = every combination of 4 vegetations x 4 symbols, shuffled
- *    face up into a 4x4 square.
- *  - Each player has 8 character tokens of their own pattern.
- *  - The first player must take a tile on the OUTSIDE BORDER of the garden
- *    (the 4 middle tiles are forbidden on the first turn) and replaces it with
- *    one of their tokens.
- *  - Every following move must take a tile that shares the vegetation OR the
- *    symbol with the tile that was just removed, and replace it with a token.
- *  - A player wins immediately on completing a row of 4 of their tokens
- *    (horizontal, vertical or diagonal), or a 2x2 square of their tokens.
- *  - A player also wins if the opponent has no legal move ("blocked").
+ * Rules implemented here, in our own words:
+ *  - The 16 tiles pair each of 4 vegetations with each of 4 symbols; they are
+ *    shuffled and laid face up in a 4x4 garden.
+ *  - Each player has 8 tokens.
+ *  - The opening move of a game may only take a tile on the outer ring; the
+ *    centre four are off limits until the second move. The mover puts a token
+ *    where the tile was.
+ *  - From then on, a move must take a tile with the same vegetation or the same
+ *    symbol as the tile taken by the move before, and leave a token in its place.
+ *  - Four tokens of one player in a line (row, column or diagonal) or in a 2x2
+ *    square win the game at once.
+ *  - So does leaving the opponent no tile they may take ("blocked").
  *  - Full garden: the PDF does not say what happens when the 16th tile is
  *    taken without a formation. The designer, Bruno Cathala, ruled that the
  *    game is a tie (BoardGameGeek thread 984327, 2013-05-30: "in this case,
  *    it's a tie !"). The engine ends such a game with `winner: null` and
  *    reason 'full'.
- *  - Victory-points variant: the winner scores as many points as there are
- *    garden tiles left in the garden.
+ *  - Victory-points variant: a win scores one point for each tile still in the
+ *    garden.
  *
  * This module is pure and side-effect free. State objects are never mutated;
  * every operation returns a new state.
@@ -118,7 +116,7 @@ export function sameTile(a: Tile, b: Tile): boolean {
   return a.veg === b.veg && a.sym === b.sym;
 }
 
-/** Two tiles "share an element" if they have the same vegetation or the same symbol. */
+/** Whether two tiles have the same vegetation or the same symbol. */
 export function sharesElement(a: Tile, b: Tile): boolean {
   return a.veg === b.veg || a.sym === b.sym;
 }

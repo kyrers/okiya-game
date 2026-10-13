@@ -10,7 +10,7 @@ import { App } from './ui/app';
 for (const face of ['800 1em "Shippori Mincho B1"', '400 1em "Source Sans 3"', '600 1em "Source Sans 3"', '700 1em "Source Sans 3"']) {
   void document.fonts?.load(face).catch(() => undefined);
 }
-void document.fonts?.load('800 1em "Okiya Ellipsis"', '\u2026').catch(() => undefined);
+void document.fonts?.load('800 1em "Garden Ellipsis"', '\u2026').catch(() => undefined);
 
 const root = document.getElementById('app');
 if (!root) throw new Error('missing #app');

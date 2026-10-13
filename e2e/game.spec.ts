@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { applyMove, newGameFromTiles, tileCode } from '../src/engine/okiya';
+import { applyMove, newGameFromTiles, tileCode } from '../src/engine/garden';
 import {
   HOT_SEAT,
+  MATCH_KEY,
   VS_EASY,
   boardCodes,
   continueMatch,
@@ -72,7 +73,8 @@ test.describe('the rules on screen', () => {
     const bad = codes.findIndex((c, i) => /^[MCPI][spbr]$/.test(c) && !legal.includes(i));
     test.skip(bad < 0, 'every remaining tile is legal in this position');
     await tap(page, bad, hasTouch);
-    await expect(page.locator('.seat.moving .say-what')).toContainText('Not that tile');
+    // The card's own line says what may be taken instead, no longer than the order it replaces.
+    await expect(page.locator('.seat.moving .say-what')).toContainText(/^\s*Only an? /);
     await expect(page.locator('[aria-live]')).toContainText('shares nothing');
     expect((await boardCodes(page))[bad]).toBe(codes[bad]);
   });
@@ -228,6 +230,44 @@ test.describe('against the computer', () => {
   });
 });
 
+test.describe('undo and leaving', () => {
+  test('a double tap on Undo takes back one round, not two', async ({ page, hasTouch }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const g = findGame(() => true, 12);
+    await seedMatch(page, saved(VS_EASY, [{ tiles: g.tiles, first: 1, moves: [] }]));
+    await continueMatch(page);
+    const tokens = async () => (await boardCodes(page)).filter((c) => c.startsWith('p') || c === '1' || c === '2').length;
+    for (const n of [2, 4]) {
+      await tap(page, (await legalIndices(page))[0], hasTouch);
+      await expect.poll(tokens, { timeout: 10_000 }).toBe(n);
+      await expect(page.locator('.seat-1.moving .say-order')).toBeVisible();
+    }
+    const undoBtn = page.getByRole('button', { name: 'Undo' });
+    await undoBtn.dblclick();
+    await expect.poll(tokens).toBe(2);
+    await page.waitForTimeout(600);
+    expect(await tokens()).toBe(2);
+    await undoBtn.click();
+    await expect.poll(tokens).toBe(0);
+  });
+
+  test('Back from a game closes a confirmation left open, and the match is kept', async ({ page, hasTouch }) => {
+    const g = findGame((s) => s.history.length >= 6, 81);
+    await seedMatch(page, saved(HOT_SEAT, [{ tiles: g.tiles, first: g.first, moves: g.moves.slice(0, 2) }]));
+    await continueMatch(page);
+    await tap(page, g.moves[2], hasTouch);
+    const before = await boardCodes(page);
+    await page.getByRole('button', { name: 'Menu' }).click();
+    await page.getByRole('dialog', { name: 'Menu' }).getByRole('button', { name: 'Restart the match' }).click();
+    await expect(page.getByRole('dialog', { name: 'Restart the match?' })).toBeVisible();
+    await page.goBack();
+    await expect(page.getByRole('heading', { name: 'Paper Garden' })).toBeVisible();
+    await expect(page.locator('dialog[open]')).toHaveCount(0);
+    await page.getByRole('button', { name: /Continue/ }).click();
+    await expect.poll(() => boardCodes(page)).toEqual(before);
+  });
+});
+
 test.describe('saving', () => {
   test('a match survives a reload and resumes on the same position', async ({ page, hasTouch }) => {
     const g = findGame((s) => s.history.length >= 8, 3);
@@ -242,7 +282,7 @@ test.describe('saving', () => {
   });
 
   test('a corrupt save is ignored', async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem('okiya.match.v1', '{"version":1,"setup":{},"games":[{"tiles":[],"first":3}]}'));
+    await page.addInitScript(() => localStorage.setItem('paper-garden.match.v1', '{"version":1,"setup":{},"games":[{"tiles":[],"first":3}]}'));
     await openHome(page);
     await expect(page.getByRole('button', { name: /Continue/ })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /New game/ })).toBeVisible();
@@ -274,13 +314,64 @@ test.describe('sheets and keys', () => {
     await expect(page.locator('.cell[data-index="1"].is-token')).toBeVisible();
   });
 
+  test('keyboard focus follows the game: into the garden after Start and Next game, kept on the result through a resize', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'keyboard play is a desktop concern');
+    await openHome(page);
+    await page.getByRole('button', { name: /New game/ }).focus();
+    await page.keyboard.press('Enter');
+    await page.getByRole('dialog', { name: 'New game' }).getByText('A friend, on this device').click();
+    await page.getByRole('button', { name: 'Start' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.game .cell.legal:focus')).toHaveCount(1);
+    // A game one move from its end, finished from the keyboard.
+    const g = findGame((s) => s.result?.reason === 'row' && s.result.tilesRemaining >= 3, 5);
+    await page.evaluate(([k, v]) => localStorage.setItem(k, v), [MATCH_KEY, JSON.stringify(saved({ ...HOT_SEAT, mode: 'sets3' }, [{ tiles: g.tiles, first: g.first, moves: g.moves.slice(0, -1) }]))] as const);
+    await page.reload();
+    await page.getByRole('button', { name: /Continue/ }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.game .cell.legal:focus')).toHaveCount(1);
+    await page.locator(`.cell[data-index="${g.moves[g.moves.length - 1]}"]`).focus();
+    await page.keyboard.press('Enter');
+    const next = page.locator('.say-actions [data-action="next"]');
+    await expect(next).toBeFocused();
+    const size = page.viewportSize()!;
+    await page.setViewportSize({ width: size.width - 120, height: size.height - 80 });
+    await expect(next).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.game .cell.legal:focus')).toHaveCount(1);
+  });
+
+  test('on a touch screen, no focus ring appears in the garden after Start', async ({ page, hasTouch }) => {
+    test.skip(!hasTouch, 'touch only');
+    await openHome(page);
+    await page.getByRole('button', { name: /New game/ }).tap();
+    await page.getByRole('dialog', { name: 'New game' }).getByText('A friend, on this device').tap();
+    await page.getByRole('button', { name: 'Start' }).tap();
+    await expect(page.locator('.game .cell.legal').first()).toBeVisible();
+    expect(await page.evaluate(() => document.querySelector('.game .cell:focus-visible') === null)).toBe(true);
+  });
+
+  test('a press dragged from the backdrop into a sheet does not close it', async ({ page, hasTouch }) => {
+    test.skip(hasTouch, 'a mouse press');
+    await openHome(page);
+    await page.getByRole('button', { name: 'Settings' }).click();
+    const panel = (await page.locator('dialog[open] .sheet-panel').boundingBox())!;
+    await page.mouse.move(4, 4);
+    await page.mouse.down();
+    await page.mouse.move(panel.x + panel.width / 2, panel.y + 40, { steps: 4 });
+    await page.mouse.up();
+    await expect(page.getByRole('dialog', { name: 'Settings' })).toBeVisible();
+    await page.mouse.click(4, 4);
+    await expect(page.getByRole('dialog', { name: 'Settings' })).toHaveCount(0);
+  });
+
   test('turning off the lift leaves the takeable tiles unmarked but still takeable', async ({ page, hasTouch }) => {
     await openHome(page);
     await page.getByRole('button', { name: 'Settings' }).click();
     await page.getByText('Lift the tiles you may take').click();
     await page.keyboard.press('Escape');
     const g = findGame((s) => s.history.length >= 4, 6);
-    await page.evaluate(([k, v]) => localStorage.setItem(k, v), ['okiya.match.v1', JSON.stringify(saved(HOT_SEAT, [{ tiles: g.tiles, first: g.first, moves: [] }]))] as const);
+    await page.evaluate(([k, v]) => localStorage.setItem(k, v), ['paper-garden.match.v1', JSON.stringify(saved(HOT_SEAT, [{ tiles: g.tiles, first: g.first, moves: [] }]))] as const);
     await page.reload();
     await page.getByRole('button', { name: /Continue/ }).click();
     await expect(page.locator('.cell.show-legal')).toHaveCount(0);

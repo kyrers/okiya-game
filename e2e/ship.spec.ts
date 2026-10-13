@@ -13,7 +13,7 @@ test.describe('installable and offline', () => {
     await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
     await context.setOffline(true);
     await page.reload();
-    await expect(page.getByRole('heading', { name: 'Okiya' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Paper Garden' })).toBeVisible();
     await page.getByRole('button', { name: /New game/ }).click();
     await page.getByRole('dialog', { name: 'New game' }).getByText('The computer', { exact: true }).click();
     await page.getByRole('button', { name: 'Start' }).click();
@@ -21,6 +21,28 @@ test.describe('installable and offline', () => {
     await expect(page.locator('.seat-1.moving .say-order')).toBeVisible({ timeout: 10_000 });
     const fonts = await page.evaluate(() => [...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family));
     expect(fonts.join(',')).toContain('Shippori Mincho B1');
+  });
+
+  test('a licence opened from Settings never takes the game’s place offline', async ({ page, context, browserName }) => {
+    test.skip(browserName !== 'chromium', 'service-worker offline emulation is checked in Chromium');
+    await page.goto('/');
+    await page.evaluate(() => navigator.serviceWorker.ready);
+    await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+    // The licence opens in a new tab, through this site's service worker.
+    await page.getByRole('button', { name: 'Settings' }).click();
+    const [licence] = await Promise.all([context.waitForEvent('page'), page.getByRole('link', { name: 'Source Sans 3' }).click()]);
+    await expect(licence.locator('body')).toContainText('SIL Open Font License');
+    await licence.close();
+    await context.setOffline(true);
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Paper Garden' })).toBeVisible();
+    // Offline, a licence still opens as itself, and a path below the site leads to the game.
+    const other = await context.newPage();
+    await other.goto('/licenses/ShipporiMinchoB1-OFL.txt');
+    await expect(other.locator('body')).toContainText('SIL Open Font License');
+    await other.goto('/no/such/page');
+    await expect(other.getByRole('heading', { name: 'Paper Garden' })).toBeVisible();
+    await other.close();
   });
 
   test('Chrome considers the game installable to the home screen', async ({ page, browserName }) => {
@@ -77,7 +99,7 @@ test.describe('installable and offline', () => {
 
   test('the manifest and icons are served', async ({ request }) => {
     const m = await (await request.get('/manifest.webmanifest')).json();
-    expect(m.name).toBe('Okiya');
+    expect(m.name).toBe('Paper Garden');
     for (const icon of m.icons) expect((await request.get(icon.src.replace('./', '/'))).ok()).toBe(true);
     for (const f of ['/apple-touch-icon.png', '/favicon-32.png', '/og-image.jpg', '/icon.svg', '/sw.js']) expect((await request.get(f)).ok()).toBe(true);
   });

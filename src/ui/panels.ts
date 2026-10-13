@@ -1,6 +1,6 @@
 /** The contents of the setup, settings and in-game menu sheets. */
 import type { Difficulty } from '../engine/ai';
-import type { MatchMode } from '../engine/okiya';
+import type { MatchMode } from '../engine/garden';
 import { NAME_MAX, defaultNames, type MatchSetup, type Opponent } from '../game/match';
 import { icon, tokenSvg, type IconName } from './art';
 import type { Settings } from './prefs';
@@ -34,7 +34,7 @@ export function setupForm(initial: MatchSetup, onStart: (s: MatchSetup) => void)
       <legend>Play against</legend>
       <div class="seg">
         ${seg('opponent', 'computer', 'The computer', initial.opponent === 'computer')}
-        ${seg('opponent', 'human', 'A friend, on this device', initial.opponent === 'human')}
+        ${seg('opponent', 'human', 'A friend, on this\u00a0device', initial.opponent === 'human')}
       </div>
     </fieldset>
     <fieldset class="choices f-level" data-for="computer">
@@ -111,7 +111,7 @@ export function settingsPanel(settings: Settings, onChange: (s: Settings) => voi
     ${toggle('reduceMotion', 'Reduce motion', 'No flying tiles or sweeping light. Your device setting is always respected.', settings.reduceMotion)}
     <section class="about">
       <h3>About</h3>
-      <p>Okiya is a game designed by Bruno Cathala and Cyril Bouquet, published by Blue Orange Games. This digital edition plays by the official rules; for a garden filled without a winner it follows the designer's ruling: a tie. Who opens after a tie is our choice (the other player than last time), since the rules name only the loser.</p>
+      <p>Paper Garden plays by the rules of a game designed by Bruno Cathala. This edition is not affiliated with or endorsed by him or by any publisher. For a garden filled without a winner it follows the designer's ruling: a tie. Who opens after a tie is our choice (the other player than last time), since the rules name only the loser.</p>
       <p>The art, sounds and code are original. The typefaces are used under the SIL Open Font License: <a href="./licenses/ShipporiMinchoB1-OFL.txt" target="_blank" rel="noopener">Shippori Mincho B1</a> and <a href="./licenses/SourceSans3-OFL.txt" target="_blank" rel="noopener">Source Sans 3</a>.</p>
       <p>Your matches and settings are saved on this device only. Nothing is sent anywhere.</p>
     </section>`;

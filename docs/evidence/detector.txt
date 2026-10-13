@@ -1,0 +1,17 @@
+Impeccable detector (impeccable 4.5.0), `impeccable detect --json src/ui index.html`, 2026-10-13 05:39 UTC.
+
+Errors 0, warnings 0, advisories 62.
+
+Advisories by kind (values used in the build but not named in DESIGN.md):
+  design-system-color          42
+  design-system-font-size      14
+  design-system-radius         6
+
+By file:
+  src/ui/styles.css            60
+  src/ui/game.ts               2
+
+About half are the tile art's own pigments (the "Tile art" block of styles.css, kept from the
+original designs); the rest are the turn lights' glows, shade and shadow tints, the gold mark's
+tints, and a few one-off type sizes and radii. The one warning of this run's first pass (the 'Garden Ellipsis' face, renamed with the
+game, not declared in DESIGN.md) was fixed by declaring it.

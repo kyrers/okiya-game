@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyMove, legalMoves, mulberry32, parseLayout, type Player } from '../engine/okiya';
+import { applyMove, legalMoves, mulberry32, parseLayout, type Player } from '../engine/garden';
 import { derive, nextGame, play, restore, seededRng, startMatch, undo, type MatchSetup, type MatchView } from './match';
 
 const CANON = parseLayout('Ms Mp Mb Mr  Cs Cp Cb Cr  Ps Pp Pb Pr  Is Ip Ib Ir');

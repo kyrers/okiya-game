@@ -1,0 +1,24 @@
+vercel.json against Vercel's published schema, 2026-10-13 05:36 UTC.
+
+Schema: https://openapi.vercel.sh/vercel.json, fetched today (sha256 c2b8f70341f148e3..., unchanged since
+2026-10-12). It declares draft-04 but uses draft-07 keywords, so it is compiled as draft-07.
+Validator: ajv 8.17.1 (strict off, all errors). Negative control: a copy with a numeric header
+source and an array as outputDirectory.
+
+Result:
+  vercel.json: valid against https://openapi.vercel.sh/vercel.json
+  negative control rejected: true
+
+The check, as run (from a scratch folder holding ajv and the schema):
+
+  const Ajv = require('ajv');
+  const schema = require('../vercel.schema.json');
+  delete schema.$schema; // declares draft-04 but uses draft-07 keywords
+  const ajv = new Ajv({ strict: false, allErrors: true, validateSchema: false });
+  const check = ajv.compile(schema);
+  const data = require('../../vercel.json');
+  console.log(check(data) ? 'vercel.json: valid against https://openapi.vercel.sh/vercel.json' : JSON.stringify(check.errors, null, 1));
+  const bad = JSON.parse(JSON.stringify(data));
+  bad.headers[0].source = 5;
+  bad.outputDirectory = ['x'];
+  console.log('negative control rejected:', !check(bad));

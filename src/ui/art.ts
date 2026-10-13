@@ -3,7 +3,7 @@
  * small diagrams used by the rules. Tokens live in one hidden sprite so every cell can reference
  * them with <use> instead of repeating the markup.
  */
-import type { Player } from '../engine/okiya';
+import type { Player } from '../engine/garden';
 
 const PETAL = 'M50,50 C41,43 38,31 44,23 L50,28 L56,23 C62,31 59,43 50,50 Z';
 

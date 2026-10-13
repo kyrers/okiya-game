@@ -1,0 +1,63 @@
+Output of `npx tsx scripts/rules-oracle.ts 100000 20000` (2026-10-13 05:36 UTC, 3 min 5 s). It exits at the first
+disagreement with the engine or the match layer; exit 0, so none. Counts are what the random
+games and matches reached (end:<how> for single games, <format>:games=<n> for matches).
+
+single games: 100000 checked, layout samples 20000, max position/tile freq deviation from 1/16: 0.0054
+{
+  'end:diagonal': 8028,
+  'winner:second': 39166,
+  'end:blocked': 29969,
+  'formation+block same move': 6442,
+  'end:square': 25188,
+  'winner:opener': 51891,
+  'end:column': 14016,
+  'end:row': 13856,
+  'end:full': 8943,
+  'winner:tie': 8943,
+  'formation on last tile': 2909,
+  'multi-formation': 2889
+}
+matches: 20000 checked
+{
+  'firstOpener:1': 10014,
+  'single:games=1': 4000,
+  tie: 21614,
+  'sets3:games=4': 1179,
+  'zero-point win': 8264,
+  'points10:games=9': 288,
+  overshoot: 7068,
+  'points15:games=9': 380,
+  'points20:games=10+': 3410,
+  'sets3:games=5': 1446,
+  'points10:games=3': 244,
+  'points15:games=6': 213,
+  'sets3:games=6': 635,
+  'points15:games=10+': 2475,
+  'points20:games=9': 237,
+  'points10:games=7': 414,
+  'points15:games=8': 360,
+  'sets3:games=7': 202,
+  'points10:games=10+': 1192,
+  'points10:games=5': 472,
+  'points20:games=7': 101,
+  'sets3:games=3': 462,
+  'points10:games=6': 505,
+  'sets3:games=8': 62,
+  'points15:games=5': 131,
+  'points15:games=7': 320,
+  'points10:games=8': 354,
+  'points10:games=4': 414,
+  'points10:games=2': 117,
+  'firstOpener:2': 9986,
+  'points15:games=4': 88,
+  'points20:games=8': 165,
+  'points20:games=6': 64,
+  'sets3:games=9': 12,
+  'points20:games=5': 18,
+  'points20:games=4': 5,
+  'points15:games=3': 31,
+  'sets3:games=10+': 2,
+  'points15:games=2': 2
+}
+tampered saves: refused
+undo checks: 2509

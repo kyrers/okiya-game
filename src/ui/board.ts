@@ -2,9 +2,10 @@
  * The garden: 16 buttons that keep their DOM nodes across renders, so moves can animate and keyboard
  * focus survives. Only cells whose content changed are rewritten.
  */
-import { CELL_COUNT, colOf, rowOf, tileCode, type GameState, type Player } from '../engine/okiya';
+import { CELL_COUNT, colOf, rowOf, tileCode, type GameState, type Player } from '../engine/garden';
 import { tokenSvg } from './art';
 import { tileLabel, tileSvg } from './tileArt';
+import { possessive } from './words';
 
 export interface BoardRender {
   readonly state: GameState;
@@ -25,6 +26,11 @@ export interface BoardHandlers {
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/** Whether the player's last input was a key press, rather than a touch or a click. */
+let keyboardLast = false;
+window.addEventListener('keydown', () => (keyboardLast = true), true);
+window.addEventListener('pointerdown', () => (keyboardLast = false), true);
 
 export class BoardView {
   readonly el: HTMLDivElement;
@@ -109,6 +115,9 @@ export class BoardView {
       else b.removeAttribute('aria-disabled');
     }
     this.el.classList.toggle('has-legal', r.legal.size > 0 && r.showLegal);
+    // A person may take a tile now: every tile answers the pointer alike, so a hover never tells
+    // which tiles may be taken when marking them is turned off.
+    this.el.classList.toggle('can-take', r.legal.size > 0);
     this.el.classList.toggle('over', !!win);
     const prev = this.last;
     this.last = r;
@@ -120,12 +129,15 @@ export class BoardView {
     this.cells[this.focusIndex].focus();
   }
 
-  /** Focus the first takeable cell, if the board does not already hold focus. */
+  /** Moves the garden's tab stop to the first tile that may be taken (or leaves it where focus last
+   *  rested: the computer's turn, the game over), unless the garden already holds focus; and, for
+   *  a player using the keyboard, puts focus there. After a touch, WebKit would draw a focus ring
+   *  on the tile, so focus is left alone. */
   focusFirstLegal(): void {
-    if (!this.last) return;
+    if (!this.last || this.grid.contains(document.activeElement)) return;
     const first = [...this.last.legal][0];
-    if (first === undefined) return;
-    if (!this.grid.contains(document.activeElement)) this.setFocusIndex(first);
+    this.setFocusIndex(first ?? this.focusIndex);
+    if (keyboardLast) this.cells[this.focusIndex].focus({ preventScroll: true });
   }
 
   private label(i: number, r: BoardRender): string {
@@ -133,7 +145,7 @@ export class BoardView {
     const c = r.state.board[i];
     if (c.kind === 'token') {
       const win = r.state.result?.cells.includes(i) ? ', part of the winning formation' : '';
-      return `${where}: ${r.names[c.player - 1]}'s token${win}`;
+      return `${where}: ${possessive(r.names[c.player - 1])} token${win}`;
     }
     const legal = r.legal.has(i) ? ', can be taken' : '';
     return `${where}: ${tileLabel(c.tile)}${legal}`;

@@ -1,5 +1,5 @@
 /**
- * Okiya simulation harness: seeded games between two move-choosers, alternating who opens.
+ * Simulation harness: seeded games between two move-choosers, alternating who opens.
  *
  * Usage:
  *   npx tsx scripts/simulate.ts calibrate [games=400]   difficulty ladder against three player models
@@ -7,7 +7,7 @@
  *   npx tsx scripts/simulate.ts timing [games=20]       think time per move of each difficulty
  */
 import { DIFFICULTY, Searcher, WIN, chooseMove, type AiOptions, type Difficulty } from '../src/engine/ai';
-import { applyMove, legalMoves, mulberry32, newGame, type GameState, type Player } from '../src/engine/okiya';
+import { applyMove, legalMoves, mulberry32, newGame, type GameState, type Player } from '../src/engine/garden';
 
 export interface Tally {
   games: number;

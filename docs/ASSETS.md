@@ -1,7 +1,7 @@
 # What ships, and where each file comes from
 
 Every file a player downloads, from `dist/` after `npm run build` (identical to Vercel's
-`.vercel/output/static`). Requirement: all assets original or licensed for commercial use.
+`.vercel/output/static` for the same commit; see `docs/evidence/vercel-build.txt`). Requirement: all assets original or licensed for commercial use.
 
 | File(s) | What it is | Origin | Licence |
 |---|---|---|---|
@@ -15,7 +15,7 @@ Every file a player downloads, from `dist/` after `npm run build` (identical to 
 | `assets/cloth-*.webp`, `assets/paper-*.webp` | Cloth and paper textures | Drawn procedurally for this project by `scripts/render-textures.ts`; provenance in the `.json` sidecars next to the sources | Project's own |
 | The 16 garden tiles, tokens, icons, rules diagrams, brush stroke | Inline SVG inside the JS | Drawn for this project (`src/ui/tileArt.ts`, `src/ui/art.ts`); the tiles are the client-approved designs of the earlier attempt | Project's own |
 | `icon.svg`, `favicon-32.png`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png` | App icons | `public/icon.svg` drawn for this project; PNGs rendered from it by `scripts/render-icons.ts`; provenance embedded in each PNG | Project's own |
-| `og-image.jpg` | Link-preview image | A capture of this game's own home screen by `scripts/capture.ts`; provenance embedded | Project's own |
+| `og-image.jpg` | Link-preview image | A capture of this game's own home screen by `scripts/capture.ts`, which writes its provenance into the file (a JPEG comment) | Project's own |
 | Sounds | Wood clicks, paper slide, chimes | Synthesised at run time with the Web Audio API (`src/ui/sound.ts`); there are no audio files | Project's own |
 | `manifest.webmanifest`, `robots.txt` | App manifest, crawler rules | Written for this project | Project's own |
 | `licenses/*.txt` | The two font licences | Copied from the font projects | The OFL text itself |
@@ -24,5 +24,6 @@ Nothing is loaded from another domain at run time: the Content Security Policy i
 allows only the site itself (`default-src 'self'`), and the e2e suite runs a game under that policy
 with no violation.
 
-The name "Okiya" and the published game belong to the publisher and the designers; this edition
-credits them, uses none of their art or marks, claims no endorsement, and is not for sale.
+The published game, its name and its art belong to its publisher, designer and illustrator. This
+edition is called Paper Garden, credits the game's designer by name, uses none of the published game's name, art or
+marks, claims no endorsement, and is not for sale.

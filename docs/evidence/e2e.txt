@@ -1,20 +1,20 @@
-End-to-end results of the final run on the production build (2026-10-13 01:37 UTC), 11 device profiles.
+End-to-end results of the final run on the production build (2026-10-13 06:03 UTC), 11 device profiles.
 
 == main (npx playwright test --grep-invert "@perf|@sweep", 6 workers)
-  iphone-se              passed  27  skipped  8  failed 0
-  iphone-15              passed  30  skipped  5  failed 0
-  iphone-15-landscape    passed  27  skipped  8  failed 0
-  pixel-7                passed  34  skipped  1  failed 0
-  iphone-se-3            passed  27  skipped  8  failed 0
-  android-360            passed  31  skipped  4  failed 0
-  ipad-portrait          passed  27  skipped  8  failed 0
-  ipad-landscape         passed  27  skipped  8  failed 0
-  desktop-chrome         passed  35  skipped  0  failed 0
-  desktop-firefox        passed  30  skipped  5  failed 0
-  desktop-safari         passed  28  skipped  7  failed 0
-  total                  passed 323  skipped 62  failed 0
+  iphone-se              passed  30  skipped 11  failed 0
+  iphone-15              passed  33  skipped  8  failed 0
+  iphone-15-landscape    passed  30  skipped 11  failed 0
+  pixel-7                passed  38  skipped  3  failed 0
+  iphone-se-3            passed  30  skipped 11  failed 0
+  android-360            passed  35  skipped  6  failed 0
+  ipad-portrait          passed  30  skipped 11  failed 0
+  ipad-landscape         passed  30  skipped 11  failed 0
+  desktop-chrome         passed  40  skipped  1  failed 0
+  desktop-firefox        passed  34  skipped  7  failed 0
+  desktop-safari         passed  32  skipped  9  failed 0
+  total                  passed 362  skipped 89  failed 0
 
-== sweep (npx playwright test --grep @sweep --workers=6 on this machine; npm run e2e uses 3): the layout rules on 13 screen states at about 190 sizes each in WebKit (iphone-15) and Chromium as a phone (pixel-7), and at those sizes plus 7 desktop sizes in desktop Chrome at scale 2 and Firefox at scale 1 windows (desktop-chrome, desktop-firefox); every control reached by a real tap through two whole matches at 11 phone and tablet sizes (iphone-15, pixel-7, desktop-chrome) and 3 desktop sizes (the three desktop browsers)
+== sweep (npx playwright test --grep @sweep --workers=6 on this machine; npm run e2e uses 3): the layout rules on 14 screen states (12 tests) at 176 sizes each in WebKit (iphone-15) and Chromium as a phone (pixel-7), and at those sizes plus 7 desktop sizes (183) in desktop Chrome at scale 2 and Firefox at scale 1 windows (desktop-chrome, desktop-firefox); the opener note and the size of the garden after the first move at the same sizes plus 7 short portrait ones; every control reached by a real tap (a two-player game, the next game, menu, rules, home, restart, then a whole game against the computer) at 11 phone and tablet sizes (iphone-15, pixel-7, desktop-chrome) and 3 desktop sizes (the three desktop browsers)
   iphone-se              passed   0  skipped 27  failed 0
   iphone-15              passed  24  skipped  3  failed 0
   iphone-15-landscape    passed   0  skipped 27  failed 0

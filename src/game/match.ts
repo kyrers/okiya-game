@@ -24,7 +24,7 @@ import {
   type MatchState,
   type Player,
   type Tile,
-} from '../engine/okiya';
+} from '../engine/garden';
 
 export type Opponent = 'human' | 'computer';
 
@@ -124,7 +124,7 @@ export function nextGame(view: MatchView, rng: () => number = Math.random): Matc
   return derive({ ...view.saved, games });
 }
 
-/** Replay a saved match through the engine. Throws if anything in it is not a legal Okiya match. */
+/** Replay a saved match through the engine. Throws if anything in it is not a legal match. */
 export function derive(saved: SavedMatch): MatchView {
   if (saved.games.length === 0) throw new Error('a match has at least one game');
   let match = newMatch(saved.setup.mode, saved.games[0].first);
@@ -170,7 +170,9 @@ export function restore(data: unknown): MatchView | null {
     if (st.opponent !== 'human' && st.opponent !== 'computer') return null;
     if (!isDifficulty(st.difficulty) || !isMatchMode(st.mode)) return null;
     if (!Array.isArray(st.names) || st.names.length !== 2) return null;
-    const setup = cleanSetup({ opponent: st.opponent, difficulty: st.difficulty, mode: st.mode, names: [String(st.names[0]), String(st.names[1])] });
+    // A name that is not text (a hand-edited or damaged save) falls back to the default name.
+    const name = (n: unknown) => (typeof n === 'string' ? n : '');
+    const setup = cleanSetup({ opponent: st.opponent, difficulty: st.difficulty, mode: st.mode, names: [name(st.names[0]), name(st.names[1])] });
     if (data.games.length === 0 || data.games.length > 500) return null;
     const games: GameRecord[] = [];
     for (const g of data.games as unknown[]) {

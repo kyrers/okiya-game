@@ -1,8 +1,8 @@
 import { expect, type Page } from '@playwright/test';
-import { applyMove, legalMoves, mulberry32, newGame, type GameState, type Player, type Tile } from '../src/engine/okiya';
+import { applyMove, legalMoves, mulberry32, newGame, type GameState, type Player, type Tile } from '../src/engine/garden';
 import type { MatchSetup, SavedMatch } from '../src/game/match';
 
-export const MATCH_KEY = 'okiya.match.v1';
+export const MATCH_KEY = 'paper-garden.match.v1';
 
 /** Store a match before the page loads, as if it had been saved by an earlier visit. */
 export async function seedMatch(page: Page, saved: SavedMatch): Promise<void> {
@@ -54,7 +54,7 @@ export const LONG_NAMES: [string, string] = ['Wmmmmmmmmmmmmmmm', 'WWWWWWWWWWWWWW
 
 export async function openHome(page: Page): Promise<void> {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Okiya' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Paper Garden' })).toBeVisible();
 }
 
 export async function continueMatch(page: Page): Promise<void> {

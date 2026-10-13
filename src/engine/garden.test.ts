@@ -26,7 +26,7 @@ import {
   type GameState,
   type Tile,
   type GameResult,
-} from './okiya';
+} from './garden';
 import { stateFromPicture } from './testUtils';
 
 /** Canonical layout: rows are vegetations (M, C, P, I); columns are symbols (s, p, b, r). */
@@ -414,7 +414,7 @@ describe('match variants (End of the game)', () => {
   const p1wins = (tilesRemaining: number): GameResult => ({ winner: 1, reason: 'row', cells: [0, 1, 2, 3], tilesRemaining });
   const p2wins = (tilesRemaining: number): GameResult => ({ winner: 2, reason: 'blocked', cells: [], tilesRemaining });
 
-  it('single game: the winner of the round wins the match', () => {
+  it('single game: the one game decides the match', () => {
     const m = recordGame(newMatch('single', 1), p2wins(5));
     expect(m.champion).toBe(2);
     expect(m.over).toBe(true);

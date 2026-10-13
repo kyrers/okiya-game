@@ -1,7 +1,7 @@
 {
-  "name": "Okiya",
-  "short_name": "Okiya",
-  "description": "The two-player garden game by Bruno Cathala and Cyril Bouquet. Play a friend on one device or the computer.",
+  "name": "Paper Garden",
+  "short_name": "Paper Garden",
+  "description": "The two-player garden game designed by Bruno Cathala. Play a friend on one device or the computer.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

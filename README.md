@@ -1,7 +1,7 @@
-# Okiya
+# Paper Garden
 
-A digital edition of **Okiya**, the two-player garden game by Bruno Cathala and Cyril Bouquet,
-played exactly by the official rules. Two people on one device, or one person against the
+**Paper Garden** is a two-player garden game, played exactly by the rules of the abstract game
+designed by Bruno Cathala. Two people on one device, or one person against the
 computer at three levels. Phones, tablets and desktops; portrait and landscape; works offline
 once loaded. A static site with no backend, accounts, keys or tracking.
 
@@ -26,7 +26,7 @@ The full rules, their sources and the one interpretation this edition makes are 
 
 ## Run it
 
-Requires Node 20 or newer.
+Requires Node 22.12 or newer (the versions Vite 8 and Vitest 5 support; Vercel builds it on 22.x).
 
 ```bash
 npm install
@@ -40,7 +40,7 @@ Other scripts:
 
 ```bash
 npm run sim -- calibrate 400   # difficulty ladder against three player models
-npm run sim -- solve 24        # exact game value of random gardens with perfect play
+npm run sim -- solve 40        # exact game value of random gardens with perfect play
 npx tsx scripts/capture.ts     # screenshots and share image from a running build (vite preview)
 npm run icons                  # PNG icons from public/icon.svg
 ```
@@ -52,12 +52,14 @@ long-term caching for hashed assets, `no-cache` for the service worker, and secu
 a Content Security Policy. Import the repository in Vercel (or run `vercel` / `vercel --prod`
 from the project root) and accept the detected settings. There are no environment variables.
 
-The same `dist/` works on any static host; asset paths are relative.
+The same `dist/` works on any static host, from the site's root or a sub-path: the game's asset
+paths are relative. Only `404.html`, which a host serves for any missing path, links to the root
+(`/`), so on a sub-path its "Play" link and icon point one level too high.
 
 ## Project layout
 
 ```
-src/engine/okiya.ts   the official rules: pure functions, immutable state (+ tests)
+src/engine/garden.ts  the official rules: pure functions, immutable state (+ tests)
 src/engine/ai.ts      negamax search with alpha-beta; Easy / Medium / Hard presets (+ tests)
 src/game/match.ts     a match: setup, games, undo, save/restore by replaying the engine (+ tests)
 src/game/aiClient.ts  runs the computer's search in a Web Worker (ai.worker.ts)
@@ -69,9 +71,10 @@ docs/                 rules, process, evidence, screenshots
 
 ## Credits and licences
 
-- **Okiya** (also published as **Niya**) is designed by Bruno Cathala and Cyril Bouquet and
-  published by Blue Orange Games. This edition uses its rules; no Blue Orange artwork, logos or
-  trade dress are used, and no endorsement is claimed. This edition is not for sale.
+- **Game design** by Bruno Cathala. Paper Garden plays by his rules (sources in
+  [docs/RULES.md](docs/RULES.md)); it uses none of the published game's name, art, logos or trade
+  dress, is not affiliated with or endorsed by its designer, illustrator or any publisher, and is
+  not for sale.
 - **Art**: the garden tiles, tokens, icons and app icon are original SVG drawn for this project.
 - **Sounds**: synthesised at run time with the Web Audio API; there are no audio files.
 - **Typefaces**, both under the SIL Open Font License 1.1 and self-hosted (the licence texts ship

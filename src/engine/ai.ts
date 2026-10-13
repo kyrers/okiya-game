@@ -1,5 +1,5 @@
 /**
- * AI opponent for Okiya: negamax with alpha-beta pruning, a transposition
+ * The computer player: negamax with alpha-beta pruning, a transposition
  * table and iterative deepening. Pure functions; deterministic given a PRNG.
  *
  * Scores are from the point of view of the player to move:
@@ -18,7 +18,7 @@ import {
   type Cell,
   type GameState,
   type Player,
-} from './okiya';
+} from './garden';
 
 export const WIN = 10_000;
 

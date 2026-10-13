@@ -5,7 +5,9 @@ import { LONG_NAMES, boardCodes } from './helpers';
  * Every control a player needs, reached with a real tap (or click) at the sizes most at risk: no
  * `force`, so Playwright's own checks apply to each one (visible, steady, enabled, and the topmost
  * thing under the finger). The layout sweep measures where things are; this proves they can be
- * used there. Two complete matches per size: two players with victory points, then the computer.
+ * used there. Per size: a two-player victory-points match set up by taps, one whole game of it,
+ * the next game, the menu, the rules, home and back, and a restart; then a whole single-game match
+ * against the computer.
  */
 const PHONES_AND_TABLETS: [number, number][] = [
   [320, 568], [360, 640], [390, 780], [430, 932],
@@ -49,7 +51,7 @@ test.describe('every control reachable by a real tap @sweep', () => {
   });
 
   for (let i = 0; i < DESKTOPS.length + PHONES_AND_TABLETS.length; i++) {
-    test(`size ${i + 1}: set up, play two whole matches, menu, rules, home, restart`, async ({ page, hasTouch }, info) => {
+    test(`size ${i + 1}: a two-player game and next game, menu, rules, home, restart; a game against the computer`, async ({ page, hasTouch }, info) => {
       const size = sizesFor(info.project.name)[i];
       test.skip(!size, 'phones and tablets in one WebKit and one Chromium project; desktops in the three desktop browsers');
       test.setTimeout(120_000);
@@ -75,7 +77,7 @@ test.describe('every control reachable by a real tap @sweep', () => {
       await page.goto('/');
       await page.evaluate(() => localStorage.clear());
       await page.reload();
-      await expect(page.getByRole('heading', { name: 'Okiya' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Paper Garden' })).toBeVisible();
 
       // Two players, victory points to 10, set up entirely by taps.
       await act(page.getByRole('button', { name: /New game/ }));
@@ -133,7 +135,7 @@ test.describe('every control reachable by a real tap @sweep', () => {
       await expect(page.getByRole('dialog')).toHaveCount(0);
       await playToEnd();
       await act(page.locator('.say-actions [data-action="home"]'));
-      await expect(page.getByRole('heading', { name: 'Okiya' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Paper Garden' })).toBeVisible();
     });
   }
 });

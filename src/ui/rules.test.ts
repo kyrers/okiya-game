@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { BORDER_CELLS, FORMATIONS, applyMove, legalMoves, newGameFromTiles, parseLayout, tileCode } from '../engine/okiya';
+import { BORDER_CELLS, FORMATIONS, applyMove, legalMoves, newGameFromTiles, parseLayout, tileCode } from '../engine/garden';
 import { EXAMPLE_POSITION, EXAMPLE_TAKEN, WIN_DIAGRAMS } from './rules';
 
 /** The rules page must never show a position the rules could not produce. */
 describe('rules page diagrams', () => {
   it('the constraint example is reached by a legal game, and its lifted tiles are exactly the legal ones', () => {
-    // The garden before the four moves: the tokens' cells held Ps, Pr, Cr and Cb.
+    // The garden before the four moves: the tokens' cells held Ps, Pb, Mb and Mr.
     const original = EXAMPLE_POSITION.split(/\s+/);
-    const taken: Record<number, string> = { 1: 'Ps', 4: 'Pr', 10: 'Cr', 15: 'Cb' };
+    const taken: Record<number, string> = { 1: 'Ps', 4: 'Pb', 10: 'Mb', 15: 'Mr' };
     const layout = original.map((c, i) => taken[i] ?? c).join(' ');
     let g = newGameFromTiles(parseLayout(layout), 1);
     for (const m of [1, 4, 10, 15]) g = applyMove(g, m);
@@ -15,8 +15,8 @@ describe('rules page diagrams', () => {
     expect(g.lastTile && tileCode(g.lastTile)).toBe(EXAMPLE_TAKEN);
     const shown = g.board.map((c) => (c.kind === 'tile' ? tileCode(c.tile) : String(c.player)));
     expect(shown.join(' ')).toBe(EXAMPLE_POSITION.split(/\s+/).join(' '));
-    // Five cherry-or-bird tiles, as the text says.
-    expect(legalMoves(g).map((i) => shown[i]).sort()).toEqual(['Cp', 'Cs', 'Ib', 'Mb', 'Pb']);
+    // Five maple-or-rain tiles, as the text says.
+    expect(legalMoves(g).map((i) => shown[i]).sort()).toEqual(['Cr', 'Ir', 'Mp', 'Ms', 'Pr']);
   });
 
   it('every win diagram is a plausible end of a game', () => {

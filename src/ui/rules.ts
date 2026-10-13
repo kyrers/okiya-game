@@ -1,14 +1,14 @@
 /**
- * How to play: the official rules (Blue Orange print-and-play sheet, in our own words), the
+ * How to play: the official rules (in our own words, with our own examples and diagrams), the
  * designer's ruling for a full garden, the match formats and a key of the sixteen tiles.
  */
-import { parseTile, sharesElement } from '../engine/okiya';
+import { parseTile, sharesElement } from '../engine/garden';
 import { miniGarden, tokenSvg } from './art';
 import { gardenKeyHtml, symGlyph, tileLabel, tileSvg, vegGlyph } from './tileArt';
 
-/** The constraint example: a real position, reached by taking Ps, Pr, Cr, then Cb (rules.test.ts). */
-export const EXAMPLE_POSITION = 'Ms 1 Cp Pb  2 Ir Ib Cs  Pp Mb 1 Is  Mr Mp Ip 2';
-export const EXAMPLE_TAKEN = 'Cb';
+/** The constraint example: a real position, reached by taking Ps, Pb, Mb, then Mr (rules.test.ts). */
+export const EXAMPLE_POSITION = 'Cs 1 Mp Pr  2 Ib Ir Ms  Pp Cr 1 Is  Cb Cp Ip 2';
+export const EXAMPLE_TAKEN = 'Mr';
 
 /** The win diagrams, as drawn: [cells, formation]. '1'/'2' tokens, 'x' a tile that may not be taken. */
 export const WIN_DIAGRAMS: [string, number[] | null][] = [
@@ -18,7 +18,7 @@ export const WIN_DIAGRAMS: [string, number[] | null][] = [
   ['1 2 x 2 2 1 2 1 x 1 2 1 2 x 1 x', null],
 ];
 
-/** A real position: cherry-bird was just taken; the cherry and bird tiles are the ones allowed. */
+/** A real position: maple-rain was just taken; the maple and rain tiles are the ones allowed. */
 function exampleBoard(): string {
   const taken = parseTile(EXAMPLE_TAKEN);
   const cells = EXAMPLE_POSITION.split(/\s+/);
@@ -30,7 +30,7 @@ function exampleBoard(): string {
       return `<span class="eg-cell ${ok ? 'eg-open' : 'eg-closed'}" title="${tileLabel(t)}">${tileSvg(t)}</span>`;
     })
     .join('');
-  return `<div class="eg" role="img" aria-label="Example: after cherry with bird was taken, the five cherry or bird tiles may be taken">
+  return `<div class="eg" role="img" aria-label="Example: after maple with rain was taken, the five maple or rain tiles may be taken">
     <div class="eg-taken"><span class="eg-cell">${tileSvg(taken)}</span><span>Just taken</span></div>
     <div class="eg-board">${html}</div>
   </div>`;
@@ -62,7 +62,7 @@ export function rulesHtml(): string {
     </div>
     <div class="rules-row">
       ${exampleBoard()}
-      <p><b>Every tile after that</b> must share the plant <i>or</i> the symbol of the tile your opponent just took. Here they took ${vegGlyph('cherry')} cherry with ${symGlyph('bird')} bird, so you may take any cherry tile or any bird tile: the five lifted ones.</p>
+      <p><b>Every tile after that</b> must share the plant <i>or</i> the symbol of the tile your opponent just took. Here they took ${vegGlyph('maple')} maple with ${symGlyph('rain')} rain, so you may take any maple tile or any rain tile: the five lifted ones.</p>
     </div>
     <p>The tile just taken is shown in the next player's half of the screen, with what it allows.</p>
 
@@ -84,6 +84,6 @@ export function rulesHtml(): string {
     <p>Each tile pairs one of four plants with one of four symbols. The printed rules call the fourth symbol "rain or cloud": here, a cloud with rain falling.</p>
     ${gardenKeyHtml()}
 
-    <p class="rules-credit">Okiya is a game by Bruno Cathala and Cyril Bouquet.</p>
+    <p class="rules-credit">Game design by Bruno Cathala.</p>
   </div>`;
 }

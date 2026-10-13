@@ -22,6 +22,13 @@ export interface SheetOptions {
 }
 
 let seq = 0;
+/** Every sheet open now, so leaving a screen can close them all (a confirmation included). */
+const openSheets = new Set<() => void>();
+
+/** Closes every open sheet, as if each were cancelled. */
+export function closeAllSheets(): void {
+  for (const close of [...openSheets]) close();
+}
 
 export function openSheet(opts: SheetOptions): Sheet {
   const opener = document.activeElement as HTMLElement | null;
@@ -53,6 +60,7 @@ export function openSheet(opts: SheetOptions): Sheet {
   const close = () => {
     if (closed) return;
     closed = true;
+    openSheets.delete(close);
     if (dialog.open) dialog.close();
     dialog.remove();
     opts.onClose?.();
@@ -63,10 +71,22 @@ export function openSheet(opts: SheetOptions): Sheet {
     ev.preventDefault();
     close();
   });
-  // A click on the backdrop lands on the dialog element itself, outside the panel.
-  dialog.addEventListener('click', (ev) => {
-    if (ev.target === dialog) close();
+  // A click on the backdrop lands on the dialog element itself, outside the panel. Only a press
+  // that starts and ends there closes the sheet (not a drag that began inside and ended outside,
+  // nor the reverse: a click then goes to the nearest element holding both ends, the dialog).
+  let pressedBackdrop = false;
+  let releasedBackdrop = false;
+  dialog.addEventListener('pointerdown', (ev) => {
+    pressedBackdrop = ev.target === dialog;
   });
+  dialog.addEventListener('pointerup', (ev) => {
+    releasedBackdrop = ev.target === dialog;
+  });
+  dialog.addEventListener('click', (ev) => {
+    if (ev.target === dialog && pressedBackdrop && releasedBackdrop) close();
+    pressedBackdrop = releasedBackdrop = false;
+  });
+  openSheets.add(close);
   dialog.showModal();
   // Focus the panel, not its first control: no stray focus ring for touch users, and Tab
   // still walks straight into the sheet.

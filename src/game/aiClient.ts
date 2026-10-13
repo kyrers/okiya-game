@@ -3,7 +3,7 @@
  * responsive; if workers are unavailable it runs on the main thread instead.
  */
 import { DIFFICULTY, Searcher, chooseMove, type Difficulty } from '../engine/ai';
-import { mulberry32, type GameState } from '../engine/okiya';
+import { mulberry32, type GameState } from '../engine/garden';
 
 export interface AiRequest {
   id: number;

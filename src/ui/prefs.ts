@@ -1,6 +1,6 @@
 /** Player preferences and the last match setup, kept in the browser. */
 import { isDifficulty } from '../engine/ai';
-import { isMatchMode } from '../engine/okiya';
+import { isMatchMode } from '../engine/garden';
 import { defaultNames, NAME_MAX, type MatchSetup } from '../game/match';
 import { loadRaw, saveRaw } from './storage';
 
@@ -12,9 +12,9 @@ export interface Settings {
   reduceMotion: boolean;
 }
 
-const SETTINGS_KEY = 'okiya.settings.v1';
-const SETUP_KEY = 'okiya.setup.v1';
-export const MATCH_KEY = 'okiya.match.v1';
+const SETTINGS_KEY = 'paper-garden.settings.v1';
+const SETUP_KEY = 'paper-garden.setup.v1';
+export const MATCH_KEY = 'paper-garden.match.v1';
 
 export const DEFAULT_SETTINGS: Settings = { sound: true, showPlayable: true, reduceMotion: false };
 

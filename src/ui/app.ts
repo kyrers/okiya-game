@@ -6,7 +6,7 @@ import { homeScreen } from './home';
 import { menuList, settingsPanel, setupForm, startButton, type MenuItem } from './panels';
 import { MATCH_KEY, loadSettings, loadSetup, saveSettings, saveSetup, type Settings } from './prefs';
 import { rulesHtml } from './rules';
-import { confirmSheet, openSheet, type Sheet } from './sheet';
+import { closeAllSheets, confirmSheet, openSheet, type Sheet } from './sheet';
 import { setSoundEnabled, unlockAudio } from './sound';
 import { loadRaw, saveRaw } from './storage';
 
@@ -24,6 +24,16 @@ export class App {
     window.addEventListener('keydown', unlock);
     window.addEventListener('popstate', () => {
       if (this.game) this.showHome(false);
+    });
+    // The same match open in another tab: take up what that tab saved, rather than overwrite it
+    // with this tab's older position on the next move.
+    window.addEventListener('storage', (ev) => {
+      if (ev.key !== MATCH_KEY) return;
+      if (this.game) {
+        const v = this.savedMatch();
+        if (v) this.showGame(v);
+        else this.showHome(false);
+      } else if (!this.sheet) this.showHome(false);
     });
   }
 
@@ -45,6 +55,7 @@ export class App {
 
   private showHome(fromGame: boolean): void {
     this.closeSheet();
+    closeAllSheets();
     if (this.game) {
       this.game.destroy();
       this.game = null;
@@ -57,20 +68,24 @@ export class App {
       settings: () => this.openSettings(),
     });
     this.mount(el);
-    if (fromGame && history.state?.okiya === 'game') history.back();
+    if (fromGame && history.state?.screen === 'game') history.back();
+    // Back from a game: keyboard focus on the first action, not lost on the page.
+    if (fromGame) el.querySelector<HTMLElement>('.home-actions .btn')?.focus({ preventScroll: true });
   }
 
   private showGame(view: MatchView): void {
     this.closeSheet();
+    closeAllSheets();
     this.game?.destroy();
     this.game = new GameScreen(view, {
       settings: () => this.settings,
       save: (v) => saveRaw(MATCH_KEY, v.saved),
       openMenu: () => this.openMenu(),
       goHome: () => this.showHome(true),
+      onChange: () => this.updateMenu(),
     });
     this.mount(this.game.el);
-    if (history.state?.okiya !== 'game') history.pushState({ okiya: 'game' }, '');
+    if (history.state?.screen !== 'game') history.pushState({ screen: 'game' }, '');
     this.game.focusBoard();
     keepAwake(true);
   }
@@ -97,7 +112,17 @@ export class App {
 
   private open(title: string, body: Node | string, className?: string, footer?: Node): Sheet {
     this.closeSheet();
-    const s = openSheet({ title, body, className, footer, onClose: () => this.sheet === s && (this.sheet = null) });
+    const s = openSheet({
+      title,
+      body,
+      className,
+      footer,
+      onClose: () => {
+        if (this.sheet === s) this.sheet = null;
+        // Moves made while the sheet was open were not heard (the game behind it was inert).
+        this.game?.reannounce();
+      },
+    });
     this.sheet = s;
     return s;
   }
@@ -145,6 +170,7 @@ export class App {
     const list = menuList(items, async (id) => {
       if (id === 'resume') return this.closeSheet();
       if (id === 'undo') {
+        if (!g.canUndo) return;
         this.closeSheet();
         return g.undo();
       }
@@ -158,6 +184,12 @@ export class App {
       }
     });
     this.open('Menu', list, 'sheet-menu');
+  }
+
+  /** The menu's Undo follows the game while the menu is open (a flight landing, the computer's reply). */
+  private updateMenu(): void {
+    const undoItem = this.sheet?.dialog.querySelector<HTMLButtonElement>('.menu-item[data-id="undo"]');
+    if (undoItem && this.game) undoItem.disabled = !this.game.canUndo;
   }
 
   private applySettings(): void {

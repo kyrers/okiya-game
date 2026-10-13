@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-10-12T15:49:02+00:00",
-  "title": "Design System: Okiya",
+  "title": "Design System: Paper Garden",
   "extensions": {
     "colorMeta": {
       "verm": {
@@ -368,7 +368,7 @@
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "The Okiya wordmark on home only."
+        "purpose": "The Paper Garden wordmark on home only."
       },
       "headline": {
         "displayName": "Headline",
@@ -380,7 +380,7 @@
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Default text; rules prose at 1.55 line height, 62ch."
+        "purpose": "Default text; rules prose at 1.55 line height, measure set by the 38rem rules sheet."
       },
       "body-strong": {
         "displayName": "Strong",
@@ -686,7 +686,7 @@
       },
       {
         "name": "The Eighteen Pixel Rule",
-        "body": "The display face is set at 18px or above only; below that everything is Source Sans 3. The smallest live display use (a seat name on a short phone) computes to about 19px.",
+        "body": "The display face is set at 18px or above only; below that everything is Source Sans 3. Seat names are the one display use that can shrink under 18px (a long name on a small screen); when the fit takes them there, both names switch to Source Sans 3 bold together.",
         "section": "typography"
       },
       {
