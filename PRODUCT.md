@@ -8,7 +8,7 @@ web
 
 ## Users
 
-People who want to play the two-player abstract garden game designed by Bruno Cathala on a
+People who want to play a two-player abstract garden game on a
 screen instead of a table:
 
 - **Two people sharing one device** (a phone or tablet passed back and forth or laid between them,
@@ -64,9 +64,10 @@ top.
   not wanted and is removed.
 - **The product is called Paper Garden.** The client ruled (2026-10-13) that it cannot be called by
   the published game's name; they chose "Paper Garden" from a vetted shortlist (no game of that
-  name was found). The product credits the game's designer, Bruno Cathala, by name only (the
-  published game's illustrator, Cyril Bouquet, is not credited: none of his art is used): no
-  published title, publisher name, artwork, logos or trade dress, and no endorsement claimed.
+  name was found). It names no one from the published game: the client first had it credit the
+  game's designer by name, then (2026-10-13, after the merge) removed the credit, since none of the
+  published game's assets are used. No published title, publisher name, artwork, logos or trade
+  dress, and no endorsement claimed.
 
 ## Evidence on Hand
 

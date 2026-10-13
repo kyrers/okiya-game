@@ -19,7 +19,6 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
   el.innerHTML = `
     <section class="home-title">
       <h1 class="wordmark"><span>Paper</span> <span>Garden</span></h1>
-      <p class="home-sub">Game design by <span class="nowrap credit-name">Bruno Cathala</span></p>
     </section>
     <div class="home-actions-wrap"><section class="home-actions">
       <div class="home-buttons">

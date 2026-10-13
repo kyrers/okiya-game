@@ -592,7 +592,6 @@ button:disabled { cursor: default; }
   letter-spacing: 0.04em;
   text-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
 }
-.home-sub { font-size: 0.9375rem; color: var(--cream-2); max-width: 30ch; text-wrap: balance; margin-top: 0.5em; }
 .home-buttons {
   grid-area: actions;
   display: flex;
@@ -676,10 +675,6 @@ button:disabled { cursor: default; }
   /* Landscape: "Paper" over "Garden" (about 4.1em wide), as large as the column allows. */
   .wordmark { font-size: min(5.5rem, 100cqi / 4.1); }
   .wordmark span { display: block; }
-  .home-sub { font-size: clamp(0.9375rem, 0.6rem + 0.5vw, 1.25rem); }
-  /* Two lines, like the wordmark above it: a narrow column cannot be trusted to wrap one line that
-     only just fits (WebKit kept it whole, 2 px too wide, at 812 x 414). */
-  .home-sub .credit-name { display: block; }
   .home-actions { width: min(100% - 2 * var(--gutter), 24em); padding: 0; font-size: clamp(1rem, 0.7rem + 0.45vw, 1.25rem); }
 }
 
@@ -1059,7 +1054,6 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 .rules-modes dt { font-weight: 700; }
 .rules-modes dd { margin: 0; color: var(--ink-2); }
 @media (max-width: 420px) { .rules-modes { grid-template-columns: 1fr; } .rules-modes dd { margin-bottom: 6px; } }
-.rules-credit { font-size: 0.875rem; color: var(--ink-3); margin-top: 8px; }
 .rules-aside { font-size: 0.9375rem; color: var(--ink-2); padding-left: 0.9em; box-shadow: inset 1px 0 0 rgba(80, 60, 30, 0.35); }
 
 .eg { display: flex; gap: 10px; align-items: flex-start; }

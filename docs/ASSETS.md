@@ -25,5 +25,5 @@ allows only the site itself (`default-src 'self'`), and the e2e suite runs a gam
 with no violation.
 
 The published game, its name and its art belong to its publisher, designer and illustrator. This
-edition is called Paper Garden, credits the game's designer by name, uses none of the published game's name, art or
+edition is called Paper Garden, names no one from the published game, uses none of the published game's name, art or
 marks, claims no endorsement, and is not for sale.

@@ -121,7 +121,7 @@ export function settingsPanel(settings: Settings, onChange: (s: Settings) => voi
     ${toggle('reduceMotion', 'Reduce motion', 'No flying tiles or sweeping light. Your device setting is always respected.', settings.reduceMotion)}
     <section class="about">
       <h3>About</h3>
-      <p>Paper Garden plays by the rules of a game designed by Bruno Cathala. This edition is not affiliated with or endorsed by him or by any publisher. For a garden filled without a winner it follows the designer's ruling: a tie. Who opens after a tie is our choice (the other player than last time), since the rules name only the loser.</p>
+      <p>Paper Garden plays by the rules of a published abstract game, and is not affiliated with or endorsed by its designer or any publisher. A garden filled without a winner is a tie, as the designer ruled. Who opens after a tie is our choice (the other player than last time), since the rules name only the loser.</p>
       <p>The art, sounds and code are original. The typefaces are used under the SIL Open Font License: <a href="./licenses/ShipporiMinchoB1-OFL.txt" target="_blank" rel="noopener">Shippori Mincho B1</a> and <a href="./licenses/SourceSans3-OFL.txt" target="_blank" rel="noopener">Source Sans 3</a>.</p>
       <p>Your matches and settings are saved on this device only. Nothing is sent anywhere.</p>
     </section>`;
