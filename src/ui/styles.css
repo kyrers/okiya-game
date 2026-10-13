@@ -642,6 +642,43 @@ button:disabled { cursor: default; }
   font-size: var(--act-fs);
 }
 .home:has([data-go="continue"]) { --act-h: calc(8.8 * var(--act-fs) + 10px); }
+/* The cloth lit as a lamp over the table would light it, in the game's own light: brightest around
+   the garden and behind the wordmark, sinking towards the edges, the weave showing most where the
+   light falls (soft-light shades it in proportion). One half each, meeting at the garden's centre,
+   where the indigo is folded over the vermilion: a lit edge above the seam, its shadow below. The
+   vermilion light keeps above the links, so their cream text keeps its contrast. */
+.home::before,
+.home::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  /* Under everything: the buttons and links sit in display: contents wrappers, out of .screen > *. */
+  z-index: -1;
+  pointer-events: none;
+  background-blend-mode: soft-light, normal, normal, normal, normal, normal;
+}
+.home::before {
+  top: 0;
+  height: var(--home-seam);
+  background:
+    var(--cloth) 0 0 / 256px 256px,
+    radial-gradient(farthest-corner at 50% 100%, rgba(8, 6, 14, 0) 38%, rgba(8, 6, 14, 0.5) 100%),
+    linear-gradient(to top, rgba(251, 243, 228, 0.2), rgba(251, 243, 228, 0) 2px),
+    radial-gradient(calc(var(--wm) * 4.8) calc(var(--wm) * 1.8) at 50% calc(100% - var(--home-board) / 2 - 12px - var(--act-h) - 0.8 * var(--wm)), rgba(150, 170, 255, 0.2), rgba(150, 170, 255, 0)),
+    radial-gradient(calc(var(--home-board) * 0.8 + 24vw) calc(var(--home-board) * 1.1) at 50% 100%, rgba(150, 170, 255, 0.36), rgba(150, 170, 255, 0.13) 50%, rgba(150, 170, 255, 0)),
+    var(--indi);
+}
+.home::after {
+  top: var(--home-seam);
+  bottom: 0;
+  background:
+    var(--cloth) 0 calc(-1 * var(--home-seam)) / 256px 256px,
+    radial-gradient(farthest-corner at 50% 0, rgba(8, 6, 14, 0) 38%, rgba(8, 6, 14, 0.5) 100%),
+    linear-gradient(to bottom, rgba(8, 6, 14, 0.3), rgba(8, 6, 14, 0) 3px),
+    radial-gradient(calc(var(--home-board) * 0.8 + 24vw) calc(var(--home-board) * 0.56) at 50% 0, rgba(255, 180, 125, 0.34), rgba(255, 180, 125, 0.1) 55%, rgba(255, 180, 125, 0)),
+    var(--verm);
+}
 .home .seam { grid-area: board; padding: 12px 0; }
 /* One column: the title, the way into a game on the garden's top edge, the garden, the links. */
 .home-actions-wrap, .home-actions { display: contents; }
@@ -789,6 +826,29 @@ button:disabled { cursor: default; }
     background:
       var(--cloth) 0 0 / 256px 256px,
       linear-gradient(to right, var(--verm) 0, var(--verm) var(--home-seam-x, 50%), var(--indi) var(--home-seam-x, 50%), var(--indi) 100%);
+  }
+  /* Vermilion on the left, under the wordmark and the buttons; indigo on the right. */
+  .home::before,
+  .home::after { top: 0; bottom: 0; height: auto; }
+  .home::before {
+    right: auto;
+    width: var(--home-seam-x, 50%);
+    background:
+      var(--cloth) 0 0 / 256px 256px,
+      radial-gradient(farthest-corner at 100% var(--home-seam, 50%), rgba(8, 6, 14, 0) 38%, rgba(8, 6, 14, 0.5) 100%),
+      linear-gradient(to left, rgba(8, 6, 14, 0.3), rgba(8, 6, 14, 0) 3px),
+      radial-gradient(calc((100% - var(--home-board) / 2) * 0.5) 22% at calc(50% - var(--home-board) / 4) 30%, rgba(255, 180, 125, 0.14), rgba(255, 180, 125, 0)),
+      radial-gradient(calc(var(--home-board) * 0.52) calc(var(--home-board) * 0.8 + 12vh) at 100% var(--home-seam, 50%), rgba(255, 180, 125, 0.34), rgba(255, 180, 125, 0.1) 55%, rgba(255, 180, 125, 0)),
+      var(--verm);
+  }
+  .home::after {
+    left: var(--home-seam-x, 50%);
+    background:
+      var(--cloth) calc(-1 * var(--home-seam-x, 50%)) 0 / 256px 256px,
+      radial-gradient(farthest-corner at 0 var(--home-seam, 50%), rgba(8, 6, 14, 0) 38%, rgba(8, 6, 14, 0.5) 100%),
+      linear-gradient(to right, rgba(251, 243, 228, 0.2), rgba(251, 243, 228, 0) 2px),
+      radial-gradient(calc(var(--home-board) * 0.8) calc(var(--home-board) * 0.8 + 12vh) at 0 var(--home-seam, 50%), rgba(150, 170, 255, 0.36), rgba(150, 170, 255, 0.13) 50%, rgba(150, 170, 255, 0)),
+      var(--indi);
   }
   .home .seam { padding: 10px var(--gutter) 10px 0; align-self: center; }
   .home-title { padding: 0 var(--gutter); }
