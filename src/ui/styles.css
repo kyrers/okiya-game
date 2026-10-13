@@ -359,7 +359,9 @@ button:disabled { cursor: default; }
   background-blend-mode: soft-light, normal;
   box-shadow: 0 1px 0 rgba(251, 243, 228, 0.22) inset, 0 8px 16px -10px rgba(8, 6, 14, 0.7);
 }
-.end-card .btn.primary:hover { filter: brightness(1.1); }
+/* Its own hover: the general .btn.primary:hover (later in this file) would turn it cream, the
+   colour of its text, and a pointer still resting on the winning tile is often right there. */
+.end-card .btn.primary:hover { background: var(--cloth) 0 0 / 256px 256px, var(--card-dye); filter: brightness(1.1); }
 .end-card .btn.ghost { color: var(--ink); background: transparent; border-color: rgba(31, 27, 24, 0.3); }
 .end-card .btn.ghost:hover { background: rgba(31, 27, 24, 0.06); }
 .end-card :focus-visible { outline-color: var(--card-dye); }

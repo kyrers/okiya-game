@@ -173,6 +173,11 @@ test.describe('matches', () => {
     const next = page.locator('.seam .end-card [data-action="next"]');
     await expect(next).toBeVisible();
     await expect(page.locator('.end-card [data-action]')).toHaveCount(1);
+    // Hovered, it keeps the winner's dye: its cream text must not vanish into a cream button.
+    await expect(page.locator('.end-card:not(.arriving)')).toBeVisible();
+    await next.hover();
+    await page.waitForTimeout(400); // past the button's colour transition
+    expect(await next.evaluate((b) => getComputedStyle(b).backgroundColor)).not.toBe('rgb(255, 248, 234)');
     await next.click();
     await expect(page.locator('.end-card')).toBeHidden();
     await expect(page.locator('.match-label')).toContainText('Game 2');
