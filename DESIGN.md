@@ -192,7 +192,7 @@ The interface recedes. The garden is the largest thing on every screen at every 
 
 **Key Characteristics:**
 - Two dyed halves (vermilion, indigo), stacked in portrait and side by side in landscape, meeting at the garden's centre.
-- One paper garden on the seam, as large as the viewport allows (up to 640px portrait, 760px landscape).
+- One paper garden on the seam, as large as the viewport allows (up to 640px portrait, 1120px landscape).
 - Lit versus sunk dye is the turn indicator; players are also told apart by token pattern (crest versus plain).
 - Cream type on cloth, ink type on paper; controls invert their colours when they land on paper.
 - A serif display face for names, results and titles only; a humanist sans for everything else.
@@ -254,7 +254,7 @@ Two saturated dyes, each with a lit and a sunk state, over a warm paper-and-ink 
 ### Named Rules
 **The Eighteen Pixel Rule.** The display face is set at 18px or above only; below that everything is Source Sans 3. Seat names are the one display use that can shrink under 18px (a long name on a small screen); when the fit takes them there, both names switch to Source Sans 3 bold together.
 
-**The Seat Scale Rule.** Everything in a seat is sized in em from one seat font size (1rem default; 0.9375rem and 0.875rem on short screens; clamp(0.875rem, 0.25rem + 1.2vw, 1.5rem) in landscape), so a seat scales as a whole.
+**The Seat Scale Rule.** Everything in a seat is sized in em from one seat font size (1rem default; 0.9375rem and 0.875rem on short screens; in landscape, sized from the seat's own width so a 16-letter name keeps one line: about 13.8em across while the smallest name step is in Source Sans 3, 17em once it is in Shippori, between 0.875rem and 2rem), so a seat scales as a whole.
 
 **The Tabular Count Rule.** Token counts and points use tabular figures.
 
@@ -264,9 +264,9 @@ The screen is fixed to the visual viewport (100dvh where supported) and never sc
 
 **Portrait (aspect below 5/4):** a single column grid of top bar, indigo seat, garden, vermilion seat, bottom inset. The garden takes the smaller of the full width minus gutters, the height left after the top bar and two minimum seat heights, and 640px. The two dyes meet at the garden's centre line, computed from the top bar and insets (home measures it live). The indigo seat aligns its contents to the garden's top edge, the vermilion seat to its bottom edge, so each player's information sits against the garden on their side.
 
-**Landscape (aspect 5/4 and wider):** vermilion seat left, garden centre, indigo seat right, the top bar spanning above. Seats are clamp(9.5rem, 22vw, 23.75rem) wide; the garden takes what remains up to 760px. Both seats start level with the garden's top edge so the two names share a line.
+**Landscape (aspect 5/4 and wider):** vermilion seat left, garden centre, indigo seat right, the top bar spanning above. Seats are clamp(9.5rem, 22vw, 23.75rem) wide (at most 44rem columns on very wide screens, the seat-garden-seat group centred); the garden takes what remains up to 1120px. A seat has no gutter on the garden side, so its content sits beside the garden. Both seats start level with the garden's top edge so the two names share a line. From 1700x1000 the top bar grows (5.25rem, 56px buttons).
 
-**Home** is one centred column on every screen but a phone held sideways: the wordmark, the way into a game exactly as wide as the garden and sitting on its top edge (Continue and New game side by side on wider screens, stacked on phones), a freshly dealt garden on the seam (indigo above its middle line, vermilion below), then How to play and Settings as 48px pill buttons with a faint cream fill. The garden grows with the window's height. On a phone held sideways the garden sits on the right and everything else beside it.
+**Home** is one centred column on every screen but a phone held sideways: the wordmark, the way into a game exactly as wide as the garden and sitting on its top edge (with a match to resume, Continue above New game on every screen; the garden gives way to a long summary), a freshly dealt garden on the seam (indigo above its middle line, vermilion below), then How to play and Settings as 48px pill buttons with a faint cream fill. The garden grows with the window's height. On a phone held sideways the garden sits on the right and everything else beside it.
 
 **Rhythm:** gutters are clamp(12px, 3.6vw, 32px) in portrait and clamp(12px, 1.6vw, 28px) in landscape. The garden keeps a 10px gap to the halves (6px on very short landscape screens). Component spacing uses 4, 8, 10, 12, 16 and 20px; inside seats spacing is in em.
 
@@ -317,13 +317,13 @@ Paper on cloth, cloth on paper: a button takes the material opposite to the grou
 - **Link button:** pill, 44px tall, transparent, 600 weight, 20px icon; hover fills translucent cream.
 
 ### Order card (signature)
-The paper card in the mover's half that says what to take. Paper with paper texture, 12px radius, a small cast shadow; the opponent's last tile at the left (3.4em square tile face), the instruction to its right, with inline tile glyphs and bold tile names. On the opening move the tile becomes a 4x4 ring diagram with gold outer cells. In narrow seats (container under 250px) the tile shrinks to 2.6em and the card stays one row. The computer's thinking state shows a breathing ellipsis (opacity 0.25 to 1, 1.2s).
+The paper card in the mover's half that says what to take. Paper with paper texture, 12px radius, a small cast shadow; the opponent's last tile at the left (3.4em square tile face), the instruction to its right, with inline tile glyphs and bold tile names. On the opening move the tile becomes a 4x4 ring diagram with gold outer cells. In narrow seats (container under 250px) the tile shrinks to 2.6em; under 15em the card stacks, the tile above the order, so a word never breaks inside and an order takes one or two lines. The computer's thinking state shows a breathing ellipsis (opacity 0.25 to 1, 1.2s).
 
 ### Seat (signature)
 A player's half: their token chip, name in the display face, match score (three gold seals, or points in the display face), a row of eight token pips (spent pips become empty cream rings), then the order card, a waiting line, or the result. Results use the display face in cream with a cream-2 reason line; points scored are gold on indigo and cream on vermilion, where gold text would be too faint (3.3:1).
 
 ### End card
-At a game's end, a slip of the garden's paper over the middle of the garden, sealed on its top edge with the winner's token (both tokens, overlapping, for a tie). It says who won in the display face ("Aki wins", "You win", "A tie", "... wins the match") and how, in a caption line, then the buttons stacked at full width: Next game or Play again in the winner's dyed cloth (ink for a tie), Home on paper with a thin outline. Always inside the garden; it comes in once the brush stroke is drawn and cannot be pressed before it is seen.
+At a game's end, a slip of the garden's paper over the middle of the garden, sealed on its top edge with the winner's token (both tokens, overlapping, for a tie). It says who won in the display face ("Aki wins", "You win", "A tie", "... wins the match") and how, in a caption line, then the buttons stacked at full width: Next game or Play again in the winner's dyed cloth (ink for a tie), Home on paper with a thin outline. Laid over the garden, never moving it, and sized from it (type at 4.2% of the garden, 13 to 22px); always inside it. On screens 340px tall or less it drops the line that says how. It comes in once the brush stroke is drawn and cannot be pressed before it is seen.
 
 ### Garden (signature)
 The paper board with sixteen cells in a 4x4 grid, gap 1.8% and padding 3% of the board. Cells are tile faces holding the kept tile art; taken cells become pressed wells holding a lacquered token. States: may be taken (gold ring, lifted, shadow), may not be taken (warm shade), last placed (gold ring inside the cell), refused tap (a short horizontal shake, 0.32s), game over (a brush-ink stroke drawn through the winning formation; dead tiles shaded).

@@ -324,6 +324,61 @@ Everything else (engine, AI, UI, tests, scripts, docs) was written in the main s
   the setup sheet, the rules sheet (captured by `scripts/capture.ts` from the production build).
 - `test-screens/` (not committed): every layout state on every profile, written by each e2e run.
 
+## After the merge: the client's changes
+
+Asked on 2026-10-13, after pull request #1 was merged, to be done quickly:
+
+- **New game first.** "The new game button does not call enough attention, it should at least be
+  at the top of the board on the home page, not below." A first version put the buttons above the
+  garden in portrait and beside it in landscape; the client did not like it on desktop, and in a
+  desktop window of 775x1030 the wordmark's descenders ran into New game. Three layouts were then
+  designed with the impeccable skill and rendered at phone, tablet and desktop sizes; the client
+  chose **one column on every screen**: the wordmark, the way into a game as wide as the garden on
+  its top edge, the garden, then How to play and Settings (DESIGN.md, Layout and Display).
+- **A game's end in the middle.** "When a game is over, the Play Again and Home should show on top
+  of the board, in the middle [...] like a small modal." A first card in the winner's dye with the
+  buttons side by side was "not good"; of three designed options the client chose the **paper
+  slip**: the garden's paper sealed with the winner's token, who won and how, the buttons stacked
+  (DESIGN.md, End card). It comes in once the brush stroke is drawn and cannot be pressed before it
+  is seen, so a quick second tap on the garden does not land on it. With no buttons in the halves,
+  the garden keeps its size at a game's end.
+- **Sheets that belong to the game.** "The how to play and settings are also very 'Claude'
+  looking." They were a cream page with orange pill toggles. One design pass with the impeccable
+  skill, a finish review and one round of its fixes gave every sheet the game's materials (see
+  DESIGN.md: Sheets, Choice card, Toggle row, Switch).
+- **No credit line.** The client removed "Game design by Bruno Cathala" from the product, since
+  none of the published game's assets are used. The app, its page and manifest descriptions and
+  the README name no one from the published game; the sources of the rules (docs/RULES.md, the
+  engine's header) still cite where each rule comes from.
+- **Bugs found on the way** (a bug hunt at 16 sizes in Chromium and WebKit, desktop windows
+  included), all fixed. In the narrow side seat of a phone held sideways, orders broke words in the
+  middle ("compute / r is thinking") and ran one or two words a line; a narrow seat now stacks the
+  card, and a layout check fails on any word broken inside. On desktop windows from 1024 to 1440
+  wide, orders took four lines and long names broke over two; the seat type now follows the
+  seat's width. On 1920 and wider the garden stopped at 760px in empty cloth; it now grows to
+  1120px. "Start a new game?" opened on top of the New game sheet; it now takes the sheet's place,
+  and Cancel brings the sheet back as it was. The checks of the redesign found two more, fixed
+  before the push: the one-column home ran off the screen with long names (the garden now gives
+  way), and the paper slip pushed the garden off phones held sideways 300px tall (it is now laid
+  over the garden and sized from it). The finish review found that with a match to resume, a long
+  summary side by side with New game wrapped to nine lines on desktops (Continue now sits above New
+  game everywhere), and the documentation captures that the slip's main button turned blank under
+  the pointer (it keeps its dye; a test hovers it).
+
+The first version of the home and end card reached production before its checks had finished;
+they found that it pushed Settings off short landscape phones, fixed before the redesign replaced
+it.
+
+**Checks** on the final build: unit tests (69 passed); the main end-to-end pass on seven profiles
+(iphone-se, iphone-15-landscape, pixel-7, ipad-portrait, desktop-chrome, desktop-safari,
+desktop-firefox: 244 passed, 0 failed, with the axe scan and the layout checks of every sheet);
+the size sweep of every screen state on pixel-7, iphone-15 and desktop-chrome (75 passed, 0
+failed), with the home sweep rerun after the last home change (3 passed); and 234 screenshots (13
+states at 9 sizes, in Chromium and WebKit) given to a finish reviewer, whose findings were fixed,
+except one the client had accepted when choosing the slip: on a win in the garden's middle the
+slip covers the formation (the brush stroke is drawn before the slip comes in). Not rerun for these
+changes: the sweep on the other profiles, and the performance tests.
+
 ## Outside this build
 
 Nothing known is open in the build itself. These are steps only the client can take; none of them
@@ -338,10 +393,9 @@ changes the code:
   to rewrite history, is the client's call. An install made from the preview keeps its old name on
   the home screen until the browser refreshes it from the new manifest, or it is reinstalled; a
   match saved there is not carried over.
-- **Deployment.** This build is not in production, by the client's choice (asked: "Don't
-  deploy"). The repository is already connected to a Vercel project: production serves `master`,
-  the earlier attempt, and the client checked this branch on the preview of pull request #1. This
-  build goes live when that pull request is merged (or its preview is promoted). Deployability is
+- **Deployment.** Production serves `master` from the Vercel project; pull request #1 (this
+  build) was merged on 2026-10-13, and later changes come through pull requests, each with a
+  preview. Deployability is
   demonstrated on the final commit: Vercel's own build (`vercel build`, CLI 44.7.3, run locally with no account)
   completes and emits Build Output v3 whose static files are identical to the tested `dist/` and
   whose routes carry the cache rules, security headers and CSP of `vercel.json`. `vercel.json`
