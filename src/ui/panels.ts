@@ -1,9 +1,9 @@
 /** The contents of the setup, settings and in-game menu sheets. */
 import type { Difficulty } from '../engine/ai';
 import type { MatchMode } from '../engine/garden';
-import { NAME_MAX, defaultNames, type MatchSetup, type Opponent } from '../game/match';
+import { NAME_MAX, defaultNames, type Opponent } from '../game/match';
 import { icon, tokenSvg, type IconName } from './art';
-import type { Settings } from './prefs';
+import type { SetupDraft, Settings } from './prefs';
 
 const LEVELS: { id: Difficulty; title: string; detail: string }[] = [
   { id: 'easy', title: 'Easy', detail: 'Plays loosely. Good for a first game.' },
@@ -21,11 +21,15 @@ export function startButton(): HTMLButtonElement {
   return b;
 }
 
-export function setupForm(initial: MatchSetup, onStart: (s: MatchSetup) => void): HTMLFormElement {
+/**
+ * The New game form. Its choices go to onDraft as they are made, not only to onStart, so closing
+ * the sheet (to read the rules, or to come back later) keeps them.
+ */
+export function setupForm(initial: SetupDraft, onStart: (s: SetupDraft) => void, onDraft?: (s: SetupDraft) => void): HTMLFormElement {
   const form = document.createElement('form');
   form.className = 'setup';
   form.noValidate = true;
-  const pointsTarget = initial.mode.startsWith('points') ? initial.mode : 'points10';
+  const pointsTarget = initial.target;
   const matchKind = initial.mode.startsWith('points') ? 'points' : initial.mode;
   const names = initial.names;
   const humanDefaults = defaultNames('human');
@@ -67,20 +71,26 @@ export function setupForm(initial: MatchSetup, onStart: (s: MatchSetup) => void)
       el.hidden = f === 'points' ? match !== 'points' : f !== opp;
     });
   };
-  form.addEventListener('change', sync);
+  const read = (): SetupDraft => {
+    const val = (n: string) => (form.elements.namedItem(n) as RadioNodeList | HTMLInputElement).value;
+    const match = val('match');
+    return {
+      opponent: val('opponent') as Opponent,
+      difficulty: val('difficulty') as Difficulty,
+      mode: (match === 'points' ? val('target') : match) as MatchMode,
+      names: [val('name1'), val('name2')],
+      target: val('target') as MatchMode,
+    };
+  };
+  form.addEventListener('change', () => {
+    sync();
+    onDraft?.(read());
+  });
+  form.addEventListener('input', () => onDraft?.(read()));
   sync();
   form.addEventListener('submit', (ev) => {
     ev.preventDefault();
-    const val = (n: string) => (form.elements.namedItem(n) as RadioNodeList | HTMLInputElement).value;
-    const opponent = val('opponent') as Opponent;
-    const match = val('match');
-    const mode = (match === 'points' ? val('target') : match) as MatchMode;
-    onStart({
-      opponent,
-      difficulty: val('difficulty') as Difficulty,
-      mode,
-      names: [val('name1'), val('name2')],
-    });
+    onStart(read());
   });
   return form;
 }

@@ -1,10 +1,10 @@
 /** The app shell: switches between home and the game, and owns the sheets and saved state. */
-import { restore, startMatch, type MatchSetup, type MatchView } from '../game/match';
+import { restore, startMatch, type MatchView } from '../game/match';
 import { installSprite } from './art';
 import { GameScreen } from './game';
 import { homeScreen } from './home';
 import { menuList, settingsPanel, setupForm, startButton, type MenuItem } from './panels';
-import { MATCH_KEY, loadSettings, loadSetup, saveSettings, saveSetup, type Settings } from './prefs';
+import { MATCH_KEY, loadSettings, loadSetup, saveSettings, saveSetup, type Settings, type SetupDraft } from './prefs';
 import { rulesHtml } from './rules';
 import { closeAllSheets, confirmSheet, openSheet, type Sheet } from './sheet';
 import { setSoundEnabled, unlockAudio } from './sound';
@@ -96,7 +96,7 @@ export class App {
     else this.showHome(false);
   }
 
-  private startNew(setup: MatchSetup): void {
+  private startNew(setup: SetupDraft): void {
     saveSetup(setup);
     const view = startMatch(setup);
     saveRaw(MATCH_KEY, view.saved);
@@ -135,7 +135,7 @@ export class App {
         if (!ok) return;
       }
       this.startNew(setup);
-    });
+    }, saveSetup);
     this.open('New game', form, 'sheet-setup', startButton());
   }
 

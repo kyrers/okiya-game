@@ -186,6 +186,14 @@ all fixed:
   planning they are now fitted afresh at each step. And the plan's longest note from the other
   seat said "Computer was chosen…" where the game says "The computer was chosen…".
 
+The client's last phone check found one more: the New game sheet forgot the choices made in it
+(opponent, level, format, typed names) unless a game was started, so closing it to read the
+rules meant typing two names again. Its choices are now remembered as they are made; they only
+set what the sheet shows next time, never a match in progress. Two reviewers (code, and a player
+on two phones) then found the victory points target still lost when another kind of match was
+looked at before closing; the last target picked is now remembered on its own. e2e test for both
+(each fails without its fix).
+
 Accepted, not fixed: on portrait screens under 500 px tall (and on the smallest phones at 20 px
 text) tiles are 37 to 43 px, under the 44 px target. The seats need that room for what a player
 must read, and no smaller layout keeps both; such screens are rare (a phone with its keyboard or a
@@ -241,7 +249,7 @@ The client ruled (2026-10-13) that the product cannot be called by the published
 |---|---|---|
 | Unit tests (engine, AI, match flow, rules-page diagrams) | `npm test` | 4 files, 69 tests, all passing |
 | Type-check and production build | `npm run build` | passes; service worker generated |
-| End-to-end, 11 device profiles: iPhone SE 320 × 568, iPhone SE (3rd gen) 375 × 553, iPhone 15 393 × 659 and landscape 734 × 343 (WebKit, Safari's visible area); Pixel 7 412 × 839 and Android 360 × 640 (Chromium); iPad 810 × 1080 and 1080 × 810 (WebKit); desktop Chrome 1440 × 900 at scale 2 (a high-density laptop), Firefox 1280 × 800 at scale 1, Safari 1920 × 1080 | `npm run e2e` | **362 passed, 0 failed**, 89 skipped by design (checks that belong to one or two engines, or to touch or mouse); sweep pass 94 of 94; perf pass 11 of 11. Per profile: `docs/evidence/e2e.txt`, written by `scripts/e2e-evidence.ts` from the three passes' JSON reports |
+| End-to-end, 11 device profiles: iPhone SE 320 × 568, iPhone SE (3rd gen) 375 × 553, iPhone 15 393 × 659 and landscape 734 × 343 (WebKit, Safari's visible area); Pixel 7 412 × 839 and Android 360 × 640 (Chromium); iPad 810 × 1080 and 1080 × 810 (WebKit); desktop Chrome 1440 × 900 at scale 2 (a high-density laptop), Firefox 1280 × 800 at scale 1, Safari 1920 × 1080 | `npm run e2e` | **373 passed, 0 failed**, 89 skipped by design (checks that belong to one or two engines, or to touch or mouse); sweep pass 94 of 94; perf pass 11 of 11 (those two on the commit before the last, which changed no layout or timing). Per profile: `docs/evidence/e2e.txt`, written by `scripts/e2e-evidence.ts` from the three passes' JSON reports |
 | Layout invariants on every screen state and profile: no page scroll, nothing off-screen, seats never on the garden or the top bar, targets ≥ 44 px, no text outside its box, no name or summary cut short | `e2e/layout.spec.ts` (rules in `e2e/helpers.ts`) | included above |
 | Large default text (20 px root) on every profile | `e2e/bigtext.spec.ts` | included above |
 | Text in clipping boxes keeps its descenders and accents ("Diogo", "Ágqy Jóy"): every line's font box inside the clip box, with a control that fails on the old line height | `e2e/glyphs.spec.ts` | included above |
@@ -253,6 +261,7 @@ The client ruled (2026-10-13) that the product cannot be called by the published
 | Two players have no Undo, on screen or in the menu; the menu says Home; a double tap on Undo takes back one round; Back from a game closes a confirmation left open and keeps the match; keyboard focus goes into the garden after Start, Continue and Next game and stays on the result's button through a resize, and no focus ring appears after a touch; a press dragged from the backdrop into a sheet does not close it | `e2e/game.spec.ts` | included above |
 | Real phone | the client, on their own phone and a desktop browser over the local network | three passes: "looks ok mostly" (two findings), "found problems" (two), "looks better in general" (the note, undo, the Home label, long names); every finding fixed and covered by a test (Defects, above) |
 | Real phone, final build | the client, on their Android phone, on Vercel's preview of pull request #1 (the same files as the tested build); a shared coworking network blocked the local test host, so the preview replaced it | 1, the opener's note with a 16-letter name in portrait and the header through a game's end: works; 2, rotating mid-game: works (no iPhone to hand, so Safari's toolbars rest on the WebKit tests); 3, the New game sheet held sideways: works; 4, undo against the computer, none between two players, "Home" in the menu: works; 5, reduced motion: works; 6, installed to the home screen (in Brave, Chromium's engine): opens as its own app and stays clear of the status and navigation bars, which Android fills with the game's indigo theme colour; 7, offline after one visit: "seems ok"; 8, the screen kept awake during a game: "seems ok" |
+| Real phone, after the rename | the client, on their Android phone, on Vercel's preview of pull request #1 at the commit "Paper Garden: the rename, the audit's findings, a provenance check" | the new name and credit: works; rotating mid-game, also during the computer's flight: works; a refused tile ("Only a … tile", the shake): works; a swipe down from the top, a long press on a tile and on a name, a double tap on the cloth: nothing harmful; switching to another app during the computer's think and coming back: works. Found one defect, fixed: the New game sheet forgot choices unless a game was started (Fourth pass, above). The largest text and the offline home-screen app were left out by the client. |
 | Offline: after one visit a game against the computer plays with the network off; a font licence opened from Settings never takes the game's place, and offline a licence opens as itself and a path below the site leads to the game | `e2e/ship.spec.ts` | passes (desktop Chrome, Pixel 7, Android 360) |
 | Installable to the home screen: Chrome's own installability check | `e2e/ship.spec.ts` (`Page.getInstallabilityErrors`, `Page.getAppManifest`) | no installability errors, no manifest errors (desktop and both Android profiles) |
 | Screen kept awake during a game, released on leaving it | `e2e/ship.spec.ts` | lock acquired at game start and released on Home (desktop and both Android profiles) |
@@ -301,6 +310,7 @@ so no comp) from 15 screenshots plus the per-profile captures.
 | Name drafters (4, stopped once the client asked for a plain name) | the product's look and mechanics | 10 candidate names; the shortlist was checked for existing games in the main session |
 | Provenance checkers (4, fresh): tile art, rules text, shipped files and look, git history | the PDF, published photos of the game, the repository and its history, the build | Nothing copied; three corrections (The rename, above) |
 | Code reviewer (fresh, read-only) | the fourth pass's diff | Eight bugs, all fixed (fourth pass, above); smaller risks noted but left (two tabs both computing the computer's reply, then agreeing; a turn announced twice in some menu flows) |
+| Reviewers of the New game sheet fix (2, fresh: code, and a player on two phones) | the fix and the served build | One gap found by both (the points target), fixed; every way of closing, typing mid-word, a match in progress and storage that throws checked |
 
 Everything else (engine, AI, UI, tests, scripts, docs) was written in the main session.
 

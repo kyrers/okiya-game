@@ -46,6 +46,40 @@ test.describe('starting', () => {
   });
 });
 
+test.describe('the New game sheet', () => {
+  test('keeps its choices when closed without starting, and after a reload', async ({ page }) => {
+    await openHome(page);
+    await page.getByRole('button', { name: /New game/ }).click();
+    const sheet = page.getByRole('dialog', { name: 'New game' });
+    await sheet.getByText('A friend, on this device').click();
+    await sheet.getByText('First to 3 wins').click();
+    await sheet.locator('input[name="name1"]').fill('Diogo');
+    await sheet.locator('input[name="name2"]').fill('Ana');
+    await page.keyboard.press('Escape');
+    await expect(sheet).toHaveCount(0);
+    for (const reload of [false, true]) {
+      if (reload) await page.reload();
+      await page.getByRole('button', { name: /New game/ }).click();
+      await expect(sheet.locator('input[name="opponent"][value="human"]')).toBeChecked();
+      await expect(sheet.locator('input[name="match"][value="sets3"]')).toBeChecked();
+      await expect(sheet.locator('input[name="name1"]')).toHaveValue('Diogo');
+      await expect(sheet.locator('input[name="name2"]')).toHaveValue('Ana');
+      await page.keyboard.press('Escape');
+      await expect(sheet).toHaveCount(0);
+    }
+    // A points target picked, then another kind of match looked at: the target is still there.
+    await page.getByRole('button', { name: /New game/ }).click();
+    await sheet.getByText('Victory points').click();
+    await sheet.getByText('20 points').click();
+    await sheet.getByText('Single game').click();
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: /New game/ }).click();
+    await expect(sheet.locator('input[name="match"][value="single"]')).toBeChecked();
+    await sheet.getByText('Victory points').click();
+    await expect(sheet.locator('input[name="target"][value="points20"]')).toBeChecked();
+  });
+});
+
 test.describe('the rules on screen', () => {
   test('the takeable tiles are exactly those sharing the plant or symbol of the tile just taken, every turn of a two-player game', async ({ page, hasTouch }) => {
     const g = findGame((s) => s.history.length >= 12);
