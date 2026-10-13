@@ -209,14 +209,14 @@ export class BoardView {
     // Drawn round the formation, not through it: a thin loop of ink that leaves every token clear.
     let d: string;
     if (win.reason === 'square') {
+      // A rounded square round the four, its sides between the tokens and the cells' edges (a
+      // circle cannot pass between four discs), so it stays inside the 2x2 block even in a corner.
       const xs = pts.map((p) => p.x);
       const ys = pts.map((p) => p.y);
-      const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
-      const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
-      // Outside the four tokens, inside the garden's frame even for a square in a corner.
-      const rad = s * 1.12;
-      // A brush circle that overshoots its start, as a hand would draw it.
-      d = `M ${cx - rad * 0.2} ${cy - rad} A ${rad} ${rad} 0 1 1 ${cx - rad * 0.98} ${cy + rad * 0.12} A ${rad} ${rad} 0 0 1 ${cx + rad * 0.12} ${cy - rad * 0.99}`;
+      const [l, rt, t, b] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+      const r = s * 0.44;
+      // Closing past its start, as a hand would draw it.
+      d = `M ${l + s * 0.12} ${t - r} L ${rt} ${t - r} A ${r} ${r} 0 0 1 ${rt + r} ${t} L ${rt + r} ${b} A ${r} ${r} 0 0 1 ${rt} ${b + r} L ${l} ${b + r} A ${r} ${r} 0 0 1 ${l - r} ${b} L ${l - r} ${t} A ${r} ${r} 0 0 1 ${l} ${t - r} L ${l + s * 0.45} ${t - r * 0.94}`;
     } else {
       // A long loop round the line of four, closing past its start as a hand would draw it. Its
       // sides run between the tokens and the cells' edges, so it stays inside the row.

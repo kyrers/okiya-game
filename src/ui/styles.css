@@ -1504,6 +1504,16 @@ dialog.sheet.sheet-demo { width: min(100%, 40rem); }
   .choice { padding: 8px 14px; }
   .choice-detail { line-height: 1.3; }
 }
+/* The smallest phones (568px tall): tighter still, so the Match row naming the remembered match
+   shows above the fold, as it must. */
+@media (max-height: 580px) and (max-aspect-ratio: 5/4) {
+  .sheet-setup .sheet-body { padding-top: 8px; }
+  .setup { gap: 8px; }
+  .setup legend { margin-bottom: 2px; }
+  .choices { gap: 4px; }
+  .choice { padding: 6px 12px; }
+  .choice-detail { line-height: 1.25; }
+}
 
 /* Short, wide screens (a phone held sideways): every row of height counts. The sheet takes nearly
    the whole height, its action moves into the title row, and the setup form uses two columns.

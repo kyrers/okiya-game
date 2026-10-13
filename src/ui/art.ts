@@ -109,7 +109,8 @@ export function miniGarden(cells: string, label: string, stroke?: number[]): str
     // As the game draws a win: a thin loop around the winning tokens, never a stroke through them.
     if (stroke.length === 4 && isSquare(stroke)) {
       const [x0, y0] = pt(Math.min(...stroke));
-      parts.push(`<circle class="mg-brush" cx="${x0 + size / 2}" cy="${y0 + size / 2}" r="${size * 1.02}"/>`);
+      const r = size * 0.44;
+      parts.push(`<rect class="mg-brush" x="${x0 - r}" y="${y0 - r}" width="${size + 2 * r}" height="${size + 2 * r}" rx="${r}"/>`);
     } else {
       const [x1, y1] = pt(stroke[0]);
       const [x2, y2] = pt(stroke[stroke.length - 1]);

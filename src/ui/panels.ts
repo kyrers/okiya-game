@@ -94,6 +94,11 @@ export function setupForm(initial: SetupDraft, onStart: (s: SetupDraft) => void,
     const open = more.getAttribute('aria-expanded') !== 'true';
     more.setAttribute('aria-expanded', String(open));
     options.hidden = !open;
+    // Opened, the choices come into view: they lie under the footer otherwise.
+    if (open) {
+      const still = matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.contains('reduce-motion');
+      requestAnimationFrame(() => more.scrollIntoView({ block: 'start', behavior: still ? 'auto' : 'smooth' }));
+    }
   });
 
   const sync = () => {

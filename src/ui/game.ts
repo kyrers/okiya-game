@@ -796,10 +796,10 @@ export class GameScreen {
       // reads why in their own half too. Then who opens the next game, as after a tie.
       quiet = true;
       result = matchOver ? verb(name, 'You lose the match', 'Loses the match') : verb(name, 'You lose', 'Loses');
-      reason = reasonWords(r.reason, name, nameHtml) + (m.over ? '' : `&nbsp;· ${verb(name, 'you open&nbsp;next', 'opens&nbsp;next')}`);
+      reason = reasonWords(r.reason, name, nameHtml) + (m.over ? '' : `&nbsp;· ${verb(name, 'you&nbsp;open&nbsp;next', 'opens&nbsp;next')}`);
     } else {
       result = 'Tie';
-      reason = reasonWords('full', '') + (!m.over && m.nextFirst === p ? `&nbsp;· ${verb(name, 'you open&nbsp;next', 'opens&nbsp;next')}` : '');
+      reason = reasonWords('full', '') + (!m.over && m.nextFirst === p ? `&nbsp;· ${verb(name, 'you&nbsp;open&nbsp;next', 'opens&nbsp;next')}` : '');
     }
     return `<div class="say-over${m.over ? ' match-over' : ''}">
         <div class="say-text"><p class="say-result${quiet ? ' quiet' : ''}">${result}</p>${reason ? `<p class="say-reason">${reason}</p>` : ''}</div>
