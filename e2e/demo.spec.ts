@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { layoutProblems, openHome } from './helpers';
+import { expectSheetPainted, expectTokenPainted, holdNextDrop, layoutProblems, openHome } from './helpers';
 
 /** Watch a game: the engine plays a whole game in a sheet, slowly, saying what happens. */
 const sheet = (page: Page) => page.locator('dialog.sheet-demo');
@@ -32,8 +32,26 @@ test('opens from home: the takeable tiles are lifted, and the line follows each 
   expect(await layoutProblems(page)).toEqual([]);
 });
 
+test('with motion on, each token set down is painted, even when the browser runs no frames for its drop', async ({ page }) => {
+  await openDemo(page);
+  await sheet(page).getByRole('button', { name: 'Pause' }).click();
+  const paused = Number(await move(page));
+  await sheet(page).getByRole('button', { name: 'Next move' }).click();
+  await expect(sheet(page).locator('.demo')).toHaveAttribute('data-move', String(paused + 1));
+  await expectTokenPainted(page, sheet(page).locator('.cell.last'));
+  // Held at its first frame, as a browser that paints nothing for a while leaves it.
+  await holdNextDrop(page, 'dialog.sheet-demo');
+  await sheet(page).getByRole('button', { name: 'Next move' }).click();
+  await expect(sheet(page).locator('.demo')).toHaveAttribute('data-move', String(paused + 2));
+  await expect.poll(() => page.evaluate('window.__heldDrop')).toBe('0');
+  await expectTokenPainted(page, sheet(page).locator('.cell.last'));
+});
+
 test('Pause stops it, Next moves it on by one, and the end offers Play again', async ({ page }) => {
   await openDemo(page);
+  // Pause is pressed once the sheet has come in and is drawn where it stays: a click aimed while
+  // WebKit still held a frame of the entrance could land beside the button it meant.
+  await expectSheetPainted(page);
   await sheet(page).getByRole('button', { name: 'Pause' }).click();
   await expect(sheet(page).getByRole('button', { name: 'Play', exact: true })).toBeVisible();
   const paused = await move(page);

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import { applyMove, newGameFromTiles, tileCode } from '../src/engine/garden';
 import {
   HOT_SEAT,
@@ -6,8 +6,10 @@ import {
   VS_EASY,
   boardCodes,
   continueMatch,
+  expectTokenPainted,
   expectedLegal,
   findGame,
+  holdNextDrop,
   legalIndices,
   openHome,
   pickMatch,
@@ -87,6 +89,39 @@ test.describe('the New game sheet', () => {
     await pickMatch(sheet, 'Victory points');
     await expect(sheet.locator('input[name="target"][value="points20"]')).toBeChecked();
   });
+
+  test('one press on the Match row opens it, straight after typing the names', async ({ page, hasTouch }) => {
+    // A name field's change comes on blur, inside the press that moves focus to the Match row. It
+    // once rewrote the row's word under the finger, and WebKit then sent no click: the first press
+    // did nothing. So the press lands on that word, at the device's own size; and, on touch
+    // screens, in the row's middle on the smallest phone held sideways, where the middle is the
+    // word (as it was reported).
+    const press = (l: Locator) => (hasTouch ? l.tap() : l.click());
+    const sizes: ([number, number] | null)[] = hasTouch ? [null, [568, 320]] : [null];
+    for (const size of sizes) {
+      if (size) await page.setViewportSize({ width: size[0], height: size[1] });
+      await openHome(page);
+      await page.evaluate(() => localStorage.clear());
+      await page.reload();
+      await press(page.getByRole('button', { name: /New game/ }));
+      const sheet = page.getByRole('dialog', { name: 'New game' });
+      await press(sheet.getByText('A friend, on this device'));
+      for (const [i, name] of ['Abcdefghijklmnop', 'Pqrstuvwxyzabcde'].entries()) {
+        await press(sheet.locator(`input[name="name${i + 1}"]`));
+        await page.keyboard.type(name);
+      }
+      await expect(sheet.locator('input[name="name2"]')).toBeFocused();
+      const row = sheet.getByRole('button', { name: /^Match/ });
+      await press(size ? row : sheet.locator('.more-current'));
+      await expect(row, `one press opens the Match row${size ? ` at ${size.join('x')}` : ''}`).toHaveAttribute('aria-expanded', 'true');
+      // Seen, not only present: the choices open from transparent, so wait out their animation.
+      const options = sheet.locator('.more-options');
+      await options.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
+      expect(await options.evaluate((el) => [getComputedStyle(el).opacity, getComputedStyle(el).transform])).toEqual(['1', 'none']);
+      await expect(options.locator('.choice').first()).toBeInViewport({ ratio: 1 });
+      await expect(sheet.locator('input[name="name2"]')).toHaveValue('Pqrstuvwxyzabcde');
+    }
+  });
 });
 
 test.describe('the rules on screen', () => {
@@ -162,6 +197,33 @@ test.describe('the rules on screen', () => {
     await expect(page.locator('.seat-2.tie .say-result')).toHaveText('Tie');
     await expect(page.locator('.seat-1.tie .say-reason')).toContainText('The garden is full');
     await expect(page.locator('.seat-2.tie .say-reason')).toContainText('The garden is full');
+  });
+});
+
+test.describe('a move on screen', () => {
+  // Motion on (no reduced-motion emulation): the tile flies and the token drops into its cell.
+  test('the token set down is painted once its drop is over, and so is the one before it', async ({ page, hasTouch }) => {
+    const g = findGame((s) => s.history.length >= 6, 81);
+    await seedMatch(page, saved(HOT_SEAT, [{ tiles: g.tiles, first: g.first, moves: [] }]));
+    await continueMatch(page);
+    const cell = (i: number) => page.locator(`.game .cell[data-index="${i}"]`);
+    await tap(page, 0, hasTouch);
+    await expectTokenPainted(page, cell(0));
+    const next = (await legalIndices(page))[0];
+    await tap(page, next, hasTouch);
+    await expectTokenPainted(page, cell(next));
+    await expectTokenPainted(page, cell(0));
+  });
+
+  test('the token is painted even when the browser runs no frames for its drop', async ({ page, hasTouch }) => {
+    const g = findGame((s) => s.history.length >= 6, 81);
+    await seedMatch(page, saved(HOT_SEAT, [{ tiles: g.tiles, first: g.first, moves: [] }]));
+    await continueMatch(page);
+    await holdNextDrop(page, '.game');
+    await tap(page, 0, hasTouch);
+    // Held at its first frame, the token is not there; it is at rest well before the next move.
+    await expect.poll(() => page.evaluate('window.__heldDrop')).toBe('0');
+    await expectTokenPainted(page, page.locator('.game .cell[data-index="0"]'));
   });
 });
 

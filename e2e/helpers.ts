@@ -52,6 +52,35 @@ export const VS_EASY: MatchSetup = { opponent: 'computer', difficulty: 'easy', m
 /** The longest names the form accepts (NAME_MAX), in wide letters with no space to break at. */
 export const LONG_NAMES: [string, string] = ['Wmmmmmmmmmmmmmmm', 'WWWWWWWWWWWWWWWW'];
 
+/**
+ * Waits until the open sheet (the topmost one not waiting behind another) has finished its entrance,
+ * then checks that it is painted: opaque, untransformed, and on screen. toBeVisible() alone passes
+ * for a sheet at opacity 0, which is how a sheet once stayed invisible over a dimmed home in WebKit.
+ * The assertions retry: a single read right after the entrance can see a stale frame.
+ */
+export async function expectSheetPainted(page: Page): Promise<void> {
+  const sheet = page.locator('dialog.sheet[open]:not(.is-behind)').last();
+  const panel = sheet.locator('.sheet-panel');
+  await expect(sheet).toHaveCount(1);
+  await expect
+    .poll(() => sheet.evaluate((d) => d.getAnimations({ subtree: true }).filter((a) => a.playState === 'running' && a.effect?.getComputedTiming().iterations !== Infinity).length))
+    .toBe(0);
+  await expect(sheet).toHaveCSS('opacity', '1');
+  await expect(sheet).toHaveCSS('transform', 'none');
+  await expect(panel).toHaveCSS('opacity', '1');
+  await expect(panel).toHaveCSS('transform', 'none');
+  await expect
+    .poll(() =>
+      panel.evaluate((p) => {
+        const r = p.getBoundingClientRect();
+        const vw = document.documentElement.clientWidth;
+        const vh = window.innerHeight;
+        return r.width > 0 && r.height > 0 && r.top >= -0.5 && r.left >= -0.5 && r.bottom <= vh + 0.5 && r.right <= vw + 0.5;
+      }),
+    )
+    .toBe(true);
+}
+
 export async function openHome(page: Page): Promise<void> {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Paper Garden' })).toBeVisible();
@@ -109,6 +138,56 @@ export function expectedLegal(codes: string[], taken: string | null): number[] {
   return out;
 }
 
+/**
+ * The token in `cell` is painted at rest: its drop is over, it and every element above it are at
+ * full opacity and visible, and the cell's pixels change when the token alone is hidden.
+ * (toBeVisible passes for a token at opacity 0, so it is not enough.) Screenshots keep animations
+ * running: `animations: 'disabled'` would finish a drop that the browser never ran.
+ */
+export async function expectTokenPainted(page: Page, cell: Locator): Promise<void> {
+  const token = cell.locator('.token');
+  await expect(token).toHaveCount(1);
+  // The drop is over well within the time a player waits before the next move: finished, or gone.
+  await expect
+    .poll(() => token.evaluate((tok) => tok.getAnimations().filter((a) => a.playState !== 'finished').map((a) => `${(a as CSSAnimation).animationName ?? 'animation'} ${a.playState} at ${a.currentTime}`)), {
+      message: 'the token is still dropping',
+      timeout: 3000,
+    })
+    .toEqual([]);
+  const unseen = await token.evaluate((tok) => {
+    const out: string[] = [];
+    for (let e: Element | null = tok; e; e = e.parentElement) {
+      const s = getComputedStyle(e);
+      if (s.opacity !== '1' || s.visibility !== 'visible') out.push(`${e.tagName}.${e.getAttribute('class') ?? ''}: opacity ${s.opacity}, ${s.visibility}`);
+    }
+    return out;
+  });
+  expect(unseen, 'the token or an element above it is not fully shown').toEqual([]);
+  const shown = await cell.screenshot();
+  const hide = await page.addStyleTag({ content: '.cell .token { visibility: hidden !important; }' });
+  const hidden = await cell.screenshot();
+  await hide.evaluate((s) => (s as Element).remove());
+  expect(shown.equals(hidden), 'the token adds nothing to the cell on screen').toBe(false);
+}
+
+/**
+ * Holds the drop of the next token set down in `root` at its first frame, as a browser that runs no
+ * frames for a while does (headless WebKit under load ran none for seconds, and the token stayed
+ * at its first, invisible frame).
+ */
+export async function holdNextDrop(page: Page, root: string): Promise<void> {
+  // A string: functions given to page.evaluate lose their inner named functions in some builds.
+  await page.evaluate(`(() => {
+    const root = ${JSON.stringify(root)};
+    new MutationObserver((records, obs) => {
+      const tok = document.querySelector(root + ' .cell.placed .token');
+      if (!tok) return;
+      for (const a of tok.getAnimations()) { a.pause(); a.currentTime = 0; }
+      window.__heldDrop = getComputedStyle(tok).opacity;
+      obs.disconnect();
+    }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+  })()`);
+}
 
 /**
  * Every layout rule the app keeps, checked on the page as it stands: no page scroll, nothing off
@@ -143,6 +222,11 @@ export async function layoutProblems(page: Page): Promise<string[]> {
       if (b.left < -1 || b.top < -1 || b.right > vw + 1 || b.bottom > vh + 1) out.push(`${name(el)} leaves the viewport (${Math.round(b.left)},${Math.round(b.top)},${Math.round(b.right)},${Math.round(b.bottom)} in ${vw}x${vh})`);
     }
     if (dialog) {
+      // A sheet that has come in rests in its place: nothing of its entrance is left on it (WebKit
+      // once held it on a frame of its rise after the animation had finished, a few pixels low).
+      const moving = dialog.getAnimations().some((a) => a.playState === 'running');
+      const transform = getComputedStyle(dialog).transform;
+      if (!moving && transform !== 'none') out.push(`sheet rests out of place: ${transform}`);
       // A sheet sits centred, and its title starts on the same edge as its text.
       const panel = dialog.querySelector('.sheet-panel')!.getBoundingClientRect();
       const gap = Math.abs(panel.left - (vw - panel.right));

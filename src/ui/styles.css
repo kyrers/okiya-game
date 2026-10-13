@@ -311,8 +311,19 @@ button:disabled { cursor: default; }
 .seam { position: relative; }
 .end-card {
   --card-dye: var(--ink);
+  /* A small garden (under 360px: a phone held sideways, a small phone upright, a short window)
+     takes the compact slip: it still says who won and how, in less room. It takes more of the
+     garden's width, its seal and headline step down and its buttons share one row (without their
+     icons), so even the longest names and the two buttons at a match's end stay inside the garden.
+     Decided by the garden's own size, which the seats' room changes too, not by the screen's:
+     --big is a huge length on a large garden and a huge negative one on a small garden, so
+     clamp(compact, var(--big), full) is one value or the other. */
+  /* 320px: the full slip (stacked buttons, as the client prefers) fits from there, so phones from
+     360px wide keep it; only 320px-wide phones and short sideways screens get the compact one. */
+  --big: calc((var(--board) - 320px) * 1000);
+  --small: calc(var(--big) * -1);
   /* How far the seal stands above the slip's top edge: half the seal. */
-  --seal-over: 1.5em;
+  --seal-over: clamp(1em, var(--big), 1.5em);
   position: absolute;
   /* The slip and its seal are centred together, so a tall slip (long names, two buttons) never
      pushes its seal out of the garden onto the half above, where the reason is written. */
@@ -322,12 +333,12 @@ button:disabled { cursor: default; }
   z-index: 5;
   display: flex;
   flex-direction: column;
-  gap: 0.25em;
+  gap: clamp(0em, var(--big), 0.25em);
   /* Always inside the garden, never a band across it; the seal stands above its top edge. Sized
      from the garden, so it reads the same on a phone and on a large desktop garden. */
-  width: min(15em, calc(var(--board) - 2.5em));
+  width: min(clamp(15em, var(--small), 17em), calc(var(--board) - clamp(1.5em, var(--big), 2.5em)));
   max-height: calc(var(--board) - var(--seal-over));
-  padding: 1.75em 1em 1em;
+  padding: clamp(1.15em, var(--big), 1.75em) clamp(0.75em, var(--big), 1em) clamp(0.75em, var(--big), 1em);
   border-radius: calc(var(--radius) + 0.5em);
   font-size: clamp(0.8125rem, calc(var(--board) * 0.042), 1.375rem);
   color: var(--ink);
@@ -343,21 +354,31 @@ button:disabled { cursor: default; }
 .end-card.arriving { pointer-events: none; }
 /* The buttons are the same whoever won: an action is neutral, in ink; only the seal says who. */
 .end-card .card-seal { position: absolute; top: 0; left: 50%; display: flex; transform: translate(-50%, -50%); }
-.end-card .card-seal .token-svg { width: 3em; height: 3em; filter: drop-shadow(0 4px 5px rgba(40, 25, 5, 0.45)); }
+.end-card .card-seal .token-svg { width: clamp(2em, var(--big), 3em); height: clamp(2em, var(--big), 3em); filter: drop-shadow(0 4px 5px rgba(40, 25, 5, 0.45)); }
 .end-card .card-seal .token-svg + .token-svg { margin-left: -1em; }
 .end-card .card-head {
-  margin: 0;
+  margin: 0 0 clamp(0em, var(--small), 0.2em);
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 1.5em;
+  font-size: clamp(1.125em, var(--big), 1.5em);
   line-height: 1.15;
   text-wrap: balance;
   overflow-wrap: anywhere;
 }
 .game.names-ui .end-card .card-head { font-family: var(--font-ui); font-weight: 700; }
-.end-card .card-why { margin: 0 0 0.75em; color: var(--ink-2); font-size: 0.9375em; line-height: 1.3; text-wrap: balance; overflow-wrap: anywhere; }
-.end-card .say-actions { flex-direction: column; flex-wrap: nowrap; gap: 0.5em; }
-.end-card .btn { width: 100%; font-size: 1em; min-height: max(44px, 3em); padding-inline: 0.875em; }
+.end-card .card-why { margin: 0 0 clamp(0.5em, var(--big), 0.75em); color: var(--ink-2); font-size: 0.9375em; line-height: 1.3; text-wrap: balance; overflow-wrap: anywhere; }
+/* Stacked at full width on a large garden; side by side on a small one, each its own line's width
+   or half a line, never wrapping between the two. */
+.end-card .say-actions { flex-flow: row wrap; gap: 0.5em; }
+.end-card .btn {
+  flex: 1 1 clamp(0%, var(--big), 100%);
+  min-width: 0;
+  gap: clamp(0px, var(--big), 10px);
+  font-size: 1em;
+  min-height: max(44px, clamp(0em, var(--big), 3em));
+  padding-inline: clamp(0.5em, var(--big), 0.875em);
+}
+.end-card .say-actions .btn .icon { width: clamp(0em, var(--big), 1.25em); }
 .end-card .btn.primary, .end-tab .btn.primary {
   color: var(--cream);
   background: var(--cloth) 0 0 / 256px 256px, var(--card-dye);
@@ -377,7 +398,7 @@ button:disabled { cursor: default; }
   align-items: center;
   gap: 0.25em;
   min-height: 44px;
-  margin: 0.25em 0 -0.6em;
+  margin: clamp(0.1em, var(--big), 0.25em) 0 clamp(-0.6em, var(--small), -0.45em);
   padding: 0 0.75em;
   border: 0;
   border-radius: 999px;
@@ -466,20 +487,6 @@ button:disabled { cursor: default; }
 .end-tab .btn:focus-visible { outline: 3px solid var(--cream); outline-offset: -5px; }
 @media (min-aspect-ratio: 5/4) {
   .seam { --fold-dir: -1; }
-}
-/* A small garden (a phone held sideways, 340px tall or less): the slip still says who won and how,
-   in less room. It takes more of the garden's width, its seal and headline step down, and its
-   buttons share one row (without their icons), so even the longest names and the two buttons at a
-   match's end stay inside the garden. */
-@media (max-height: 340px) and (min-aspect-ratio: 5/4) {
-  .end-card { --seal-over: 1em; width: min(17em, calc(var(--board) - 1.5em)); padding: 1.15em 0.75em 0.75em; gap: 0; }
-  .end-card .card-seal .token-svg { width: 2em; height: 2em; }
-  .end-card .card-head { font-size: 1.125em; margin-bottom: 0.2em; }
-  .end-card .card-why { margin-bottom: 0.5em; }
-  .end-card .say-actions { flex-direction: row; }
-  .end-card .btn { width: auto; flex: 1 1 0; min-width: 0; min-height: 44px; padding-inline: 0.5em; }
-  .end-card .btn .icon { display: none; }
-  .end-card .card-fold { margin: 0.1em 0 -0.45em; }
 }
 @keyframes card-in {
   from { opacity: 0; transform: translateY(12px) scale(0.96); }
@@ -1148,8 +1155,14 @@ dialog.sheet::backdrop { background: rgba(12, 10, 22, 0.6); }
 /* A sheet waiting under a confirmation it asked for: out of sight (the question takes its place),
    still focusable, so focus can return to it on Cancel. */
 dialog.sheet.is-behind, dialog.sheet.is-behind::backdrop { opacity: 0; }
-dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
-@keyframes sheet-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+/* The entrance rises without fading, and on the panel, not on the dialog in the top layer: if the
+   engine is slow to draw the next frame (WebKit then holds the animation's first frame, or a stale
+   one after it has finished, for as long as the next rendering update takes), the sheet is still
+   there to read, a few pixels low, never an invisible sheet over a dimmed screen. */
+dialog.sheet[open] > .sheet-panel { animation: sheet-up 0.32s var(--ease-out); }
+/* Arrived (sheet.ts): no animation left on it, so nothing can hold it short of its place. */
+dialog.sheet[open].arrived > .sheet-panel { animation: none; }
+@keyframes sheet-up { from { transform: translateY(24px); } to { transform: none; } }
 .sheet-panel {
   display: flex;
   flex-direction: column;

@@ -87,6 +87,7 @@ export class App {
       onChange: () => this.updateMenu(),
     });
     this.mount(this.game.el);
+    this.game.attached();
     if (history.state?.screen !== 'game') history.pushState({ screen: 'game' }, '');
     this.game.focusBoard();
     keepAwake(true);

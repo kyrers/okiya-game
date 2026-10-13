@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { SavedMatch } from '../src/game/match';
-import { HOT_SEAT, LONG_NAMES, MATCH_KEY, VS_EASY, continueMatch, findGame, layoutProblems, openHome, pickMatch, saved, seatWordBreaks, seedMatch } from './helpers';
+import { HOT_SEAT, LONG_NAMES, MATCH_KEY, VS_EASY, continueMatch, expectSheetPainted, findGame, layoutProblems, openHome, pickMatch, saved, seatWordBreaks, seedMatch } from './helpers';
 
 /**
  * Layout invariants at every device size: nothing scrolls the page, nothing leaves the viewport,
@@ -47,6 +47,20 @@ test('home, setup and the sheets', async ({ page }) => {
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Settings' }).click();
   await checkLayout(page, '5-settings');
+});
+
+test('every sheet from a fresh home is painted: opaque and on screen once it has come in', async ({ page }) => {
+  // A fresh home, default settings: the case where WebKit once left the sheet invisible over the dimmed home.
+  await page.goto('/');
+  await page.evaluate(() => localStorage.clear());
+  await openHome(page);
+  for (const name of [/^New game/, /How to play/, /Settings/, /Watch a game/]) {
+    await page.getByRole('button', { name }).first().click();
+    await expect(page.locator('dialog.sheet[open]').getByRole('button', { name: 'Close' })).toBeVisible();
+    await expectSheetPainted(page);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('dialog.sheet[open]')).toHaveCount(0);
+  }
 });
 
 test('a two-player game: playing, long names, the end, the next game', async ({ page }) => {
@@ -214,3 +228,113 @@ async function reasonProblems(page: Page): Promise<string[]> {
     return out;
   });
 }
+
+/**
+ * The game screen is fitted before it is first drawn: on the first frame it is on the page, the
+ * seats already hold their content (here the tallest: two 16-letter names, Indigo opening with
+ * the note under the order). The fit once waited for the ResizeObserver's first call, which
+ * headless WebKit made hundreds of milliseconds after drawing the screen: Indigo's name lay over
+ * the top bar, and with large text the order card ran under the screen's foot.
+ */
+for (const how of ['continue', 'start'] as const) {
+  test(`the game screen is fitted when first drawn (${how})`, async ({ page }) => {
+    // The smallest phone, where these seats cannot hold their content unfitted, in every engine.
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const names: [string, string] = ['Abcdefghijklmnop', 'Pqrstuvwxyzabcde'];
+    const g = findGame((s) => s.history.length >= 8, 21);
+    if (how === 'continue') await seedMatch(page, saved({ ...HOT_SEAT, names }, [{ tiles: g.tiles, first: 2, moves: [] }]));
+    await openHome(page);
+    // Checked from a MutationObserver as the screen is added: after the code that put it there,
+    // before the browser has drawn it (and before any ResizeObserver has been called).
+    const first = page.evaluate(() => new Promise<string[]>((resolve) => {
+      new MutationObserver((_, mo) => {
+        if (!document.querySelector('.game')) return;
+        mo.disconnect();
+        const out: string[] = [];
+        const vh = innerHeight;
+        const top = document.querySelector('.topbar')!.getBoundingClientRect();
+        for (const seat of document.querySelectorAll('.game .seat')) {
+          const s = seat.getBoundingClientRect();
+          for (const el of seat.querySelectorAll('.seat-id, .seat-pips, .seat-say > *')) {
+            const b = el.getBoundingClientRect();
+            if (!b.height || getComputedStyle(el).display === 'none') continue;
+            const what = `${seat.classList[1]} .${el.classList[0]}`;
+            if (b.top < top.bottom - 1 && b.bottom > top.top + 1) out.push(`${what} overlaps the top bar`);
+            if (b.top < s.top - 1 || b.bottom > s.bottom + 1) out.push(`${what} spills out of its seat`);
+            if (b.bottom > vh + 1) out.push(`${what} leaves the screen`);
+          }
+        }
+        resolve(out);
+      }).observe(document.body, { childList: true, subtree: true });
+    }));
+    if (how === 'continue') await page.getByRole('button', { name: /Continue/ }).click();
+    else {
+      await page.getByRole('button', { name: /New game/ }).click();
+      const sheet = page.locator('dialog.sheet-setup');
+      await sheet.getByText('A friend, on this').click();
+      await sheet.getByRole('textbox', { name: 'Vermilion' }).fill(names[0]);
+      await sheet.getByRole('textbox', { name: 'Indigo' }).fill(names[1]);
+      // Indigo opens: the first draw after Start decides who opens (match.ts startMatch).
+      await page.evaluate(() => {
+        const random = Math.random;
+        let first = true;
+        Math.random = () => (first ? ((first = false), 0.75) : random());
+      });
+      await sheet.getByRole('button', { name: 'Start' }).click();
+    }
+    expect(await first).toEqual([]);
+    await expect(page.locator('.seat-2')).toHaveClass(/moving/);
+  });
+}
+
+/**
+ * The end slip at a points match's end with the longest names (its tallest content: a headline of
+ * three lines, a reason of two, two buttons and See the board) stays inside the garden and the
+ * screen, open and folded, wherever the garden is small: every phone held sideways from 300 to
+ * 520px tall (the slip once ran See the board off a 568x360 screen) and a small phone upright.
+ * The compact slip is chosen by the garden's size, not the screen's.
+ */
+test('the end slip fits the garden at every sideways height, open and folded', async ({ page }) => {
+  test.setTimeout(240_000);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const a = findGame((s) => s.result?.winner === 1 && s.history[0].player === 1 && s.result.tilesRemaining >= 5, 75);
+  const b = findGame((s) => s.result?.winner === 1 && s.history[0].player === 2 && s.result.tilesRemaining >= 10 - a.final.result!.tilesRemaining, 76);
+  await seedMatch(page, saved({ ...HOT_SEAT, mode: 'points10', names: LONG_NAMES }, [a, { ...b, moves: b.moves.slice(0, -1) }]));
+  await continueMatch(page);
+  await page.locator(`.cell[data-index="${b.moves[b.moves.length - 1]}"]`).click({ force: true });
+  await expect(page.locator('.end-card:not(.arriving) [data-action="home"]')).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  const sizes: [number, number][] = [[320, 568]];
+  for (const h of [300, 320, 340, 341, 360, 375, 390, 414, 430, 460, 480, 500, 520]) for (const w of [568, 667, 844, 932]) if (w / h >= 1.25) sizes.push([w, h]);
+  const out: string[] = [];
+  for (const [w, h] of sizes) {
+    await page.setViewportSize({ width: w, height: h });
+    for (const folded of [false, true]) {
+      if (folded) await page.locator('.end-card .card-fold').click();
+      await expect(page.locator('.seam')).toHaveClass(folded ? /card-folded/ : /^(?!.*card-folded)/);
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(r)))));
+      const found = await page.evaluate((folded) => {
+        const vw = document.documentElement.clientWidth;
+        const board = document.querySelector('.game .board')!.getBoundingClientRect();
+        const card = document.querySelector<HTMLElement>('.end-card')!;
+        const parts: [string, Element][] = folded
+          ? [...document.querySelectorAll('.end-tab, .end-tab button')].map((el): [string, Element] => [el.className, el])
+          : [['slip', card], ['seal', card.querySelector('.card-seal')!], ['reason', card.querySelector('.card-why')!], ['See the board', card.querySelector('.card-fold')!], ...[...card.querySelectorAll('.btn')].map((el): [string, Element] => [el.textContent!.trim(), el])];
+        const res: string[] = [];
+        for (const [what, el] of parts) {
+          const r = el.getBoundingClientRect();
+          if (r.left < -1 || r.top < -1 || r.right > vw + 1 || r.bottom > innerHeight + 1) res.push(`${what} leaves the screen`);
+          // The tab straddles the garden's edge on purpose; the open slip lies wholly on the garden.
+          if (!folded && (r.left < board.left - 1 || r.top < board.top - 1 || r.right > board.right + 1 || r.bottom > board.bottom + 1)) res.push(`${what} leaves the garden`);
+          if (el.tagName === 'BUTTON' && r.height < 44) res.push(`${what} is ${Math.round(r.height)}px tall`);
+        }
+        if (!folded && card.scrollHeight > card.clientHeight + 1) res.push('the slip spills its content');
+        return res;
+      }, folded);
+      for (const p of found) out.push(`${w}x${h}${folded ? ' folded' : ''}: ${p}`);
+      if (folded) await page.locator('.end-tab .tab-show').click();
+    }
+  }
+  expect(out).toEqual([]);
+});

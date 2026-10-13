@@ -142,7 +142,8 @@ export class GameScreen {
     // Continuing a finished game: say how it ended, not whose turn it would be.
     if (this.view.game.result) this.say(this.resultSentence(this.view.game.result));
     else this.announceTurn();
-    this.maybeComputer();
+    // The computer's first move waits for attached(), so its time to think is counted from a
+    // screen that is fitted and can be drawn.
     // Refit the seats whenever the screen changes size (rotation, browser bars), when a seat's
     // content changes size (text reflowing), and when any font finishes loading.
     if (typeof ResizeObserver !== 'undefined') {
@@ -195,6 +196,19 @@ export class GameScreen {
   /** Re-read settings (playable-tile marking) after they change. */
   refresh(): void {
     this.render(null);
+  }
+
+  /**
+   * Call once the screen is on the page: fits the seats before it is first drawn. The constructor
+   * cannot (nothing is laid out yet), and the ResizeObserver's first call may come only after the
+   * screen has been drawn, in headless WebKit hundreds of milliseconds later: until then the seats
+   * showed unfitted, a long name over the top bar and an order card under the screen's foot.
+   * Then, if it is the computer's turn, it starts to think: the fit (which can take a few hundred
+   * milliseconds on a slow phone) is not taken out of the time the player sees it thinking.
+   */
+  attached(): void {
+    this.fitSeats();
+    this.maybeComputer();
   }
 
   focusBoard(): void {

@@ -27,6 +27,15 @@ export interface BoardHandlers {
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
+/**
+ * A token's drop (`.cell.placed .token`, 0.42s in styles.css) starts from nothing, so the token is
+ * only seen once the drop has run. The drop is undone when it ends, and at the latest after this
+ * long: a browser that runs no frames for a while (headless WebKit under load ran none for
+ * seconds) never starts it, and would leave the token at its first, invisible frame until the next
+ * move, as the flying tile has its own guard for.
+ */
+const SET_DOWN_MS = 700;
+
 /** Whether the player's last input was a key press, rather than a touch or a click. */
 let keyboardLast = false;
 window.addEventListener('keydown', () => (keyboardLast = true), true);
@@ -38,6 +47,8 @@ export class BoardView {
   private readonly brush: SVGSVGElement;
   private readonly cells: HTMLButtonElement[] = [];
   private readonly keys: string[] = [];
+  /** Per cell, the timer that ends its token's drop if the drop never ends by itself. */
+  private readonly setDown: number[] = [];
   private focusIndex = 0;
   private last: BoardRender | null = null;
   private readonly resize: ResizeObserver | null;
@@ -69,6 +80,10 @@ export class BoardView {
       if (cell) this.activate(Number(cell.dataset.index));
     });
     this.grid.addEventListener('keydown', (ev) => this.onKey(ev));
+    this.grid.addEventListener('animationend', (ev) => {
+      const cell = ev.animationName === 'set-down' ? (ev.target as Element).closest<HTMLButtonElement>('.cell') : null;
+      if (cell) this.settle(Number(cell.dataset.index));
+    });
     this.grid.addEventListener('focusin', (ev) => {
       const cell = (ev.target as Element).closest<HTMLButtonElement>('.cell');
       if (cell) this.setFocusIndex(Number(cell.dataset.index));
@@ -84,6 +99,7 @@ export class BoardView {
   /** Lets go of what the garden watches (its size, for the brush stroke). */
   destroy(): void {
     this.resize?.disconnect();
+    this.setDown.forEach((t) => window.clearTimeout(t));
   }
 
   render(r: BoardRender): void {
@@ -113,7 +129,9 @@ export class BoardView {
         b.classList.remove('placed');
         void b.offsetWidth; // restart the drop animation
         b.classList.add('placed');
-      } else b.classList.remove('placed');
+        window.clearTimeout(this.setDown[i]);
+        this.setDown[i] = window.setTimeout(() => this.settle(i), SET_DOWN_MS);
+      } else this.settle(i);
       b.setAttribute('aria-label', this.label(i, r));
       if (c.kind === 'tile' && !legal) b.setAttribute('aria-disabled', 'true');
       else if (c.kind === 'token') b.setAttribute('aria-disabled', 'true');
@@ -132,6 +150,12 @@ export class BoardView {
 
   focus(): void {
     this.cells[this.focusIndex].focus();
+  }
+
+  /** The token in cell `i` is at rest: its drop is over, whether or not it ever ran. */
+  private settle(i: number): void {
+    window.clearTimeout(this.setDown[i]);
+    this.cells[i].classList.remove('placed');
   }
 
   /** Moves the garden's tab stop to the first tile that may be taken (or leaves it where focus last

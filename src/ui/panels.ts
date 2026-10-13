@@ -94,10 +94,20 @@ export function setupForm(initial: SetupDraft, onStart: (s: SetupDraft) => void,
     const open = more.getAttribute('aria-expanded') !== 'true';
     more.setAttribute('aria-expanded', String(open));
     options.hidden = !open;
-    // Opened, the choices come into view: they lie under the footer otherwise.
-    if (open) {
+    // Opened, the choices come into view when they lie under the sheet's lower edge (in portrait,
+    // under the footer): the sheet's body scrolls just far enough, never past the row itself, and
+    // not at all when they are already in view (as on most phones held sideways, where the row
+    // heads the right-hand column). The row and its choices are measured together, by their
+    // wrapper, since the choices' opening animation moves them.
+    const scroller = form.closest<HTMLElement>('.sheet-body');
+    if (open && scroller) {
       const still = matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.contains('reduce-motion');
-      requestAnimationFrame(() => more.scrollIntoView({ block: 'start', behavior: still ? 'auto' : 'smooth' }));
+      requestAnimationFrame(() => {
+        const view = scroller.getBoundingClientRect();
+        const group = more.parentElement!.getBoundingClientRect();
+        const by = Math.min(group.bottom + parseFloat(getComputedStyle(scroller).paddingBottom) - view.bottom, group.top - view.top);
+        if (by > 0) scroller.scrollBy({ top: by, behavior: still ? 'auto' : 'smooth' });
+      });
     }
   });
 
@@ -108,8 +118,13 @@ export function setupForm(initial: SetupDraft, onStart: (s: SetupDraft) => void,
       const f = el.dataset.for;
       el.hidden = f === 'points' ? match !== 'points' : f !== opp;
     });
-    current.textContent = MODE_WORD[read().mode];
-    more.setAttribute('aria-label', `Match: ${current.textContent}`);
+    // Written only when the choice changed. A name field's change comes on blur, inside the press
+    // that moves focus to the Match row: rewriting the same word there replaced the text under the
+    // finger, and WebKit, whose click goes to the node pressed, then sent no click at all.
+    const word = MODE_WORD[read().mode];
+    if (current.textContent === word) return;
+    current.textContent = word;
+    more.setAttribute('aria-label', `Match: ${word}`);
   };
   const read = (): SetupDraft => {
     const val = (n: string) => (form.elements.namedItem(n) as RadioNodeList | HTMLInputElement).value;

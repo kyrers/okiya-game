@@ -22,6 +22,8 @@ export interface SheetOptions {
 }
 
 let seq = 0;
+/** The sheet's entrance (styles.css, sheet-up). */
+const SHEET_IN_MS = 320;
 /** Every sheet open now, so leaving a screen can close them all (a confirmation included). */
 const openSheets = new Set<() => void>();
 
@@ -86,6 +88,14 @@ export function openSheet(opts: SheetOptions): Sheet {
     if (ev.target === dialog && pressedBackdrop && releasedBackdrop) close();
     pressedBackdrop = releasedBackdrop = false;
   });
+  // Once in, the entrance is taken off. Headless WebKit could leave the sheet on a frame of its
+  // rise after the animation had finished (and without sending animationend): a few pixels low,
+  // its foot below the screen. A timer, not the event, so it happens in every engine.
+  const arrive = () => dialog.classList.add('arrived');
+  dialog.addEventListener('animationend', (ev) => {
+    if ((ev.target as Element).classList.contains('sheet-panel')) arrive();
+  });
+  window.setTimeout(arrive, SHEET_IN_MS + 80);
   openSheets.add(close);
   dialog.showModal();
   // Focus the panel, not its first control: no stray focus ring for touch users, and Tab
