@@ -295,8 +295,9 @@ for (const how of ['continue', 'start'] as const) {
  * 520px tall (the slip once ran See the board off a 568x360 screen) and a small phone upright.
  * The compact slip is chosen by the garden's size, not the screen's.
  */
-test('the end slip fits the garden at every sideways height, open and folded', async ({ page }) => {
-  test.setTimeout(240_000);
+// A walk through about a hundred sizes, like the size sweep: run with it (@sweep), on its timeout.
+test('the end slip fits the garden at every sideways height, open and folded @sweep', async ({ page }) => {
+  test.setTimeout(900_000);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const a = findGame((s) => s.result?.winner === 1 && s.history[0].player === 1 && s.result.tilesRemaining >= 5, 75);
   const b = findGame((s) => s.result?.winner === 1 && s.history[0].player === 2 && s.result.tilesRemaining >= 10 - a.final.result!.tilesRemaining, 76);
