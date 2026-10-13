@@ -1,0 +1,396 @@
+/**
+ * Paper Garden's rules engine. The rules are those of the original game designed by Bruno
+ * Cathala, as published in the official print-and-play rules (sources in docs/RULES.md).
+ *
+ * Rules implemented here, in our own words:
+ *  - The 16 tiles pair each of 4 vegetations with each of 4 symbols; they are
+ *    shuffled and laid face up in a 4x4 garden.
+ *  - Each player has 8 tokens.
+ *  - The opening move of a game may only take a tile on the outer ring; the
+ *    centre four are off limits until the second move. The mover puts a token
+ *    where the tile was.
+ *  - From then on, a move must take a tile with the same vegetation or the same
+ *    symbol as the tile taken by the move before, and leave a token in its place.
+ *  - Four tokens of one player in a line (row, column or diagonal) or in a 2x2
+ *    square win the game at once.
+ *  - So does leaving the opponent no tile they may take ("blocked").
+ *  - Full garden: the PDF does not say what happens when the 16th tile is
+ *    taken without a formation. The designer, Bruno Cathala, ruled that the
+ *    game is a tie (BoardGameGeek thread 984327, 2013-05-30: "in this case,
+ *    it's a tie !"). The engine ends such a game with `winner: null` and
+ *    reason 'full'.
+ *  - Victory-points variant: a win scores one point for each tile still in the
+ *    garden.
+ *
+ * This module is pure and side-effect free. State objects are never mutated;
+ * every operation returns a new state.
+ */
+
+export const VEGETATIONS = ['maple', 'cherry', 'pine', 'iris'] as const;
+export const SYMBOLS = ['sun', 'poem', 'bird', 'rain'] as const;
+
+export type Vegetation = (typeof VEGETATIONS)[number];
+export type Symbol = (typeof SYMBOLS)[number];
+
+export interface Tile {
+  readonly veg: Vegetation;
+  readonly sym: Symbol;
+}
+
+export type Player = 1 | 2;
+
+/** A board cell is either a garden tile still in place, or a player's token. */
+export type Cell = { kind: 'tile'; tile: Tile } | { kind: 'token'; player: Player };
+
+/** How a game can end. 'full' = the 16th tile was taken without a formation: a tie. */
+export const END_REASONS = ['row', 'column', 'diagonal', 'square', 'blocked', 'full'] as const;
+export type EndReason = (typeof END_REASONS)[number];
+export type FormationReason = 'row' | 'column' | 'diagonal' | 'square';
+
+export function isEndReason(x: unknown): x is EndReason {
+  return typeof x === 'string' && (END_REASONS as readonly string[]).includes(x);
+}
+
+export interface GameResult {
+  /** The winner, or null for a tie (reason 'full'). */
+  readonly winner: Player | null;
+  readonly reason: EndReason;
+  /** Board indices (0..15) of the winning formation; empty for a block or a tie. */
+  readonly cells: readonly number[];
+  /** Garden tiles still in the garden when the game ended (= the winner's victory points). */
+  readonly tilesRemaining: number;
+}
+
+export interface Move {
+  readonly player: Player;
+  readonly index: number;
+  readonly tile: Tile;
+}
+
+export interface GameState {
+  readonly board: readonly Cell[]; // 16 cells, row-major, index = row*4 + col
+  readonly current: Player;
+  /** The tile removed on the previous move; null before the first move. */
+  readonly lastTile: Tile | null;
+  readonly history: readonly Move[];
+  /** Set once the game is over. */
+  readonly result: GameResult | null;
+}
+
+export const BOARD_SIZE = 4;
+export const CELL_COUNT = BOARD_SIZE * BOARD_SIZE;
+export const TOKENS_PER_PLAYER = 8;
+
+/** The 4 centre cells which the first player may NOT take. */
+export const CENTRE_CELLS: readonly number[] = [5, 6, 9, 10];
+/** The 12 border cells, the only legal first moves. */
+export const BORDER_CELLS: readonly number[] = [0, 1, 2, 3, 4, 7, 8, 11, 12, 13, 14, 15];
+
+/** All 16 distinct tiles in a canonical order (veg-major). */
+export function allTiles(): Tile[] {
+  const tiles: Tile[] = [];
+  for (const veg of VEGETATIONS) for (const sym of SYMBOLS) tiles.push({ veg, sym });
+  return tiles;
+}
+
+export function isVegetation(x: unknown): x is Vegetation {
+  return typeof x === 'string' && (VEGETATIONS as readonly string[]).includes(x);
+}
+
+export function isSymbol(x: unknown): x is Symbol {
+  return typeof x === 'string' && (SYMBOLS as readonly string[]).includes(x);
+}
+
+/** True only for a plain object with exactly the official `veg` and `sym` fields. */
+export function isTile(x: unknown): x is Tile {
+  if (x === null || typeof x !== 'object' || Array.isArray(x)) return false;
+  const t = x as Record<string, unknown>;
+  return Object.keys(t).length === 2 && isVegetation(t.veg) && isSymbol(t.sym);
+}
+
+export function isPlayer(x: unknown): x is Player {
+  return x === 1 || x === 2;
+}
+
+export function sameTile(a: Tile, b: Tile): boolean {
+  return a.veg === b.veg && a.sym === b.sym;
+}
+
+/** Whether two tiles have the same vegetation or the same symbol. */
+export function sharesElement(a: Tile, b: Tile): boolean {
+  return a.veg === b.veg || a.sym === b.sym;
+}
+
+export function opponent(p: Player): Player {
+  return p === 1 ? 2 : 1;
+}
+
+export function rowOf(index: number): number {
+  return Math.floor(index / BOARD_SIZE);
+}
+export function colOf(index: number): number {
+  return index % BOARD_SIZE;
+}
+export function indexOf(row: number, col: number): number {
+  return row * BOARD_SIZE + col;
+}
+
+/**
+ * Winning formations: 4 rows, 4 columns, 2 diagonals and 9 2x2 squares.
+ * Order matters for deterministic reporting: rows, columns, diagonals, squares.
+ */
+export interface Formation {
+  readonly reason: FormationReason;
+  readonly cells: readonly number[];
+}
+
+export const FORMATIONS: readonly Formation[] = (() => {
+  const out: Formation[] = [];
+  for (let r = 0; r < 4; r++) out.push({ reason: 'row', cells: [0, 1, 2, 3].map((c) => indexOf(r, c)) });
+  for (let c = 0; c < 4; c++) out.push({ reason: 'column', cells: [0, 1, 2, 3].map((r) => indexOf(r, c)) });
+  out.push({ reason: 'diagonal', cells: [0, 5, 10, 15] });
+  out.push({ reason: 'diagonal', cells: [3, 6, 9, 12] });
+  for (let r = 0; r < 3; r++)
+    for (let c = 0; c < 3; c++)
+      out.push({
+        reason: 'square',
+        cells: [indexOf(r, c), indexOf(r, c + 1), indexOf(r + 1, c), indexOf(r + 1, c + 1)],
+      });
+  return out;
+})();
+
+/** Deterministic PRNG (mulberry32) so games can be reproduced from a seed. */
+export function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export function shuffle<T>(items: readonly T[], rng: () => number): T[] {
+  const arr = items.slice();
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/**
+ * Build a fresh game from an explicit tile layout: exactly 16 distinct tiles, each one of
+ * the official 4 vegetations × 4 symbols. Anything else (including data restored from a
+ * save) is rejected with an Error.
+ */
+export function newGameFromTiles(tiles: readonly Tile[], first: Player = 1): GameState {
+  if (!Array.isArray(tiles)) throw new Error('expected an array of tiles');
+  if (tiles.length !== CELL_COUNT) throw new Error(`expected ${CELL_COUNT} tiles, got ${tiles.length}`);
+  if (!isPlayer(first)) throw new Error(`invalid first player ${String(first)}`);
+  const seen = new Set<string>();
+  const board: Cell[] = [];
+  // Indexed loop (not forEach/map) so that holes in a sparse array are visited and rejected too.
+  for (let i = 0; i < CELL_COUNT; i++) {
+    const t: unknown = tiles[i];
+    if (!isTile(t)) throw new Error(`invalid tile at index ${i}: ${JSON.stringify(t)}`);
+    const key = `${t.veg}/${t.sym}`;
+    if (seen.has(key)) throw new Error(`duplicate tile ${key}`);
+    seen.add(key);
+    board.push({ kind: 'tile', tile: t });
+  }
+  return {
+    board,
+    current: first,
+    lastTile: null,
+    history: [],
+    result: null,
+  };
+}
+
+/** Build a fresh game with a seeded random layout. */
+export function newGame(seed: number, first: Player = 1): GameState {
+  return newGameFromTiles(shuffle(allTiles(), mulberry32(seed)), first);
+}
+
+/**
+ * Legal moves for the player to move. Empty if the game is over.
+ *  - First move: any border cell (never the 4 centre cells).
+ *  - Later moves: any remaining tile sharing veg or symbol with `lastTile`.
+ */
+export function legalMoves(state: GameState): number[] {
+  if (state.result) return [];
+  const out: number[] = [];
+  for (let i = 0; i < CELL_COUNT; i++) {
+    const cell = state.board[i];
+    if (cell.kind !== 'tile') continue;
+    if (state.lastTile === null) {
+      if (!CENTRE_CELLS.includes(i)) out.push(i);
+    } else if (sharesElement(cell.tile, state.lastTile)) {
+      out.push(i);
+    }
+  }
+  return out;
+}
+
+export function isLegalMove(state: GameState, index: number): boolean {
+  return legalMoves(state).includes(index);
+}
+
+/** Find the first winning formation for `player`, or null. */
+export function findWin(board: readonly Cell[], player: Player): Formation | null {
+  for (const f of FORMATIONS) {
+    if (f.cells.every((i) => board[i].kind === 'token' && board[i].player === player)) return f;
+  }
+  return null;
+}
+
+export function tilesRemaining(board: readonly Cell[]): number {
+  return board.reduce((n, c) => n + (c.kind === 'tile' ? 1 : 0), 0);
+}
+
+/**
+ * Apply a move: the current player takes the tile at `index` and replaces it
+ * with one of their tokens. Throws on an illegal move. Resolves the end of the
+ * game: a formation wins first; otherwise an emptied garden is a tie; otherwise
+ * an opponent without a legal move is blocked and loses.
+ */
+export function applyMove(state: GameState, index: number): GameState {
+  if (state.result) throw new Error('game is over');
+  if (!isLegalMove(state, index)) throw new Error(`illegal move ${index}`);
+  const cell = state.board[index];
+  if (cell.kind !== 'tile') throw new Error('unreachable: legal move on non-tile');
+  const player = state.current;
+  const board = state.board.slice();
+  board[index] = { kind: 'token', player };
+  const move: Move = { player, index, tile: cell.tile };
+  const next: GameState = {
+    board,
+    current: opponent(player),
+    lastTile: cell.tile,
+    history: [...state.history, move],
+    result: null,
+  };
+  const remaining = tilesRemaining(board);
+  const formation = findWin(board, player);
+  if (formation) {
+    return { ...next, result: { winner: player, reason: formation.reason, cells: formation.cells, tilesRemaining: remaining } };
+  }
+  if (remaining === 0) {
+    return { ...next, result: { winner: null, reason: 'full', cells: [], tilesRemaining: 0 } };
+  }
+  if (legalMoves(next).length === 0) {
+    return { ...next, result: { winner: player, reason: 'blocked', cells: [], tilesRemaining: remaining } };
+  }
+  return next;
+}
+
+/** Tokens the player still has in hand (8 minus those placed). */
+export function tokensInHand(state: GameState, player: Player): number {
+  return TOKENS_PER_PLAYER - state.history.filter((m) => m.player === player).length;
+}
+
+/* ---------- Match layer (End of the game variants from the PDF) ---------- */
+
+export const MATCH_MODES = ['single', 'sets3', 'points10', 'points15', 'points20'] as const;
+export type MatchMode = (typeof MATCH_MODES)[number];
+
+export function isMatchMode(x: unknown): x is MatchMode {
+  return typeof x === 'string' && (MATCH_MODES as readonly string[]).includes(x);
+}
+
+export interface MatchState {
+  readonly mode: MatchMode;
+  readonly wins: Readonly<Record<Player, number>>;
+  readonly points: Readonly<Record<Player, number>>;
+  readonly ties: number;
+  readonly gamesPlayed: number;
+  /** True once the match is decided (or, for a single game, once it has been played). */
+  readonly over: boolean;
+  /** Winner of the whole match; null while it runs, and for a single game that was tied. */
+  readonly champion: Player | null;
+  /** Who opens the next game. */
+  readonly nextFirst: Player;
+}
+
+/** `first` must be chosen at random by the caller for the first game (PDF: "chosen randomly"). */
+export function newMatch(mode: MatchMode, first: Player): MatchState {
+  return { mode, wins: { 1: 0, 2: 0 }, points: { 1: 0, 2: 0 }, ties: 0, gamesPlayed: 0, over: false, champion: null, nextFirst: first };
+}
+
+export function pointsTarget(mode: MatchMode): number {
+  switch (mode) {
+    case 'points10': return 10;
+    case 'points15': return 15;
+    case 'points20': return 20;
+    default: return Infinity;
+  }
+}
+
+/**
+ * Record a finished game into the match. The game must have been opened by `match.nextFirst`.
+ * - A win adds a won game and, in a points match, the tiles left in the garden.
+ * - The loser of a game opens the next one (PDF). After a tie there is no loser; the player who
+ *   did not open the tied game opens the next one (our interpretation: openings alternate).
+ */
+export function recordGame(match: MatchState, result: GameResult): MatchState {
+  if (match.over) throw new Error('match is over');
+  if (result.winner === null) {
+    return { ...match, ties: match.ties + 1, gamesPlayed: match.gamesPlayed + 1, over: match.mode === 'single', nextFirst: opponent(match.nextFirst) };
+  }
+  const w = result.winner;
+  const wins = { ...match.wins, [w]: match.wins[w] + 1 };
+  const points = { ...match.points, [w]: match.points[w] + result.tilesRemaining };
+  let champion: Player | null = null;
+  if (match.mode === 'single') champion = w;
+  else if (match.mode === 'sets3') champion = wins[w] >= 3 ? w : null;
+  else champion = points[w] >= pointsTarget(match.mode) ? w : null;
+  return {
+    ...match,
+    wins,
+    points,
+    gamesPlayed: match.gamesPlayed + 1,
+    over: champion !== null,
+    champion,
+    nextFirst: opponent(w), // the loser of the previous game starts
+  };
+}
+
+/* ---------- Helpers for tests & rendering ---------- */
+
+const VEG_CODE: Record<Vegetation, string> = { maple: 'M', cherry: 'C', pine: 'P', iris: 'I' };
+const SYM_CODE: Record<Symbol, string> = { sun: 's', poem: 'p', bird: 'b', rain: 'r' };
+const VEG_FROM: Record<string, Vegetation> = { M: 'maple', C: 'cherry', P: 'pine', I: 'iris' };
+const SYM_FROM: Record<string, Symbol> = { s: 'sun', p: 'poem', b: 'bird', r: 'rain' };
+
+/** Two-letter code, e.g. "Cb" = cherry + bird. */
+export function tileCode(t: Tile): string {
+  return VEG_CODE[t.veg] + SYM_CODE[t.sym];
+}
+
+export function parseTile(code: string): Tile {
+  const veg = VEG_FROM[code[0]];
+  const sym = SYM_FROM[code[1]];
+  if (!veg || !sym || code.length !== 2) throw new Error(`bad tile code ${code}`);
+  return { veg, sym };
+}
+
+/** Parse a 16-token layout like "Ms Mp Mb Mr Cs Cp Cb Cr Ps Pp Pb Pr Is Ip Ib Ir". */
+export function parseLayout(layout: string): Tile[] {
+  return layout.trim().split(/\s+/).map(parseTile);
+}
+
+/** Render the board as 4 lines of 4 codes; tokens show as "1." / "2.". */
+export function boardToString(board: readonly Cell[]): string {
+  const lines: string[] = [];
+  for (let r = 0; r < 4; r++) {
+    const parts: string[] = [];
+    for (let c = 0; c < 4; c++) {
+      const cell = board[indexOf(r, c)];
+      parts.push(cell.kind === 'tile' ? tileCode(cell.tile) : `${cell.player}.`);
+    }
+    lines.push(parts.join(' '));
+  }
+  return lines.join('\n');
+}

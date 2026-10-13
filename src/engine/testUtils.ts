@@ -1,4 +1,4 @@
-import { type Cell, type GameState, type Player, type Tile, parseTile } from './okiya';
+import { type Cell, type GameState, type Player, type Tile, parseTile } from './garden';
 
 /**
  * Build a game state from a 4x4 picture. Each token is either "1" / "2"
@@ -12,5 +12,5 @@ export function stateFromPicture(picture: string, current: Player, lastTile: Til
     if (code === '2') return { kind: 'token', player: 2 };
     return { kind: 'tile', tile: parseTile(code) };
   });
-  return { board, current, lastTile, history: [], win: null };
+  return { board, current, lastTile, history: [], result: null };
 }

@@ -1,109 +1,86 @@
-# Hanamichi — The Flower Road
+# Paper Garden
 
-A single-player web game built on the board game **Okiya** (a.k.a. Niya, by Bruno Cathala and
-Cyril Bouquet, Blue Orange Games). Every game you play is a real, unmodified game of Okiya against
-an AI rival. The new game is the road around it: six stations, three lanterns (games) at each,
-a petal target to reach, and **charms** that decide how much each kind of victory is worth.
+**Paper Garden** is a two-player garden game, played exactly by the rules of the abstract game
+designed by Bruno Cathala. Two people on one device, or one person against the
+computer at three levels. Phones, tablets and desktops; portrait and landscape; works offline
+once loaded. A static site with no backend, accounts, keys or tracking.
 
-No backend, no account, no keys, no analytics: a static site that runs entirely in the browser
-and remembers your road in `localStorage`.
-
-![Hanamichi on a phone, mid-game](docs/screenshots/phone-4-play.png)
+![A game on a phone](docs/screenshots/phone-2-your-turn.png)
 
 ## How to play
 
-### Okiya, the game at the core
+Sixteen tiles lie in a 4 × 4 garden, each pairing a plant (maple, cherry, pine, iris) with a
+symbol (rising sun, poem, bird, rain). On your turn you take one tile and put one of your tokens
+in its place.
 
-- The garden is a 4×4 square of 16 tiles: every pairing of a **vegetation** (maple, cherry, pine,
-  iris) with a **symbol** (rising sun, poem, bird, rain).
-- On your turn, take a tile and put one of your tokens in its place.
-- The **first** tile of a game must come from the **outer border**; the four centre tiles are
-  closed on move one.
-- Every later tile must share the **vegetation or the symbol** of the tile your opponent just
-  took. The card under the board always tells you what you may play ("play cherry or bird").
-- You win at once with four of your tokens in a **row, column or diagonal**, or in a **2×2 square**,
-  or when your opponent has **no legal tile** left (they are blocked). The official sheet does not
-  say what happens when the last tile is taken without a formation; this game applies the blocking
-  rule literally (the other player cannot move, so the last mover wins), so there are no draws. See
-  [docs/RULES.md](docs/RULES.md).
+- The first tile of a game must come from the outer ring.
+- Every tile after that must share the plant **or** the symbol of the tile your opponent just took.
+- You win with four tokens in a row, a column or a diagonal, with a 2 × 2 square, or by leaving
+  your opponent no tile they may take.
+- If the garden is emptied with no winner, the game is a tie (the designer's ruling).
+- Matches: a single game, first to 3 wins, or victory points (a win scores the tiles left in the
+  garden) to 10, 15 or 20.
 
-### The Flower Road (the new layer)
-
-- A **run** is six stations, each with a named rival. The rivals get stronger along the road.
-- At each station you have **three lanterns**: three full games of Okiya. You need to gather the
-  station's **petal target** before the lanterns run out. Clear it and you walk on; miss it and the
-  road ends.
-- A **won game** is worth 3 petals for the win, plus the official victory points (one per tile
-  still in the garden), plus whatever your charms add. A lost game is worth nothing.
-- **Charms** are drafted at the start and after each cleared station (hold up to four). They only
-  read the finished game and never change the rules. Examples: *Stone Lantern* (+6 for a square
-  win), *Crane Scroll* (+8 for a diagonal), *Thorn Hedge* (+4 for blocking the rival),
-  *Corner Shrine* (+2 per corner held), *Rain Chain* (+1 per move that followed the constraint by
-  symbol), *Narrow Gate* (+3 each time you leave the rival exactly one legal tile),
-  *Swift Blossom* (×2 for winning with six tokens or fewer).
-- The **Firefly** can be woken once per station. For one move it marks which legal tiles win at
-  once and which hand the rival an immediate win. It only shows information.
-- "**Today's road**" uses a seed derived from the date, so everyone gets the same gardens and
-  charm offers that day. Your run autosaves after every move.
-
-The official rules, as read from the Blue Orange print-and-play PDF, are summarised in
-[docs/RULES.md](docs/RULES.md). How the game was designed, judged and tuned is in
-[docs/DESIGN.md](docs/DESIGN.md); how it was built is in [docs/PROCESS.md](docs/PROCESS.md).
+The full rules, their sources and the one interpretation this edition makes are in
+[docs/RULES.md](docs/RULES.md); the game has an illustrated "How to play" sheet too.
 
 ## Run it
 
-Requires Node 20+.
+Requires Node 22.12 or newer (the versions Vite 8 and Vitest 5 support; Vercel builds it on 22.x).
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
-```
-
-```bash
-npm test           # unit tests (rules engine, AI, charms, run flow, hints)
-npm run build      # type-check + production build into dist/
-npm run preview    # serve dist/ locally
+npm run dev          # http://localhost:5173
+npm test             # unit tests: rules engine, AI, match flow, rules-page diagrams
+npm run build        # type-check, production build into dist/, service worker
+npm run e2e          # end-to-end tests on 11 device profiles (needs `npx playwright install`)
 ```
 
 Other scripts:
 
 ```bash
-npm run sim -- 300 4 4           # AI-vs-AI Okiya simulation (games, depth P1, depth P2)
-npx tsx scripts/sim-hanamichi.ts # playtest of the charm layer by simulation
-npx tsx scripts/sim-koikoi.ts    # playtest of the runner-up idea
-npm run screenshots              # phone/tablet/desktop screenshots into docs/screenshots/ (needs the dev server)
-npm run e2e                      # Playwright flow check against the dev server (draft, release, resume, illegal clicks)
+npm run sim -- calibrate 400   # difficulty ladder against three player models
+npm run sim -- solve 40        # exact game value of random gardens with perfect play
+npx tsx scripts/capture.ts     # screenshots and share image from a running build (vite preview)
+npm run icons                  # PNG icons from public/icon.svg
 ```
 
-## Deploy
+## Deploy to Vercel
 
-The build is a plain static site with relative asset paths (`base: './'`), so `dist/` can be
-served from any static host or sub-path. For example:
+`vercel.json` declares everything: the Vite framework preset, `npm run build`, the `dist` output,
+long-term caching for hashed assets, `no-cache` for the service worker, and security headers with
+a Content Security Policy. Import the repository in Vercel (or run `vercel` / `vercel --prod`
+from the project root) and accept the detected settings. There are no environment variables.
 
-- **GitHub Pages**: `npm run build`, then publish the `dist/` folder (e.g. with the
-  `actions/upload-pages-artifact` + `actions/deploy-pages` actions, or by pushing `dist/` to a
-  `gh-pages` branch).
-- **Netlify / Vercel / Cloudflare Pages**: build command `npm run build`, publish directory `dist`.
-- **Any web server / S3 bucket**: copy the contents of `dist/` to the document root.
-
-There is nothing to configure: no environment variables, API keys or server code.
+The same `dist/` works on any static host, from the site's root or a sub-path: the game's asset
+paths are relative. Only `404.html`, which a host serves for any missing path, links to the root
+(`/`), so on a sub-path its "Play" link and icon point one level too high.
 
 ## Project layout
 
 ```
-src/engine/okiya.ts     the official rules (pure, immutable state), with okiya.test.ts
-src/engine/ai.ts        negamax AI with alpha-beta, transposition table, difficulty presets
-src/engine/charms.ts    the charm layer: pure functions scoring a finished game
-src/game/stations.ts    the six stations (rival strength, petal targets)
-src/game/run.ts         run state machine (draft → station → games → result → next)
-src/game/hints.ts       information-only helpers: Paper Lantern, "worth now", board hints
-src/ui/                 framework-free UI: app.ts, board.ts, tileArt.ts (SVG tiles), styles.css
-scripts/                simulations and the screenshot script
-docs/                   rules summary, design record, judging, simulation outputs, reviews, screenshots
+src/engine/garden.ts  the official rules: pure functions, immutable state (+ tests)
+src/engine/ai.ts      negamax search with alpha-beta; Easy / Medium / Hard presets (+ tests)
+src/game/match.ts     a match: setup, games, undo, save/restore by replaying the engine (+ tests)
+src/game/aiClient.ts  runs the computer's search in a Web Worker (ai.worker.ts)
+src/ui/               framework-free UI: app shell, home, game screen, sheets, art, styles
+e2e/                  Playwright end-to-end tests (gameplay, layout, offline, accessibility, CSP)
+scripts/              simulation, service-worker build, icons, screenshots, Vercel-header server
+docs/                 rules, process, evidence, screenshots
 ```
 
-## Credits
+## Credits and licences
 
-Okiya/Niya is designed by Bruno Cathala and Cyril Bouquet and published by Blue Orange Games.
-This project is an unofficial fan-made game that uses the published rules; all art here is original
-CSS/SVG and no assets from the published game are used.
+- **Game design** by Bruno Cathala. Paper Garden plays by his rules (sources in
+  [docs/RULES.md](docs/RULES.md)); it uses none of the published game's name, art, logos or trade
+  dress, is not affiliated with or endorsed by its designer, illustrator or any publisher, and is
+  not for sale.
+- **Art**: the garden tiles, tokens, icons and app icon are original SVG drawn for this project.
+- **Sounds**: synthesised at run time with the Web Audio API; there are no audio files.
+- **Typefaces**, both under the SIL Open Font License 1.1 and self-hosted (the licence texts ship
+  with the site in `public/licenses/` and are linked from Settings → About):
+  - Shippori Mincho B1 by the Shippori Mincho Project Authors (Fontdasu), for display, from the
+    `@fontsource/shippori-mincho-b1` package;
+  - Source Sans 3 by Adobe (Paul D. Hunt), for interface text, from `@fontsource/source-sans-3`.
+- **Code**: the dependencies shipped to players are the two font packages only; everything else
+  is development tooling.

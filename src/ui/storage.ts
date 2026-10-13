@@ -1,37 +1,25 @@
-/** Tiny localStorage wrapper that never throws (private mode, blocked storage, quota). */
-export function loadJson<T>(key: string, fallback: T): T {
+/** localStorage access that never throws (private mode, blocked storage, full quota). */
+export function loadRaw(key: string): unknown {
   try {
     const raw = localStorage.getItem(key);
-    if (raw === null) return fallback;
-    const parsed: unknown = JSON.parse(raw);
-    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) return fallback;
-    if (fallback === null || typeof fallback !== 'object') return parsed as T;
-    return { ...fallback, ...(parsed as Partial<T>) } as T;
+    return raw === null ? null : (JSON.parse(raw) as unknown);
   } catch {
-    return fallback;
+    return null;
   }
 }
 
-export function saveJson<T>(key: string, value: T): void {
+export function saveRaw(key: string, value: unknown): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {
+    /* storage unavailable: the game still plays, it just will not resume */
+  }
+}
+
+export function removeKey(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
     /* ignore */
   }
-}
-
-/** FNV-1a 32-bit hash of a string, for turning names/dates into PRNG seeds. */
-export function hashString(s: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return h >>> 0;
-}
-
-/** Seed shared by everyone on the same calendar day (local time). */
-export function dailySeed(date = new Date()): number {
-  const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  return hashString(`okiya-daily-${key}`);
 }

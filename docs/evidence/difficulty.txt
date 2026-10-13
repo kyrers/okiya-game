@@ -1,0 +1,11 @@
+Difficulty ladder: AI level vs player models, 400 games each, openings alternate.
+AI wins / ties / player wins | AI win when AI opens / when player opens | endings
+easy   vs casual      19.5%   8.3%  72.3% |  21.5%  17.5% | square 37%, row 17%, column 17%, blocked 16%, full 8%, diagonal 5% | avg 11.2 moves, 0.1s
+easy   vs thoughtful   9.3%  13.5%  77.3% |  12.0%   6.5% | square 30%, blocked 17%, column 15%, row 14%, full 14%, diagonal 11% | avg 12.0 moves, 0.2s
+easy   vs strong       5.0%  12.3%  82.8% |   8.5%   1.5% | square 39%, column 15%, row 12%, full 12%, blocked 12%, diagonal 10% | avg 11.6 moves, 1.7s
+medium vs casual      61.3%   7.8%  31.0% |  61.0%  61.5% | square 38%, blocked 17%, column 15%, row 14%, diagonal 9%, full 8% | avg 12.7 moves, 0.5s
+medium vs thoughtful  47.5%  20.3%  32.3% |  51.5%  43.5% | square 25%, blocked 21%, full 20%, column 14%, row 14%, diagonal 7% | avg 13.6 moves, 0.6s
+medium vs strong      23.5%  26.3%  50.3% |  29.5%  17.5% | full 26%, square 25%, blocked 18%, row 13%, column 11%, diagonal 7% | avg 13.8 moves, 2.2s
+hard   vs casual      83.0%   5.5%  11.5% |  86.0%  80.0% | square 38%, column 17%, row 17%, blocked 12%, diagonal 10%, full 6% | avg 12.2 moves, 5.0s
+hard   vs thoughtful  73.5%  14.0%  12.5% |  81.5%  65.5% | square 28%, blocked 21%, row 15%, full 14%, column 14%, diagonal 10% | avg 13.3 moves, 5.3s
+hard   vs strong      53.0%  24.3%  22.8% |  72.0%  34.0% | square 25%, full 24%, blocked 16%, row 15%, column 13%, diagonal 7% | avg 13.9 moves, 6.6s

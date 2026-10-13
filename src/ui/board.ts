@@ -1,57 +1,271 @@
 /**
- * Renders an Okiya board (GameState) into a container element.
- * Framework-free: re-renders the 16 cells on each call; cheap enough for a 4x4 grid.
+ * The garden: 16 buttons that keep their DOM nodes across renders, so moves can animate and keyboard
+ * focus survives. Only cells whose content changed are rewritten.
  */
-import { legalMoves, type GameState, type Player } from '../engine/okiya';
+import { CELL_COUNT, colOf, rowOf, tileCode, type GameState, type Player } from '../engine/garden';
+import { tokenSvg } from './art';
 import { tileLabel, tileSvg } from './tileArt';
+import { possessive } from './words';
 
-export interface BoardOptions {
-  /** Which player is the human (their legal moves are clickable). */
-  human: Player | null;
-  onMove: (index: number) => void;
-  /** Index of the most recently played cell, for the "just placed" animation. */
-  lastIndex?: number | null;
-  /** Extra class names for individual cells (e.g. charm highlights). */
-  cellClass?: (index: number) => string;
-  /** Optional badge markup rendered inside a cell (information only). */
-  cellBadge?: (index: number) => string;
+export interface BoardRender {
+  readonly state: GameState;
+  /** Cells the person at the screen may take now (empty while the computer moves or after the end). */
+  readonly legal: ReadonlySet<number>;
+  /** Lift the takeable tiles (setting). */
+  readonly showLegal: boolean;
+  /** The cell taken by the last move, if any. */
+  readonly lastIndex: number | null;
+  /** Animate the token that was just placed in this cell. */
+  readonly justPlaced: number | null;
+  readonly names: readonly [string, string];
 }
 
-export function renderBoard(container: HTMLElement, state: GameState, opts: BoardOptions): void {
-  const legal = new Set(opts.human !== null && state.current === opts.human && !state.win ? legalMoves(state) : []);
-  const winCells = new Set(state.win?.cells ?? []);
-  container.classList.add('board');
-  container.setAttribute('role', 'grid');
-  container.setAttribute('aria-label', 'Okiya garden');
-  const html: string[] = [];
-  for (let i = 0; i < 16; i++) {
-    const cell = state.board[i];
-    const classes = ['cell'];
-    let inner = '';
-    let label = '';
-    if (cell.kind === 'tile') {
-      classes.push('cell-tile');
-      if (legal.has(i)) classes.push('legal');
-      inner = tileSvg(cell.tile);
-      label = tileLabel(cell.tile) + (legal.has(i) ? ', playable' : '');
-    } else {
-      classes.push('cell-token', `token-p${cell.player}`);
-      if (winCells.has(i)) classes.push('win');
-      if (opts.lastIndex === i) classes.push('just-placed');
-      inner = `<span class="token"><span class="token-face"></span></span>`;
-      label = `Player ${cell.player} token`;
+export interface BoardHandlers {
+  onTake(index: number): void;
+  onDenied(index: number): void;
+}
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/** Whether the player's last input was a key press, rather than a touch or a click. */
+let keyboardLast = false;
+window.addEventListener('keydown', () => (keyboardLast = true), true);
+window.addEventListener('pointerdown', () => (keyboardLast = false), true);
+
+export class BoardView {
+  readonly el: HTMLDivElement;
+  private readonly grid: HTMLDivElement;
+  private readonly brush: SVGSVGElement;
+  private readonly cells: HTMLButtonElement[] = [];
+  private readonly keys: string[] = [];
+  private focusIndex = 0;
+  private last: BoardRender | null = null;
+  private readonly resize: ResizeObserver | null;
+
+  constructor(private readonly handlers: BoardHandlers, label = 'The garden') {
+    this.el = document.createElement('div');
+    this.el.className = 'board';
+    this.grid = document.createElement('div');
+    this.grid.className = 'board-grid';
+    this.grid.setAttribute('role', 'group');
+    this.grid.setAttribute('aria-label', label);
+    for (let i = 0; i < CELL_COUNT; i++) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'cell';
+      b.dataset.index = String(i);
+      b.tabIndex = i === 0 ? 0 : -1;
+      this.cells.push(b);
+      this.keys.push('');
+      this.grid.append(b);
     }
-    if (opts.cellClass) classes.push(opts.cellClass(i));
-    if (opts.cellBadge) inner += opts.cellBadge(i);
-    const clickable = legal.has(i);
-    html.push(
-      `<button type="button" class="${classes.join(' ')}" data-index="${i}" role="gridcell" aria-label="${label}" ${clickable ? '' : 'tabindex="-1" aria-disabled="true"'}>${inner}</button>`,
-    );
+    this.brush = document.createElementNS(SVG_NS, 'svg');
+    this.brush.classList.add('board-brush');
+    this.brush.setAttribute('aria-hidden', 'true');
+    this.el.append(this.grid, this.brush);
+
+    this.grid.addEventListener('click', (ev) => {
+      const cell = (ev.target as Element).closest<HTMLButtonElement>('.cell');
+      if (cell) this.activate(Number(cell.dataset.index));
+    });
+    this.grid.addEventListener('keydown', (ev) => this.onKey(ev));
+    this.grid.addEventListener('focusin', (ev) => {
+      const cell = (ev.target as Element).closest<HTMLButtonElement>('.cell');
+      if (cell) this.setFocusIndex(Number(cell.dataset.index));
+    });
+    this.resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => this.drawBrush(false));
+    this.resize?.observe(this.grid);
   }
-  container.innerHTML = html.join('');
-  container.onclick = (ev) => {
-    const target = (ev.target as HTMLElement).closest<HTMLElement>('.cell.legal');
-    if (!target) return;
-    opts.onMove(Number(target.dataset.index));
-  };
+
+  cell(index: number): HTMLButtonElement {
+    return this.cells[index];
+  }
+
+  render(r: BoardRender): void {
+    const { state } = r;
+    const win = state.result;
+    const winCells = new Set(win?.cells ?? []);
+    for (let i = 0; i < CELL_COUNT; i++) {
+      const c = state.board[i];
+      const b = this.cells[i];
+      const key = c.kind === 'tile' ? `t${tileCode(c.tile)}` : `p${c.player}`;
+      if (key !== this.keys[i]) {
+        b.innerHTML = c.kind === 'tile' ? tileSvg(c.tile) : `<span class="token">${tokenSvg(c.player)}</span>`;
+        b.dataset.cell = key.slice(1);
+        this.keys[i] = key;
+      }
+      const legal = r.legal.has(i);
+      b.classList.toggle('is-tile', c.kind === 'tile');
+      b.classList.toggle('is-token', c.kind === 'token');
+      b.classList.toggle('p1', c.kind === 'token' && c.player === 1);
+      b.classList.toggle('p2', c.kind === 'token' && c.player === 2);
+      b.classList.toggle('legal', legal);
+      b.classList.toggle('show-legal', legal && r.showLegal);
+      b.classList.toggle('last', r.lastIndex === i);
+      b.classList.toggle('in-win', winCells.has(i));
+      b.classList.toggle('dead', !!win && c.kind === 'tile');
+      if (r.justPlaced === i) {
+        b.classList.remove('placed');
+        void b.offsetWidth; // restart the drop animation
+        b.classList.add('placed');
+      } else b.classList.remove('placed');
+      b.setAttribute('aria-label', this.label(i, r));
+      if (c.kind === 'tile' && !legal) b.setAttribute('aria-disabled', 'true');
+      else if (c.kind === 'token') b.setAttribute('aria-disabled', 'true');
+      else b.removeAttribute('aria-disabled');
+    }
+    this.el.classList.toggle('has-legal', r.legal.size > 0 && r.showLegal);
+    // A person may take a tile now: every tile answers the pointer alike, so a hover never tells
+    // which tiles may be taken when marking them is turned off.
+    this.el.classList.toggle('can-take', r.legal.size > 0);
+    this.el.classList.toggle('over', !!win);
+    const prev = this.last;
+    this.last = r;
+    if (!win) this.brush.replaceChildren();
+    else if (!prev?.state.result) this.drawBrush(true);
+  }
+
+  focus(): void {
+    this.cells[this.focusIndex].focus();
+  }
+
+  /** Moves the garden's tab stop to the first tile that may be taken (or leaves it where focus last
+   *  rested: the computer's turn, the game over), unless the garden already holds focus; and, for
+   *  a player using the keyboard, puts focus there. After a touch, WebKit would draw a focus ring
+   *  on the tile, so focus is left alone. */
+  focusFirstLegal(): void {
+    if (!this.last || this.grid.contains(document.activeElement)) return;
+    const first = [...this.last.legal][0];
+    this.setFocusIndex(first ?? this.focusIndex);
+    if (keyboardLast) this.cells[this.focusIndex].focus({ preventScroll: true });
+  }
+
+  private label(i: number, r: BoardRender): string {
+    const where = `Row ${rowOf(i) + 1}, column ${colOf(i) + 1}`;
+    const c = r.state.board[i];
+    if (c.kind === 'token') {
+      const win = r.state.result?.cells.includes(i) ? ', part of the winning formation' : '';
+      return `${where}: ${possessive(r.names[c.player - 1])} token${win}`;
+    }
+    const legal = r.legal.has(i) ? ', can be taken' : '';
+    return `${where}: ${tileLabel(c.tile)}${legal}`;
+  }
+
+  private activate(i: number): void {
+    if (!this.last) return;
+    this.setFocusIndex(i);
+    if (this.last.legal.has(i)) this.handlers.onTake(i);
+    else if (this.last.state.board[i].kind === 'tile' && !this.last.state.result) this.handlers.onDenied(i);
+  }
+
+  private setFocusIndex(i: number): void {
+    if (i === this.focusIndex) return;
+    this.cells[this.focusIndex].tabIndex = -1;
+    this.focusIndex = i;
+    this.cells[i].tabIndex = 0;
+  }
+
+  private onKey(ev: KeyboardEvent): void {
+    const i = this.focusIndex;
+    const r = rowOf(i);
+    const c = colOf(i);
+    let next = -1;
+    switch (ev.key) {
+      case 'ArrowUp': next = r > 0 ? i - 4 : i; break;
+      case 'ArrowDown': next = r < 3 ? i + 4 : i; break;
+      case 'ArrowLeft': next = c > 0 ? i - 1 : i; break;
+      case 'ArrowRight': next = c < 3 ? i + 1 : i; break;
+      case 'Home': next = r * 4; break;
+      case 'End': next = r * 4 + 3; break;
+      default: return;
+    }
+    ev.preventDefault();
+    this.setFocusIndex(next);
+    this.cells[next].focus();
+  }
+
+  /** The brush stroke through a winning formation, in board coordinates measured from the cells. */
+  private drawBrush(animate: boolean): void {
+    const win = this.last?.state.result;
+    if (!win || win.cells.length === 0) {
+      this.brush.replaceChildren();
+      return;
+    }
+    const box = this.el.getBoundingClientRect();
+    if (box.width === 0) return;
+    this.brush.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+    const centre = (i: number) => {
+      const r = this.cells[i].getBoundingClientRect();
+      return { x: r.left - box.left + r.width / 2, y: r.top - box.top + r.height / 2, s: r.width };
+    };
+    const pts = win.cells.map(centre);
+    const s = pts[0].s;
+    const player = win.winner as Player;
+    let shape: SVGElement;
+    if (win.reason === 'square') {
+      const xs = pts.map((p) => p.x);
+      const ys = pts.map((p) => p.y);
+      const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+      const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+      const rad = s * 1.02;
+      shape = document.createElementNS(SVG_NS, 'path');
+      // A brush circle that overshoots its start, as a hand would draw it.
+      shape.setAttribute(
+        'd',
+        `M ${cx - rad * 0.2} ${cy - rad} A ${rad} ${rad} 0 1 1 ${cx - rad * 0.98} ${cy + rad * 0.12} A ${rad} ${rad} 0 0 1 ${cx + rad * 0.12} ${cy - rad * 0.99}`,
+      );
+    } else {
+      const a = pts[0];
+      const b = pts[pts.length - 1];
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const len = Math.hypot(dx, dy);
+      const ex = (dx / len) * s * 0.42;
+      const ey = (dy / len) * s * 0.42;
+      shape = document.createElementNS(SVG_NS, 'path');
+      shape.setAttribute('d', `M ${a.x - ex} ${a.y - ey} L ${b.x + ex} ${b.y + ey}`);
+    }
+    shape.setAttribute('class', `brush-stroke p${player}`);
+    const width = s * 0.26;
+    shape.setAttribute('stroke-width', String(width));
+    // The rough edge: a displacement filter whose region is this stroke's own box in user space.
+    // (A bounding-box region is empty for a row or column, whose path has zero height; an
+    // oversized region is dropped by WebKit.)
+    const xs = pts.map((p) => p.x);
+    const ys = pts.map((p) => p.y);
+    const pad = s * 1.3;
+    const filter = document.createElementNS(SVG_NS, 'filter');
+    filter.id = 'board-brush-edge';
+    for (const [k, v] of Object.entries({
+      filterUnits: 'userSpaceOnUse',
+      x: Math.min(...xs) - pad,
+      y: Math.min(...ys) - pad,
+      width: Math.max(...xs) - Math.min(...xs) + 2 * pad,
+      height: Math.max(...ys) - Math.min(...ys) + 2 * pad,
+    })) filter.setAttribute(k, String(v));
+    filter.innerHTML = `<feTurbulence type="fractalNoise" baseFrequency="0.045 0.9" numOctaves="2" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="${(s * 0.07).toFixed(1)}" xChannelSelector="R" yChannelSelector="G"/>`;
+    const defs = document.createElementNS(SVG_NS, 'defs');
+    defs.append(filter);
+    shape.setAttribute('filter', 'url(#board-brush-edge)');
+    this.brush.replaceChildren(defs, shape);
+    const length = (shape as SVGPathElement).getTotalLength?.() ?? 0;
+    if (animate && length > 0 && !matchMedia('(prefers-reduced-motion: reduce)').matches && !document.documentElement.classList.contains('reduce-motion')) {
+      shape.style.strokeDasharray = `${length}`;
+      shape.animate([{ strokeDashoffset: length }, { strokeDashoffset: 0 }], { duration: 650, delay: 180, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' });
+    }
+  }
+}
+
+/** A static garden (home screen): every tile face up, nothing to take. */
+export function staticGarden(state: GameState): HTMLDivElement {
+  const view = new BoardView({ onTake: () => undefined, onDenied: () => undefined }, 'A garden of sixteen tiles');
+  view.render({ state, legal: new Set(), showLegal: false, lastIndex: null, justPlaced: null, names: ['', ''] });
+  view.el.classList.add('static');
+  view.el.querySelectorAll('button').forEach((b) => {
+    b.tabIndex = -1;
+    b.setAttribute('aria-hidden', 'true');
+  });
+  view.el.setAttribute('aria-hidden', 'true');
+  return view.el;
 }

@@ -1,11 +1,12 @@
 /**
- * AI opponent for Okiya: negamax with alpha-beta pruning, a transposition
+ * The computer player: negamax with alpha-beta pruning, a transposition
  * table and iterative deepening. Pure functions; deterministic given a PRNG.
  *
  * Scores are from the point of view of the player to move:
  *   +WIN - plies  : the mover wins (sooner is better)
  *   -WIN + plies  : the mover loses (later is better)
- *   heuristic      : otherwise (see evaluate())
+ *   0             : a tie (full garden)
+ *   heuristic     : otherwise (see evaluate())
  */
 import {
   CELL_COUNT,
@@ -17,7 +18,7 @@ import {
   type Cell,
   type GameState,
   type Player,
-} from './okiya';
+} from './garden';
 
 export const WIN = 10_000;
 
@@ -28,7 +29,7 @@ export interface AiOptions {
   blunder?: number;
   /**
    * When true, blunders and shallow misjudgements may hand the opponent an immediate win
-   * (the station-1 rival only). Default false: the AI always takes an immediate win, and never
+   * (the easiest level). Default false: the AI always takes an immediate win, and never
    * plays a move after which the opponent can win at once when a safer move exists. Blunders
    * are then drawn from the safe moves only.
    */
@@ -98,16 +99,8 @@ export class Searcher {
   private deadline = Infinity;
   aborted = false;
 
-  /**
-   * @param maxTableSize transposition table cap
-   * @param winBonus optional extra value for a finished game, added on top of
-   *   the win/loss score. Used by layers that care HOW a game is won (e.g.
-   *   petals in Hanamichi). Positive = good for the winner of `state`.
-   */
-  constructor(
-    private readonly maxTableSize = 2_000_000,
-    private readonly winBonus?: (state: GameState) => number,
-  ) {}
+  /** @param maxTableSize transposition table cap */
+  constructor(private readonly maxTableSize = 2_000_000) {}
 
   reset(): void {
     this.tt.clear();
@@ -117,9 +110,9 @@ export class Searcher {
 
   negamax(state: GameState, depth: number, alpha: number, beta: number, ply: number): number {
     this.nodes++;
-    if (state.win) {
-      // The previous mover won, so the player to move has lost.
-      return -(WIN - ply + (this.winBonus ? this.winBonus(state) : 0));
+    if (state.result) {
+      // A tie scores 0; otherwise the previous mover won, so the player to move has lost.
+      return state.result.winner === null ? 0 : -(WIN - ply);
     }
     if (depth === 0) return evaluate(state, state.current);
     if ((this.nodes & 1023) === 0 && performance.now() > this.deadline) {
@@ -177,7 +170,7 @@ function orderMoves(state: GameState, moves: number[]): number[] {
   if (moves.length <= 1) return moves;
   const scored = moves.map((m) => {
     const next = applyMove(state, m);
-    if (next.win) return { m, s: WIN };
+    if (next.result?.winner) return { m, s: WIN };
     return { m, s: -legalMoves(next).length };
   });
   scored.sort((a, b) => b.s - a.s);
@@ -186,11 +179,6 @@ function orderMoves(state: GameState, moves: number[]): number[] {
 
 const defaultRng = mulberry32(12345);
 
-/**
- * Choose a move for the player to move. Iterative deepening up to
- * `opts.depth` plies (or until `opts.timeMs` elapses). Ties are broken at
- * random with `opts.rng` so games are varied.
- */
 /**
  * One-ply tactics for every legal move: does it win at once, and does it let the opponent win
  * at once (by a formation or by blocking us)?
@@ -201,17 +189,22 @@ export function tactics(state: GameState): { moves: number[]; wins: boolean[]; l
   const losesNext: boolean[] = [];
   for (const m of moves) {
     const next = applyMove(state, m);
-    if (next.win) {
-      wins.push(true);
+    if (next.result) {
+      wins.push(next.result.winner === state.current);
       losesNext.push(false);
       continue;
     }
     wins.push(false);
-    losesNext.push(legalMoves(next).some((r) => applyMove(next, r).win !== null));
+    losesNext.push(legalMoves(next).some((r) => applyMove(next, r).result?.winner === next.current));
   }
   return { moves, wins, losesNext };
 }
 
+/**
+ * Choose a move for the player to move. Iterative deepening up to
+ * `opts.depth` plies (or until `opts.timeMs` elapses). Equal scores are broken at
+ * random with `opts.rng` so games are varied.
+ */
 export function chooseMove(state: GameState, opts: AiOptions, searcher = new Searcher()): AiResult {
   const rng = opts.rng ?? defaultRng;
   const moves = legalMoves(state);
@@ -239,9 +232,10 @@ export function chooseMove(state: GameState, opts: AiOptions, searcher = new Sea
   searcher.reset();
   searcher.setDeadline(opts.timeMs ?? Infinity);
   let bestScores: number[] = moves.map((m) => evaluate(applyMove(state, m), state.current));
-  // Immediate wins are always visible, even at depth 0.
+  // Immediate wins (and ties) are always visible, even at depth 0.
   moves.forEach((m, i) => {
-    if (applyMove(state, m).win) bestScores[i] = WIN - 1;
+    const r = applyMove(state, m).result;
+    if (r) bestScores[i] = r.winner === null ? 0 : WIN - 1;
   });
   let completedDepth = 0;
   for (let d = 1; d <= opts.depth; d++) {
@@ -259,11 +253,17 @@ export function chooseMove(state: GameState, opts: AiOptions, searcher = new Sea
   return { index, score: max, depth: completedDepth, nodes: searcher.nodes, moves, scores: bestScores };
 }
 
-/** Preset difficulty levels for the UI. */
-export type Difficulty = 'novice' | 'apprentice' | 'master';
+/** Difficulty levels offered in the game. Calibrated by simulation: see docs/PROCESS.md. */
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
+export const DIFFICULTIES: readonly Difficulty[] = ['easy', 'medium', 'hard'];
+
+export function isDifficulty(x: unknown): x is Difficulty {
+  return typeof x === 'string' && (DIFFICULTIES as readonly string[]).includes(x);
+}
 
 export const DIFFICULTY: Record<Difficulty, AiOptions> = {
-  novice: { depth: 1, blunder: 0.35, careless: true },
-  apprentice: { depth: 4, blunder: 0.08 },
-  master: { depth: 16, timeMs: 900 },
+  easy: { depth: 1, blunder: 0.35, careless: true },
+  medium: { depth: 3, blunder: 0.1 },
+  hard: { depth: 5 },
 };
