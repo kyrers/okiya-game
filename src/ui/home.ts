@@ -1,4 +1,4 @@
-/** The home screen: the two halves again, the garden on the seam, and the way into a game. */
+/** The home screen: the two halves again, the way into a game, and the garden on the seam. */
 import { newGame } from '../engine/garden';
 import type { MatchView } from '../game/match';
 import { icon } from './art';
@@ -21,15 +21,17 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
       <h1 class="wordmark"><span>Paper</span> <span>Garden</span></h1>
       <p class="home-sub">Game design by <span class="nowrap credit-name">Bruno Cathala</span></p>
     </section>
-    <div class="seam home-seam"></div>
     <div class="home-actions-wrap"><section class="home-actions">
-      ${resumable ? `<button type="button" class="btn primary big" data-go="continue">${icon('play')}<span><span class="btn-title">Continue</span><span class="btn-sub">${summary(saved!)}</span></span></button>` : ''}
-      <button type="button" class="btn ${resumable ? 'secondary' : 'primary'} big" data-go="new">${resumable ? icon('restart') : icon('play')}<span><span class="btn-title">New game</span><span class="btn-sub">Against the computer or a&nbsp;friend</span></span></button>
+      <div class="home-buttons">
+        ${resumable ? `<button type="button" class="btn primary big" data-go="continue">${icon('play')}<span><span class="btn-title">Continue</span><span class="btn-sub">${summary(saved!)}</span></span></button>` : ''}
+        <button type="button" class="btn ${resumable ? 'secondary' : 'primary'} big" data-go="new">${resumable ? icon('restart') : icon('play')}<span><span class="btn-title">New game</span><span class="btn-sub">Against the computer or a&nbsp;friend</span></span></button>
+      </div>
       <nav class="home-links" aria-label="More">
         <button type="button" class="link-btn" data-go="rules">${icon('book')} How to play</button>
         <button type="button" class="link-btn" data-go="settings">${icon('sliders')} Settings</button>
       </nav>
-    </section></div>`;
+    </section></div>
+    <div class="seam home-seam"></div>`;
   // A different garden each visit, all sixteen tiles face up.
   const garden = staticGarden(newGame(Math.floor(Math.random() * 2 ** 31)));
   el.querySelector('.home-seam')!.append(garden);

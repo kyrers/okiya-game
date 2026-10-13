@@ -49,6 +49,10 @@ export class GameScreen {
   private readonly label: HTMLElement;
   private readonly undoBtn: HTMLButtonElement;
   private readonly live: HTMLElement;
+  /** The end of a game's buttons, in a card over the middle of the garden. */
+  private readonly endCard: HTMLElement;
+  private endCardHtml = '';
+  private endCardTimer = 0;
   private animating = false;
   private thinking = false;
   private guardUntil = 0;
@@ -99,7 +103,12 @@ export class GameScreen {
     this.live = this.el.querySelector('[aria-live]')!;
     this.seats = { 1: this.el.querySelector('.seat-1')!, 2: this.el.querySelector('.seat-2')! };
     this.board = new BoardView({ onTake: (i) => this.humanTake(i), onDenied: (i) => this.denied(i) });
-    this.el.querySelector('.seam')!.append(this.board.el);
+    this.endCard = document.createElement('div');
+    this.endCard.className = 'end-card';
+    this.endCard.setAttribute('role', 'group');
+    this.endCard.setAttribute('aria-label', 'Game over');
+    this.endCard.hidden = true;
+    this.el.querySelector('.seam')!.append(this.board.el, this.endCard);
     this.undoBtn.addEventListener('click', () => this.undo());
     this.el.querySelector('.menu-btn')!.addEventListener('click', () => this.deps.openMenu());
     this.el.addEventListener('click', (ev) => {
@@ -348,7 +357,7 @@ export class GameScreen {
     const active = document.activeElement;
     const inDialog = active?.closest('dialog');
     if (inDialog) return;
-    const btn = this.el.querySelector<HTMLButtonElement>('.seat [data-action]');
+    const btn = this.endCard.querySelector<HTMLButtonElement>('[data-action]');
     if (btn) {
       if (active === document.body || this.el.contains(active)) btn.focus({ preventScroll: true });
       return;
@@ -419,7 +428,21 @@ export class GameScreen {
     if (m.ties > 0 && this.setup.mode !== 'single') parts.push(`${m.ties} ${m.ties === 1 ? 'tie' : 'ties'}`);
     this.label.innerHTML = parts.join(' · ');
     this.renderSeats();
+    this.renderEndCard();
     this.updateUndo();
+  }
+
+  /** Kept as it is while its buttons are the same, so it comes in once, after the brush stroke. */
+  private renderEndCard(): void {
+    const html = this.view.game.result ? this.actionsHtml() : '';
+    if (html === this.endCardHtml) return;
+    this.endCardHtml = html;
+    this.endCard.innerHTML = html;
+    this.endCard.hidden = !html;
+    // Not to be pressed before it is seen: a quick second tap on the garden's middle would land on it.
+    window.clearTimeout(this.endCardTimer);
+    this.endCard.classList.toggle('arriving', !!html);
+    if (html) this.endCardTimer = window.setTimeout(() => this.endCard.classList.remove('arriving'), END_CARD_IN_MS);
   }
 
   private updateUndo(): void {
@@ -759,10 +782,8 @@ export class GameScreen {
       result = 'Tie';
       reason = reasonWords('full', '') + (!m.over && m.nextFirst === p ? `&nbsp;· ${verb(name, 'you open&nbsp;next', 'opens&nbsp;next')}` : '');
     }
-    const actions = this.actionSeat() === p ? this.actionsHtml() : '';
     return `<div class="say-over${m.over ? ' match-over' : ''}">
         <div class="say-text"><p class="say-result${quiet ? ' quiet' : ''}">${result}</p>${reason ? `<p class="say-reason">${reason}</p>` : ''}</div>
-        ${actions}
       </div>`;
   }
 
@@ -789,14 +810,6 @@ export class GameScreen {
     let s = newGameFromTiles(prev.tiles, prev.first);
     for (const m of prev.moves) s = applyMove(s, m);
     return s.result;
-  }
-
-  /** Where the end-of-game buttons go: the person's seat against the computer, else the next opener's. */
-  private actionSeat(): Player {
-    const m = this.view.match;
-    if (this.setup.opponent === 'computer') return HUMAN_SEAT;
-    if (m.over) return m.champion ? opponent(m.champion) : 1;
-    return m.nextFirst;
   }
 
   private actionsHtml(): string {
@@ -852,6 +865,8 @@ interface Fit {
 }
 
 const UNDO_GUARD_MS = 400;
+/** The end card's delay and entrance (styles.css, .end-card), after which it can be pressed. */
+const END_CARD_IN_MS = 1150;
 const NOTE_RANDOM = 'Chosen at random to open the&nbsp;match.';
 const NOTE_RANDOM_AWAY = 'was chosen at random to open the&nbsp;match.';
 

@@ -305,6 +305,34 @@ button:disabled { cursor: default; }
   60% { translate: 3% 0; }
 }
 
+/* The end of a game: its buttons in a card over the middle of the garden, dyed in the winner's
+   colour (ink for a tie), coming in once the brush stroke is drawn. */
+.seam > .board, .seam > .end-card { grid-area: 1 / 1; }
+.end-card {
+  --card-dye: var(--ink);
+  position: relative;
+  z-index: 5;
+  max-width: calc(100% - 2 * var(--gutter));
+  padding: 0.75em;
+  border-radius: 0.9em;
+  font-size: clamp(0.9375rem, 0.8rem + 0.4vw, 1.125rem);
+  color: var(--cream);
+  background: var(--cloth) 0 0 / 256px 256px, var(--card-dye);
+  background-blend-mode: soft-light, normal;
+  box-shadow: 0 0 0 1px rgba(251, 243, 228, 0.18) inset, 0 22px 48px -16px rgba(0, 0, 0, 0.75), 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: card-in 0.32s cubic-bezier(0.2, 0.7, 0.2, 1) 0.85s both;
+}
+.end-card[hidden] { display: none; }
+.end-card.arriving { pointer-events: none; }
+.game[data-turn='1'] .end-card { --card-dye: var(--verm); }
+.game[data-turn='2'] .end-card { --card-dye: var(--indi); }
+.end-card .say-actions { justify-content: center; }
+.end-card .btn { font-size: 1em; min-height: max(44px, 3em); }
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
 .board-brush {
   position: absolute;
   inset: 0;
@@ -443,7 +471,6 @@ button:disabled { cursor: default; }
 .say-points { color: var(--gold); font-weight: 700; }
 .seat-1 .say-points { color: var(--cream); }
 .say-actions { display: flex; flex-wrap: wrap; gap: 0.5em; }
-.say-over.match-over .say-actions { flex-basis: 100%; }
 .say-actions .btn .icon { width: 1.25em; height: 1.25em; }
 .say-actions .btn { white-space: nowrap; }
 .seat .btn { font-size: 1em; min-height: max(44px, 3em); }
@@ -529,8 +556,8 @@ button:disabled { cursor: default; }
   );
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: var(--sat) minmax(min-content, 1fr) auto minmax(min-content, 1fr) var(--sab);
-  grid-template-areas: 'st' 'top' 'board' 'bottom' 'sb';
+  grid-template-rows: var(--sat) minmax(min-content, 1fr) auto auto minmax(min-content, 1fr) var(--sab);
+  grid-template-areas: 'st' 'top' 'actions' 'board' 'links' 'sb';
   /* The halves may differ in height; the dyes meet at the garden's centre, which home.ts measures
      into --home-seam. One background, so the weave runs unbroken across the screen. */
   --home-seam: 50%;
@@ -541,7 +568,8 @@ button:disabled { cursor: default; }
   color: var(--cream);
 }
 .home .seam { grid-area: board; padding: 14px 0; }
-.home-actions-wrap { grid-area: bottom; display: flex; }
+/* Portrait: the way into a game above the garden, the other links below it. */
+.home-actions-wrap, .home-actions { display: contents; }
 .home .board { --board: var(--home-board); }
 .home-title {
   grid-area: top;
@@ -564,15 +592,16 @@ button:disabled { cursor: default; }
   text-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
 }
 .home-sub { font-size: 0.9375rem; color: var(--cream-2); max-width: 30ch; text-wrap: balance; margin-top: 0.5em; }
-.home-actions {
+.home-buttons {
+  grid-area: actions;
   display: flex;
   flex-direction: column;
   gap: 10px;
   width: min(100% - 2 * var(--gutter), 420px);
   margin-inline: auto;
-  padding: 6px 0 16px;
+  padding-top: 6px;
 }
-.home-links { display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; }
+.home-links { grid-area: links; align-self: start; display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; padding: 2px var(--gutter) 16px; }
 .home-links .link-btn { font-size: inherit; }
 .link-btn {
   display: inline-flex;
@@ -636,7 +665,11 @@ button:disabled { cursor: default; }
       linear-gradient(to right, var(--verm) 50%, var(--indi) 50%);
   }
   .home .seam { padding: 0 clamp(16px, 3vw, 40px); }
-  .home-actions-wrap { align-items: center; }
+  /* The way into a game starts level with the garden's top edge. */
+  .home-actions-wrap { grid-area: bottom; display: flex; align-items: flex-start; padding-top: max(0px, calc((var(--vh) - var(--sat) - var(--sab) - var(--home-board)) / 2)); }
+  .home-actions { display: flex; flex-direction: column; gap: 10px; margin-inline: auto; }
+  .home-buttons { display: contents; }
+  .home-links { padding: 0; align-self: auto; }
   .home-title { justify-content: center; padding: 16px var(--gutter); gap: 14px; }
   /* Landscape: "Paper" over "Garden" (about 4.1em wide), as large as the column allows. */
   .wordmark { font-size: min(5.5rem, 100cqi / 4.1); }
@@ -645,11 +678,8 @@ button:disabled { cursor: default; }
   /* Two lines, like the wordmark above it: a narrow column cannot be trusted to wrap one line that
      only just fits (WebKit kept it whole, 2 px too wide, at 812 x 414). */
   .home-sub .credit-name { display: block; }
-  .home-actions { justify-content: center; width: min(100% - 2 * var(--gutter), 24em); padding: 16px 0; font-size: clamp(1rem, 0.7rem + 0.45vw, 1.25rem); }
+  .home-actions { width: min(100% - 2 * var(--gutter), 24em); padding: 0 0 16px; font-size: clamp(1rem, 0.7rem + 0.45vw, 1.25rem); }
 }
-
-/* A finished game needs room for its result and buttons: the garden steps back a little. */
-.game.is-over { --seat-min: 10.5rem; }
 
 /* Short screens: tighten the seats so the garden keeps its size. */
 @media (max-height: 760px) and (max-aspect-ratio: 5/4) {
@@ -660,9 +690,9 @@ button:disabled { cursor: default; }
 @media (max-height: 620px) and (max-aspect-ratio: 5/4) {
   :root { --topbar: 3rem; --seat-min: 6.875rem; }
   .seat { --seat-fs: 0.875rem; }
-  .game.is-over { --seat-min: 8.75rem; }
   .say-result { font-size: 1.35em; }
-  .home-actions { font-size: 0.9375rem; gap: 8px; }
+  .home-actions { font-size: 0.9375rem; }
+  .home-buttons { gap: 8px; }
   .btn.big { min-height: 3.5em; }
   .wordmark { font-size: min(3rem, 100cqi / 7.6); }
 }
@@ -672,14 +702,14 @@ button:disabled { cursor: default; }
   .say-tile { width: 3em; height: 3em; }
   .wordmark { font-size: min(9vh, 4rem, 100cqi / 4.1); }
   .btn.big { min-height: 54px; padding: 0.45em 1em; }
-  .home-actions { gap: 6px; padding: 8px 0; font-size: 1rem; }
+  .home-actions { gap: 6px; padding: 0 0 8px; font-size: 1rem; }
   .home-title { gap: 6px; }
   /* Room for a long Continue summary: New game's hint repeats what its sheet shows. */
   .btn.big .btn-sub { font-size: 0.8125em; }
   .btn.big.secondary .btn-sub { display: none; }
 }
 @media (max-height: 340px) and (min-aspect-ratio: 5/4) {
-  .home-actions { padding: 2px 0; }
+  .home-actions { padding: 0 0 2px; }
 }
 @media (min-width: 1100px) and (min-height: 760px) {
   :root { --topbar: 4.25rem; }
@@ -985,6 +1015,13 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; transition-delay: 0s !important; }
 }
 .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; transition-delay: 0s !important; }
+/* No brush stroke to wait for: the end card is there at once. */
+@media (prefers-reduced-motion: reduce) {
+  .end-card { animation-delay: 0s; }
+  .end-card.arriving { pointer-events: auto; }
+}
+.reduce-motion .end-card { animation-delay: 0s; }
+.reduce-motion .end-card.arriving { pointer-events: auto; }
 
 /* Forced colours (Windows High Contrast): the garden is a picture, so it keeps its own colours,
    including the gold ring and shade that tell which tiles may be taken. */

@@ -166,9 +166,13 @@ test.describe('matches', () => {
     const winner = g.final.result!.winner!;
     const loser = winner === 1 ? 2 : 1;
     await expect(page.locator(`.seat-${winner} .seal.won`)).toHaveCount(1);
-    const next = page.locator(`.seat-${loser} [data-action="next"]`);
+    // The buttons are in one card over the garden's middle, not in either half.
+    await expect(page.locator('.seat [data-action]')).toHaveCount(0);
+    const next = page.locator('.seam .end-card [data-action="next"]');
     await expect(next).toBeVisible();
+    await expect(page.locator('.end-card [data-action]')).toHaveCount(1);
     await next.click();
+    await expect(page.locator('.end-card')).toBeHidden();
     await expect(page.locator('.match-label')).toContainText('Game 2');
     await expect(page.locator(`.seat-${loser}.moving`)).toBeVisible();
     await expect(page.locator(`.seat-${loser} .say-note`)).toHaveText('Opens after losing the last game.');
@@ -203,7 +207,8 @@ test.describe('against the computer', () => {
     }
     await expect(page.locator('.game.is-over')).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('.seat-1 .say-result')).toHaveText(/^(You win|You lose|Tie)$/);
-    await expect(page.locator('.seat-1 [data-action="again"]')).toBeVisible();
+    await expect(page.locator('.end-card [data-action="again"]')).toBeVisible();
+    await expect(page.locator('.end-card [data-action="home"]')).toBeVisible();
   });
 
   test('the computer thinks off the main thread: the screen never freezes @perf', async ({ page, browserName }) => {
