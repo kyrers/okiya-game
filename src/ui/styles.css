@@ -305,8 +305,8 @@ button:disabled { cursor: default; }
   60% { translate: 3% 0; }
 }
 
-/* The end of a game: its buttons in a card over the middle of the garden, dyed in the winner's
-   colour (ink for a tie), coming in once the brush stroke is drawn. */
+/* The end of a game: a paper slip over the middle of the garden, sealed with the winner's token,
+   saying who won and how, its buttons in neutral ink; it comes in once the brush stroke is drawn. */
 /* Laid over the garden, never part of the layout: however tall it is, the garden keeps its place. */
 .seam { position: relative; }
 .end-card {
@@ -339,8 +339,7 @@ button:disabled { cursor: default; }
 }
 .end-card[hidden] { display: none; }
 .end-card.arriving { pointer-events: none; }
-.game[data-turn='1'] .end-card { --card-dye: var(--verm); }
-.game[data-turn='2'] .end-card { --card-dye: var(--indi); }
+/* The buttons are the same whoever won: an action is neutral, in ink; only the seal says who. */
 .end-card .card-seal { position: absolute; top: 0; left: 50%; display: flex; transform: translate(-50%, -50%); }
 .end-card .card-seal .token-svg { width: 3em; height: 3em; filter: drop-shadow(0 4px 5px rgba(40, 25, 5, 0.45)); }
 .end-card .card-seal .token-svg + .token-svg { margin-left: -1em; }
