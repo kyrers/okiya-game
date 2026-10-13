@@ -1181,6 +1181,10 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 /* Sheet controls are on paper: ink buttons. */
 .sheet .btn.primary { background: var(--verm); color: var(--cream); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 8px 18px -10px rgba(90, 20, 5, 0.7); }
 .sheet .btn.primary:hover { background: #9e3019; }
+/* In the demonstration the players are Vermilion and Indigo: its Play again is neutral ink, as on
+   the end slip, so it is no one's button. */
+.sheet-demo .btn.primary, .sheet-demo .btn.primary:hover { background: var(--cloth) 0 0 / 256px 256px, var(--ink); background-blend-mode: soft-light, normal; box-shadow: 0 1px 0 rgba(251, 243, 228, 0.22) inset, 0 8px 16px -10px rgba(8, 6, 14, 0.7); }
+.sheet-demo .btn.primary:hover { filter: brightness(1.15); }
 .sheet .btn.ghost { color: var(--ink); background: transparent; border-color: rgba(31, 27, 24, 0.3); }
 .sheet .btn.ghost:hover { background: rgba(31, 27, 24, 0.06); }
 
@@ -1625,7 +1629,7 @@ dialog.sheet.sheet-demo { width: min(100%, 40rem); }
 .mg-open { fill: #fbe7b0; stroke: var(--gold-2); stroke-width: 1.4; }
 .mg-closed { fill: #c6baa6; stroke: rgba(80, 60, 30, 0.3); }
 .mg-taken { fill: var(--gold); }
-.mg-brush { fill: none; stroke: var(--brush-ink); stroke-opacity: 0.7; stroke-width: 7; stroke-linecap: round; }
+.mg-brush { fill: none; stroke: var(--brush-ink); stroke-opacity: 0.85; stroke-width: 1.9; stroke-linecap: round; }
 .rules-row { display: flex; gap: 16px; align-items: center; }
 .rules-row > svg, .rules-row > .eg { flex: none; }
 .rules-row .mini-garden { width: 112px; }
@@ -1637,7 +1641,37 @@ dialog.sheet.sheet-demo { width: min(100%, 40rem); }
 .rules-modes dt { font-weight: 700; }
 .rules-modes dd { margin: 0; color: var(--ink-2); }
 @media (max-width: 420px) { .rules-modes { grid-template-columns: 1fr; } .rules-modes dd { margin-bottom: 6px; } }
-.rules-aside { font-size: 0.9375rem; color: var(--ink-2); padding-left: 0.9em; box-shadow: inset 1px 0 0 rgba(80, 60, 30, 0.35); }
+/* A note folded under a rule: the rule stays in sight, its fine print one press away. The summary
+   is a 44px row in ink 2 with a drawn chevron that turns down when the note is open; the note
+   hangs from a warm hairline under the chevron. */
+.rules-note { margin-block: -8px -4px; }
+.rules-note summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 44px;
+  padding-right: 6px;
+  margin-left: -6px;
+  border-radius: 9px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink-2);
+  list-style: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.rules-note summary::-webkit-details-marker { display: none; }
+.rules-note summary svg { flex: none; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.22s var(--ease-out); }
+.rules-note[open] summary svg { transform: rotate(90deg); }
+.rules-note summary span { text-decoration: underline; text-decoration-color: rgba(78, 68, 58, 0.35); text-decoration-thickness: 1px; text-underline-offset: 0.2em; }
+@media (hover: hover) {
+  .rules-note summary:hover { color: var(--ink); }
+  .rules-note summary:hover span { text-decoration-color: currentColor; }
+}
+.rules-note-body { display: flex; flex-direction: column; gap: 8px; margin: 2px 0 4px 4px; padding-left: calc(0.9em + 1px); box-shadow: inset 1px 0 0 rgba(80, 60, 30, 0.35); font-size: 0.9375rem; color: var(--ink-2); }
 
 .eg { display: flex; gap: 10px; align-items: flex-start; }
 .eg-board { display: grid; grid-template-columns: repeat(4, 34px); gap: 3px; padding: 4px; border-radius: 8px; background: var(--paper-grain) 0 0 / 128px 128px, var(--paper-3); background-blend-mode: soft-light, normal; box-shadow: 0 5px 9px -4px rgba(40, 25, 5, 0.45), 0 1px 2px rgba(40, 25, 5, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(90, 64, 30, 0.25); }
@@ -1650,7 +1684,30 @@ dialog.sheet.sheet-demo { width: min(100%, 40rem); }
 .eg-closed::after { content: ''; position: absolute; inset: 0; background: rgba(70, 54, 36, 0.32); }
 .eg-taken { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--ink-3); }
 
-.garden-key { display: grid; grid-template-columns: auto repeat(4, minmax(0, 1fr)); gap: 6px; align-items: center; }
+/* The names key, beside the matching rule: the eight pictures as the tiles draw them, each over its
+   name, plants on one line and symbols on the next, in a tray pressed into the page. Its line
+   labels sit above the pictures in a narrow sheet and to their left in a wide one. */
+.key-names {
+  container-type: inline-size;
+  display: grid;
+  gap: 14px;
+  padding: 10px 12px 12px;
+  border-radius: var(--radius);
+  background: var(--paper-grain) 0 0 / 256px 256px, var(--paper-2);
+  background-blend-mode: soft-light, normal;
+  box-shadow: inset 0 1px 3px rgba(80, 60, 30, 0.18), inset 0 0 0 1px rgba(80, 60, 30, 0.1);
+}
+.key-names-row { display: grid; gap: 4px; }
+.key-names-label { font-size: 0.875rem; font-weight: 700; line-height: 1.2; color: var(--ink-2); }
+.key-names ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.key-names li { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.875rem; line-height: 1.2; text-align: center; color: var(--ink); text-wrap: balance; }
+.key-names .glyph { width: 2.75em; height: 2.75em; vertical-align: top; }
+@container (min-width: 27rem) {
+  .key-names-row { grid-template-columns: 4.5rem minmax(0, 1fr); align-items: center; gap: 12px; }
+}
+
+/* The full key closes the sheet as a reference: tiles about the size of the garden's own on a phone. */
+.garden-key { display: grid; grid-template-columns: auto repeat(4, minmax(0, 1fr)); gap: 6px; align-items: center; max-width: 22rem; }
 .key-head { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.75rem; color: var(--ink-2); text-align: center; }
 .key-head .glyph { width: 1.8em; height: 1.8em; }
 .key-tile { aspect-ratio: 1; border-radius: 6px; overflow: hidden; background: var(--tile-face); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 0 0 1px rgba(80, 60, 30, 0.16) inset, 0 2px 3px rgba(60, 40, 15, 0.22); }

@@ -403,7 +403,15 @@ test.describe('sheets and keys', () => {
     await page.getByRole('button', { name: 'How to play' }).click();
     const sheet = page.getByRole('dialog', { name: 'How to play' });
     await expect(sheet.getByRole('heading', { name: 'A full garden' })).toBeAttached();
-    await expect(sheet.getByText('this is the ruling of the designer')).toBeAttached();
+    // The plants and symbols are named beside the matching rule, not only in the key at the end.
+    await expect(sheet.locator('.key-names li')).toHaveText(['Maple', 'Cherry', 'Pine', 'Iris', 'Rising sun', 'Poem', 'Bird', 'Rain']);
+    // The tie's fine print is folded under its one-line rule, one press away.
+    const ruling = sheet.getByText('this is the ruling of the designer');
+    await expect(ruling).toBeAttached();
+    await expect(ruling).toBeHidden();
+    await sheet.locator('summary', { hasText: 'Whose rule this is, and who opens next' }).click();
+    await expect(ruling).toBeVisible();
+    await expect(sheet.getByText('the player who did not open the tied game opens the next')).toBeVisible();
     await sheet.locator('.garden-key').scrollIntoViewIfNeeded();
     await expect(sheet.locator('.garden-key .key-tile')).toHaveCount(16);
     await page.keyboard.press('Escape');

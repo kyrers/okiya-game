@@ -214,12 +214,12 @@ Two saturated dyes, each with a lit and a sunk state, over a warm paper-and-ink 
 ### Tertiary
 - **Seal Gold** (gold): the marks the game makes: the ring on tiles that may be taken, the ring on the last token placed, won-game seals, earned points, the outer-ring cells in the opening diagram, and the keyboard focus ring on the dyes.
 - **Deep Gold** (gold-2): gold's outline where gold sits on paper (ring diagram strokes, open cells in rules diagrams).
-- **Tile pigments** (maple, cherry, cherry-2, pine, iris): belong to the garden tile art and its glyphs. They appear only inside tile art, inline tile glyphs and the rules key.
+- **Tile pigments** (maple, cherry, cherry-2, pine, iris): belong to the garden tile art and its glyphs. They appear only inside tile art, inline tile glyphs and the rules' two keys.
 
 ### Neutral
 - **Garden Paper** (paper): sheets, the order card, primary buttons on the dyes, choice cards and name fields.
 - **Lit Paper** (paper-lit): hover state of the paper button.
-- **Paper Tray** (paper-2): the segmented control's tray and the opening-ring card well.
+- **Paper Tray** (paper-2): the segmented control's tray, the opening-ring card well and the rules' names key.
 - **Board Paper** (paper-3): the garden board, sheet scrollbars, rules diagram boards.
 - **Tile Face** (tile-face): the face of every garden tile cell, the flying tile, rules diagram cells.
 - **Token Well** (token-well): a cell whose tile has been taken and now holds a token; drawn inset.
@@ -342,6 +342,12 @@ A sheet (600px centred, docked on phones) in which the engine plays a whole game
 - **Time:** timers only, one at a time; nothing while the tab is hidden, nothing at all once the sheet is closed. Under reduced motion it waits for Next (Play stays offered) and no tile flies.
 
 **The New game sheet** asks only what every game needs in view: who to play (the computer or a friend) and then the level or the two names. The kind of match waits behind a Match row, closed each time the sheet opens, which names the current choice ("Single game", "First to 20 points"), so a remembered match is never hidden. Who opens is said once, in the footer just above Start, so it is in view without scrolling on every phone; it says only what applies (the colour against the computer; the loser's turn to open only when there is a next game). On a phone held sideways, where Start sits on the band, the Match row and the note take the right-hand column. On short portrait phones the form draws closer so the three levels show whole above the footer.
+
+### Rules sheet
+How to play reads top to bottom as the rules run, each rule beside its diagram, and names a thing where a newcomer first needs its name.
+- **Names key:** right after the matching rule's example (a tile must share the plant or the symbol of the one just taken), the eight pictures as the tiles draw them, each over its name in caption type, plants on one line and symbols on the next. It sits in a paper-tray well (paper-2 with the paper grain, 12px radius, pressed in by a soft inset shadow, never raised: a reference, not a control). Its line labels (bold, ink 2) sit above the pictures in a narrow sheet and to their left once the well is 27rem wide.
+- **Full key:** the sixteen tiles close the sheet as a reference, at most 22rem wide.
+- **Folded note:** fine print under a rule (whose ruling a tie is, who opens after one) is a `<details>` note, the rule itself left in sight. The summary is a 44px row in ink 2, 600 weight, faintly underlined, led by a drawn chevron (24px grid, 1.8 stroke) that turns down when the note opens; the note hangs from a warm hairline under the chevron; focus is the vermilion ring of paper.
 
 ### Inputs / Fields
 - **Segmented control:** paper-tray with 4px padding and 12px radius; options 44px tall, bold, ink-2; the selected option becomes paper with a sunk-vermilion label, a small shadow and a 2px vermilion underline inset.

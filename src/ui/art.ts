@@ -106,13 +106,17 @@ export function miniGarden(cells: string, label: string, stroke?: number[]): str
   });
   if (stroke && stroke.length) {
     const pt = (i: number) => [4 + (i % 4) * size + (size - 3) / 2, 4 + Math.floor(i / 4) * size + (size - 3) / 2];
+    // As the game draws a win: a thin loop around the winning tokens, never a stroke through them.
     if (stroke.length === 4 && isSquare(stroke)) {
       const [x0, y0] = pt(Math.min(...stroke));
-      parts.push(`<rect class="mg-brush" x="${x0 - 9}" y="${y0 - 9}" width="${size + 18}" height="${size + 18}" rx="14"/>`);
+      parts.push(`<circle class="mg-brush" cx="${x0 + size / 2}" cy="${y0 + size / 2}" r="${size * 1.02}"/>`);
     } else {
       const [x1, y1] = pt(stroke[0]);
       const [x2, y2] = pt(stroke[stroke.length - 1]);
-      parts.push(`<line class="mg-brush" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`);
+      const r = size * 0.47;
+      const len = Math.hypot(x2 - x1, y2 - y1);
+      const angle = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
+      parts.push(`<rect class="mg-brush" x="${-r}" y="${-r}" width="${len + 2 * r}" height="${2 * r}" rx="${r}" transform="translate(${x1} ${y1}) rotate(${angle})"/>`);
     }
   }
   return `<svg class="mini-garden" viewBox="0 0 105 105" role="img" aria-label="${label}">${parts.join('')}</svg>`;
