@@ -144,6 +144,7 @@ Answers the client gave during the session (structured questions):
 | With Reduce Motion, a style change applies at once and starts no transition | `e2e/names.spec.ts` | included above, every profile |
 | Two players have no Undo, on screen or in the menu; the menu says Home | `e2e/game.spec.ts` | included above |
 | Real phone | the client, on their own phone and a desktop browser over the local network | three passes: "looks ok mostly" (two findings), "found problems" (two), "looks better in general" (the note, undo, the Home label, long names); every finding fixed and covered by a test (Defects, above) |
+| Real phone, final build | the client, on their Android phone, on Vercel's preview of pull request #1 (the same files as the tested build); a shared coworking network blocked the local test host, so the preview replaced it | 1, the opener's note with a 16-letter name in portrait and the header through a game's end: works; 2, rotating mid-game: works (no iPhone to hand, so Safari's toolbars rest on the WebKit tests); 3, the New game sheet held sideways: works; 4, undo against the computer, none between two players, "Home" in the menu: works; 5, reduced motion: works; 6, installed to the home screen (in Brave, Chromium's engine): opens as its own app and stays clear of the status and navigation bars, which Android fills with the game's indigo theme colour; 7, offline after one visit: "seems ok"; 8, the screen kept awake during a game: "seems ok" |
 | Offline: after one visit a game against the computer plays with the network off | `e2e/ship.spec.ts` | passes (desktop Chrome, Pixel 7, Android 360) |
 | Installable to the home screen: Chrome's own installability check | `e2e/ship.spec.ts` (`Page.getInstallabilityErrors`, `Page.getAppManifest`) | no installability errors, no manifest errors (desktop and both Android profiles) |
 | Screen kept awake during a game, released on leaving it | `e2e/ship.spec.ts` | lock acquired at game start and released on Home (desktop and both Android profiles) |
@@ -222,7 +223,9 @@ changes the code:
   tested, three times: the first pass found the clipped "g" and the landscape rules sheet; the
   second, the cramped landscape New game sheet and the cut-off opener note; the third, the note
   now hidden, undo between two players, the Home label and long names. All are fixed and each is
-  covered by a test that fails on the old code or the old sizes. Offline play, the home-screen
+  covered by a test that fails on the old code or the old sizes. The final build was then checked
+  on the client's Android phone through Vercel's preview of the pull request (eight checks, in
+  the verification table); a tablet check by the person who will play it is still to come. Offline play, the home-screen
   install and the wake lock need a secure context, which a plain-http LAN address is not; they
   are verified in Chrome on localhost (a secure context) and behave the same on the https site.
 - **Sound on iOS** follows the ringer switch, as Web Audio does in Safari.
