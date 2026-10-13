@@ -156,7 +156,7 @@ export async function layoutProblems(page: Page): Promise<string[]> {
       }
     }
     const targets = dialog
-      ? dialog.querySelectorAll('button, .seg-opt, .choice, .toggle-row, .name-field')
+      ? dialog.querySelectorAll('button:not([inert] *), .seg-opt, .choice, .toggle-row, .name-field')
       : document.querySelectorAll('.screen button:not([aria-hidden="true"] *):not([aria-hidden="true"]):not(.is-over .cell)');
     for (const el of targets) {
       if (!visible(el)) continue;

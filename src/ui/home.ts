@@ -10,6 +10,7 @@ export interface HomeActions {
   continueMatch(): void;
   newMatch(): void;
   rules(): void;
+  demo(): void;
   settings(): void;
 }
 
@@ -28,6 +29,7 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
       </div>
       <nav class="home-links" aria-label="More">
         <button type="button" class="link-btn" data-go="rules">${icon('book')} How to play</button>
+        <button type="button" class="link-btn" data-go="demo">${icon('watch')} Watch a game</button>
         <button type="button" class="link-btn" data-go="settings">${icon('sliders')} Settings</button>
       </nav>
     </section></div>
@@ -87,6 +89,7 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
     if (go === 'continue') actions.continueMatch();
     else if (go === 'new') actions.newMatch();
     else if (go === 'rules') actions.rules();
+    else if (go === 'demo') actions.demo();
     else if (go === 'settings') actions.settings();
   });
   return el;

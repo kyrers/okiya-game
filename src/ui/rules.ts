@@ -3,7 +3,7 @@
  * designer's ruling for a full garden, the match formats and a key of the sixteen tiles.
  */
 import { parseTile, sharesElement } from '../engine/garden';
-import { miniGarden, tokenSvg } from './art';
+import { icon, miniGarden, tokenSvg } from './art';
 import { gardenKeyHtml, symGlyph, tileLabel, tileSvg, vegGlyph } from './tileArt';
 
 /** The constraint example: a real position, reached by taking Ps, Pb, Mb, then Mr (rules.test.ts). */
@@ -39,6 +39,7 @@ function exampleBoard(): string {
 export function rulesHtml(): string {
   return `
   <div class="rules">
+    <div class="rules-watch"><button type="button" class="btn ghost" data-go="demo">${icon('watch')} Watch a game</button><span>A whole game, played move by move, with what each player may take.</span></div>
     <p class="rules-lede">Two players take turns taking tiles from a garden of sixteen and putting their own tokens in their place. The tile you take decides what your opponent may take next.</p>
 
     <h3>How to win</h3>

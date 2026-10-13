@@ -46,7 +46,7 @@ export function orderHtml(t: Tile): string {
 
 /** A tile word in bold after its glyph; only the glyph and the first word never part ("rising sun"
  *  may still break before "sun" in a narrow card). */
-function glyphWords(glyph: string, words: string): string {
+export function glyphWords(glyph: string, words: string): string {
   const [first, ...rest] = words.split(' ');
   return `<b class="w-words"><span class="w">${glyph}${first}</span>${rest.length ? ` ${rest.join(' ')}` : ''}</b>`;
 }

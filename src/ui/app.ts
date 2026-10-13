@@ -1,6 +1,7 @@
 /** The app shell: switches between home and the game, and owns the sheets and saved state. */
 import { restore, startMatch, type MatchView } from '../game/match';
 import { installSprite } from './art';
+import { Demo } from './demo';
 import { GameScreen } from './game';
 import { homeScreen } from './home';
 import { menuList, settingsPanel, setupForm, startButton, type MenuItem } from './panels';
@@ -65,6 +66,7 @@ export class App {
       continueMatch: () => this.continueMatch(),
       newMatch: () => this.openSetup(),
       rules: () => this.openRules(),
+      demo: () => this.openDemo(),
       settings: () => this.openSettings(),
     });
     this.mount(el);
@@ -110,7 +112,7 @@ export class App {
     this.sheet = null;
   }
 
-  private open(title: string, body: Node | string, className?: string, footer?: Node): Sheet {
+  private open(title: string, body: Node | string, className?: string, footer?: Node, onClose?: () => void): Sheet {
     this.closeSheet();
     const s = openSheet({
       title,
@@ -118,6 +120,7 @@ export class App {
       className,
       footer,
       onClose: () => {
+        onClose?.();
         if (this.sheet === s) this.sheet = null;
         // Moves made while the sheet was open were not heard (the game behind it was inert).
         this.game?.reannounce();
@@ -144,7 +147,30 @@ export class App {
   }
 
   private openRules(): void {
-    this.open('How to play', rulesHtml(), 'sheet-rules');
+    const rules = this.open('How to play', rulesHtml(), 'sheet-rules');
+    // Watch a game, from the rules: it opens over them, and closing it brings them back as they were.
+    rules.body.addEventListener('click', (ev) => {
+      if (!(ev.target as Element).closest('[data-go="demo"]')) return;
+      rules.dialog.classList.add('is-behind');
+      const demo = new Demo();
+      openSheet({
+        title: 'Watch a game',
+        body: demo.el,
+        className: 'sheet-demo',
+        onClose: () => {
+          demo.destroy();
+          rules.dialog.classList.remove('is-behind');
+        },
+      });
+      demo.start();
+    });
+  }
+
+  /** Watch a game: the engine plays a whole game, slowly, saying what happens. */
+  private openDemo(): void {
+    const demo = new Demo();
+    this.open('Watch a game', demo.el, 'sheet-demo', undefined, () => demo.destroy());
+    demo.start();
   }
 
   private openSettings(): void {

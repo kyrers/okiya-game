@@ -2,7 +2,7 @@
  * The garden: 16 buttons that keep their DOM nodes across renders, so moves can animate and keyboard
  * focus survives. Only cells whose content changed are rewritten.
  */
-import { CELL_COUNT, colOf, rowOf, tileCode, type GameState, type Player } from '../engine/garden';
+import { CELL_COUNT, colOf, rowOf, tileCode, type GameState, type Player, type Tile } from '../engine/garden';
 import { tokenSvg } from './art';
 import { tileLabel, tileSvg } from './tileArt';
 import { possessive } from './words';
@@ -79,6 +79,11 @@ export class BoardView {
 
   cell(index: number): HTMLButtonElement {
     return this.cells[index];
+  }
+
+  /** Lets go of what the garden watches (its size, for the brush stroke). */
+  destroy(): void {
+    this.resize?.disconnect();
   }
 
   render(r: BoardRender): void {
@@ -255,6 +260,50 @@ export class BoardView {
       shape.animate([{ strokeDashoffset: length }, { strokeDashoffset: 0 }], { duration: 650, delay: 180, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' });
     }
   }
+}
+
+/**
+ * The taken tile lifts out of the garden and lands on `target` (where the next player reads it), or
+ * rises and fades when there is none. `host` holds the flying tile: the page, or an open dialog,
+ * which sits in the top layer above anything appended to the page.
+ */
+export function flyTile(from: DOMRect, tile: Tile, target: HTMLElement | null, host: HTMLElement = document.body): Promise<void> {
+  const fly = document.createElement('div');
+  fly.className = 'flyer';
+  fly.innerHTML = tileSvg(tile);
+  Object.assign(fly.style, { left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px` });
+  host.append(fly);
+  let frames: Keyframe[];
+  if (target && target.getBoundingClientRect().width > 0) {
+    const to = target.getBoundingClientRect();
+    const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+    const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+    const sc = to.width / from.width;
+    target.style.visibility = 'hidden';
+    frames = [
+      { transform: 'translate(0,0) scale(1) rotate(0deg)', boxShadow: '0 2px 4px rgba(0,0,0,.2)' },
+      { transform: 'translate(0,-8px) scale(1.08) rotate(-2deg)', boxShadow: '0 18px 30px rgba(0,0,0,.35)', offset: 0.22 },
+      { transform: `translate(${dx}px,${dy}px) scale(${sc}) rotate(0deg)`, boxShadow: '0 2px 4px rgba(0,0,0,.25)' },
+    ];
+  } else {
+    frames = [
+      { transform: 'translate(0,0) scale(1)', opacity: 1 },
+      { transform: 'translate(0,-14px) scale(1.08)', opacity: 0 },
+    ];
+  }
+  const anim = fly.animate(frames, { duration: target ? 520 : 360, easing: 'cubic-bezier(.22,.8,.24,1)', fill: 'forwards' });
+  return new Promise((resolve) => {
+    let guard = 0;
+    const done = () => {
+      window.clearTimeout(guard);
+      fly.remove();
+      if (target) target.style.visibility = '';
+      resolve();
+    };
+    anim.onfinish = done;
+    anim.oncancel = done;
+    guard = window.setTimeout(done, 900); // never leave the board locked
+  });
 }
 
 /** A static garden (home screen): every tile face up, nothing to take. */

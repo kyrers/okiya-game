@@ -17,8 +17,8 @@ import {
 } from '../engine/garden';
 import { computerMove } from '../game/aiClient';
 import { COMPUTER_SEAT, HUMAN_SEAT, isComputer, nextGame, play, startMatch, undo, type MatchView } from '../game/match';
-import { icon, tokenSvg } from './art';
-import { BoardView } from './board';
+import { icon, ringDiagram, tokenSvg } from './art';
+import { BoardView, flyTile } from './board';
 import { motionReduced, type Settings } from './prefs';
 import { soundDenied, soundEnd, soundLift, soundPlace } from './sound';
 import { tileLabel, tileSvg } from './tileArt';
@@ -370,40 +370,7 @@ export class GameScreen {
   /** The taken tile lifts out of the garden and lands where the next player reads it. */
   private fly(from: DOMRect, tile: Tile, target: HTMLElement | null): Promise<void> {
     if (motionReduced(this.deps.settings()) || from.width === 0) return Promise.resolve();
-    const fly = document.createElement('div');
-    fly.className = 'flyer';
-    fly.innerHTML = tileSvg(tile);
-    Object.assign(fly.style, { left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px` });
-    document.body.append(fly);
-    let frames: Keyframe[];
-    if (target && target.getBoundingClientRect().width > 0) {
-      const to = target.getBoundingClientRect();
-      const dx = to.left + to.width / 2 - (from.left + from.width / 2);
-      const dy = to.top + to.height / 2 - (from.top + from.height / 2);
-      const sc = to.width / from.width;
-      target.style.visibility = 'hidden';
-      frames = [
-        { transform: 'translate(0,0) scale(1) rotate(0deg)', boxShadow: '0 2px 4px rgba(0,0,0,.2)' },
-        { transform: 'translate(0,-8px) scale(1.08) rotate(-2deg)', boxShadow: '0 18px 30px rgba(0,0,0,.35)', offset: 0.22 },
-        { transform: `translate(${dx}px,${dy}px) scale(${sc}) rotate(0deg)`, boxShadow: '0 2px 4px rgba(0,0,0,.25)' },
-      ];
-    } else {
-      frames = [
-        { transform: 'translate(0,0) scale(1)', opacity: 1 },
-        { transform: 'translate(0,-14px) scale(1.08)', opacity: 0 },
-      ];
-    }
-    const anim = fly.animate(frames, { duration: target ? 520 : 360, easing: 'cubic-bezier(.22,.8,.24,1)', fill: 'forwards' });
-    return new Promise((resolve) => {
-      const done = () => {
-        fly.remove();
-        if (target) target.style.visibility = '';
-        resolve();
-      };
-      anim.onfinish = done;
-      anim.oncancel = done;
-      window.setTimeout(done, 900); // never leave the board locked
-    });
+    return flyTile(from, tile, target);
   }
 
   /* ---------- rendering ---------- */
@@ -566,7 +533,7 @@ export class GameScreen {
     const tile: Tile = { veg: 'cherry', sym: 'sun' };
     return [
       {
-        mover: `<div class="say-order"><span class="say-tile ring">${ringIcon()}</span><p class="say-what">Take any tile on the <b>outer ring</b></p></div><p class="say-note">${NOTE_RANDOM}</p>`,
+        mover: `<div class="say-order"><span class="say-tile ring">${ringDiagram()}</span><p class="say-what">Take any tile on the <b>outer ring</b></p></div><p class="say-note">${NOTE_RANDOM}</p>`,
         waiting: `<p class="say-wait">${waitWords}</p><p class="say-note say-note-away">${awayWho} ${NOTE_RANDOM_AWAY}</p>`,
       },
       {
@@ -740,7 +707,7 @@ export class GameScreen {
             ? `${only} a tile on the <b>outer ring</b>`
             : `Take any tile on the <b>outer ring</b>`;
         return `<div class="say-order${computer ? ' thinking' : ''}">
-            <span class="say-tile ring" aria-hidden="true">${ringIcon()}</span>
+            <span class="say-tile ring" aria-hidden="true">${ringDiagram()}</span>
             <p class="say-what">${what}</p>
           </div>
           <p class="say-note">${this.openerNote()}</p>`;
@@ -885,16 +852,6 @@ const UNDO_GUARD_MS = 400;
 const END_CARD_IN_MS = 1150;
 const NOTE_RANDOM = 'Chosen at random to open the&nbsp;match.';
 const NOTE_RANDOM_AWAY = 'was chosen at random to open the&nbsp;match.';
-
-function ringIcon(): string {
-  const cells = Array.from({ length: 16 }, (_, i) => {
-    const r = Math.floor(i / 4);
-    const c = i % 4;
-    const ring = r === 0 || r === 3 || c === 0 || c === 3;
-    return `<rect x="${3 + c * 11}" y="${3 + r * 11}" width="9" height="9" rx="2" class="${ring ? 'ring-on' : 'ring-off'}"/>`;
-  }).join('');
-  return `<svg viewBox="0 0 48 48" aria-hidden="true">${cells}</svg>`;
-}
 
 function escape(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
