@@ -641,11 +641,16 @@ button:disabled { cursor: default; }
   font-size: var(--act-fs);
 }
 .home:has([data-go="continue"]) { --act-h: calc(8.8 * var(--act-fs) + 10px); }
-/* The cloth lit as a lamp over the table would light it, in the game's own light: brightest around
-   the garden and behind the wordmark, sinking towards the edges, the weave showing most where the
-   light falls (soft-light shades it in proportion). One half each, meeting at the garden's centre,
-   where the indigo is folded over the vermilion: a lit edge above the seam, its shadow below. The
-   vermilion light keeps above the links, so their cream text keeps its contrast. */
+/* The cloth lit as a lamp over the table would light it, in the game's own light (the glows of the
+   game screen: cool on the indigo, warm on the vermilion). One lamp, hung a little above the
+   garden's centre: its pool is one ellipse across both halves, so the light runs on over the seam
+   and only the dye changes; it falls off softly (eased stops, no ring), reaches up to the wordmark,
+   which has a light of its own, and leaves the edges to sink into each dye's own shade rather than
+   grey. Light from above: the garden casts a soft shade on the cloth below it, where the links sit,
+   so their cream labels keep their contrast on the brightest thread. The weave shows most where the
+   light falls (soft-light shades it in proportion). At the seam the indigo lies folded over the
+   vermilion: a crest that catches the lamp (brightest under it, gone at the edges), a crease, and
+   a short shadow on the vermilion below. */
 .home::before,
 .home::after {
   content: '';
@@ -655,17 +660,27 @@ button:disabled { cursor: default; }
   /* Under everything: the buttons and links sit in display: contents wrappers, out of .screen > *. */
   z-index: -1;
   pointer-events: none;
-  background-blend-mode: soft-light, normal, normal, normal, normal, normal;
+  /* The lamp: its pool's radii, and how far above the garden's centre it hangs. */
+  --lamp-rx: calc(var(--home-board) * 0.8 + 24vw);
+  --lamp-ry: calc(var(--home-board) * 1.05 + 4vh);
+  --lamp-up: calc(var(--home-board) * 0.2);
+  /* The shade at the edges, centred on the lamp, so the near edge of the table (the bottom) sinks most. */
+  --shade-rx: calc(50vw + var(--home-board) * 0.35);
+  --shade-ry: calc(var(--vh) * 0.7);
+  /* One value per layer: a shorter list would repeat, blending every other layer. */
+  background-blend-mode: soft-light, normal, normal, normal, normal, normal, normal;
 }
 .home::before {
   top: 0;
   height: var(--home-seam);
   background:
     var(--cloth) 0 0 / 256px 256px,
-    radial-gradient(farthest-corner at 50% 100%, rgba(8, 6, 14, 0) 38%, rgba(8, 6, 14, 0.5) 100%),
-    linear-gradient(to top, rgba(251, 243, 228, 0.2), rgba(251, 243, 228, 0) 2px),
-    radial-gradient(calc(var(--wm) * 4.8) calc(var(--wm) * 1.8) at 50% calc(100% - var(--home-board) / 2 - 12px - var(--act-h) - 0.8 * var(--wm)), rgba(150, 170, 255, 0.2), rgba(150, 170, 255, 0)),
-    radial-gradient(calc(var(--home-board) * 0.8 + 24vw) calc(var(--home-board) * 1.1) at 50% 100%, rgba(150, 170, 255, 0.36), rgba(150, 170, 255, 0.13) 50%, rgba(150, 170, 255, 0)),
+    /* The fold's crest: a hairline the whole way, and a lens of light under the lamp. */
+    linear-gradient(to top, rgba(251, 243, 228, 0.14), rgba(251, 243, 228, 0.14) 1px, rgba(251, 243, 228, 0) 1px),
+    radial-gradient(var(--lamp-rx) 7px at 50% 100%, rgba(251, 243, 228, 0.3), rgba(251, 243, 228, 0.12) 45%, rgba(251, 243, 228, 0)),
+    radial-gradient(var(--shade-rx) var(--shade-ry) at 50% calc(100% - var(--lamp-up)), rgba(10, 14, 42, 0) 40%, rgba(10, 14, 42, 0.1) 56%, rgba(10, 14, 42, 0.27) 72%, rgba(10, 14, 42, 0.45) 87%, rgba(10, 14, 42, 0.56) 100%),
+    radial-gradient(calc(var(--wm) * 4.8) calc(var(--wm) * 1.8) at 50% calc(100% - var(--home-board) / 2 - 12px - var(--act-h) - 0.8 * var(--wm)), rgba(150, 170, 255, 0.2), rgba(150, 170, 255, 0.15) 30%, rgba(150, 170, 255, 0.07) 60%, rgba(150, 170, 255, 0.02) 82%, rgba(150, 170, 255, 0)),
+    radial-gradient(var(--lamp-rx) var(--lamp-ry) at 50% calc(100% - var(--lamp-up)), rgba(150, 170, 255, 0.4), rgba(150, 170, 255, 0.35) 14%, rgba(150, 170, 255, 0.25) 30%, rgba(150, 170, 255, 0.14) 48%, rgba(150, 170, 255, 0.06) 66%, rgba(150, 170, 255, 0.015) 84%, rgba(150, 170, 255, 0)),
     var(--indi);
 }
 .home::after {
@@ -673,9 +688,12 @@ button:disabled { cursor: default; }
   bottom: 0;
   background:
     var(--cloth) 0 calc(-1 * var(--home-seam)) / 256px 256px,
-    radial-gradient(farthest-corner at 50% 0, rgba(8, 6, 14, 0) 38%, rgba(8, 6, 14, 0.5) 100%),
-    linear-gradient(to bottom, rgba(8, 6, 14, 0.3), rgba(8, 6, 14, 0) 3px),
-    radial-gradient(calc(var(--home-board) * 0.8 + 24vw) calc(var(--home-board) * 0.56) at 50% 0, rgba(255, 180, 125, 0.34), rgba(255, 180, 125, 0.1) 55%, rgba(255, 180, 125, 0)),
+    /* The crease, and the folded edge's short shadow. */
+    linear-gradient(to bottom, rgba(36, 7, 3, 0.5), rgba(36, 7, 3, 0.22) 2px, rgba(36, 7, 3, 0.08) 6px, rgba(36, 7, 3, 0) 12px),
+    /* The garden's shade on the cloth below it, under the links. */
+    radial-gradient(calc(var(--home-board) * 0.6 + 48px) calc(var(--home-board) * 0.16 + 56px) at 50% calc(var(--home-board) / 2 + 34px), rgba(46, 9, 4, 0.34), rgba(46, 9, 4, 0.27) 35%, rgba(46, 9, 4, 0.12) 68%, rgba(46, 9, 4, 0)),
+    radial-gradient(var(--shade-rx) var(--shade-ry) at 50% calc(-1 * var(--lamp-up)), rgba(48, 10, 5, 0) 40%, rgba(48, 10, 5, 0.1) 56%, rgba(48, 10, 5, 0.27) 72%, rgba(48, 10, 5, 0.45) 87%, rgba(48, 10, 5, 0.56) 100%),
+    radial-gradient(var(--lamp-rx) var(--lamp-ry) at 50% calc(-1 * var(--lamp-up)), rgba(255, 180, 125, 0.36), rgba(255, 180, 125, 0.31) 14%, rgba(255, 180, 125, 0.22) 30%, rgba(255, 180, 125, 0.12) 48%, rgba(255, 180, 125, 0.05) 66%, rgba(255, 180, 125, 0.012) 84%, rgba(255, 180, 125, 0)),
     var(--verm);
 }
 .home .seam { grid-area: board; padding: 12px 0; }
@@ -829,24 +847,38 @@ button:disabled { cursor: default; }
   /* Vermilion on the left, under the wordmark and the buttons; indigo on the right. */
   .home::before,
   .home::after { top: 0; bottom: 0; height: auto; }
+  /* The lamp over the garden, a little above its centre; the shade centred between the garden and
+     the column, higher than the middle, so the near edge (where the links sit) sinks most. */
+  .home::before,
+  .home::after {
+    --lamp-rx: calc(var(--home-board) * 0.62 + 6vw);
+    --lamp-ry: calc(var(--home-board) * 0.85 + 12vh);
+    --lamp-y: calc(var(--home-seam, 50%) - var(--home-board) * 0.16);
+    --shade-x: calc(var(--home-seam-x, 50%) - var(--home-board) * 0.75);
+  }
   .home::before {
     right: auto;
     width: var(--home-seam-x, 50%);
     background:
       var(--cloth) 0 0 / 256px 256px,
-      radial-gradient(farthest-corner at 100% var(--home-seam, 50%), rgba(8, 6, 14, 0) 38%, rgba(8, 6, 14, 0.5) 100%),
-      linear-gradient(to left, rgba(8, 6, 14, 0.3), rgba(8, 6, 14, 0) 3px),
-      radial-gradient(calc((100% - var(--home-board) / 2) * 0.5) 22% at calc(50% - var(--home-board) / 4) 30%, rgba(255, 180, 125, 0.14), rgba(255, 180, 125, 0)),
-      radial-gradient(calc(var(--home-board) * 0.52) calc(var(--home-board) * 0.8 + 12vh) at 100% var(--home-seam, 50%), rgba(255, 180, 125, 0.34), rgba(255, 180, 125, 0.1) 55%, rgba(255, 180, 125, 0)),
+      /* The crease, and the folded indigo's short shadow. */
+      linear-gradient(to left, rgba(36, 7, 3, 0.5), rgba(36, 7, 3, 0.22) 2px, rgba(36, 7, 3, 0.08) 6px, rgba(36, 7, 3, 0) 12px),
+      /* The near edge, furthest from the lamp, under the links. */
+      linear-gradient(to bottom, rgba(48, 10, 5, 0) 45%, rgba(48, 10, 5, 0.1) 70%, rgba(48, 10, 5, 0.24) 100%),
+      radial-gradient(75vw 80vh at var(--shade-x) 30%, rgba(48, 10, 5, 0) 30%, rgba(48, 10, 5, 0.12) 52%, rgba(48, 10, 5, 0.3) 70%, rgba(48, 10, 5, 0.46) 86%, rgba(48, 10, 5, 0.56) 100%),
+      radial-gradient(calc((var(--home-seam-x, 50vw) - var(--home-board) / 2) * 0.5) calc(var(--vh) * 0.26) at calc(50% - var(--home-board) / 4) 34%, rgba(255, 180, 125, 0.12), rgba(255, 180, 125, 0.09) 30%, rgba(255, 180, 125, 0.05) 60%, rgba(255, 180, 125, 0.012) 82%, rgba(255, 180, 125, 0)),
+      radial-gradient(var(--lamp-rx) var(--lamp-ry) at 100% var(--lamp-y), rgba(255, 180, 125, 0.36), rgba(255, 180, 125, 0.31) 14%, rgba(255, 180, 125, 0.22) 30%, rgba(255, 180, 125, 0.12) 48%, rgba(255, 180, 125, 0.05) 66%, rgba(255, 180, 125, 0.012) 84%, rgba(255, 180, 125, 0)),
       var(--verm);
   }
   .home::after {
     left: var(--home-seam-x, 50%);
     background:
       var(--cloth) calc(-1 * var(--home-seam-x, 50%)) 0 / 256px 256px,
-      radial-gradient(farthest-corner at 0 var(--home-seam, 50%), rgba(8, 6, 14, 0) 38%, rgba(8, 6, 14, 0.5) 100%),
-      linear-gradient(to right, rgba(251, 243, 228, 0.2), rgba(251, 243, 228, 0) 2px),
-      radial-gradient(calc(var(--home-board) * 0.8) calc(var(--home-board) * 0.8 + 12vh) at 0 var(--home-seam, 50%), rgba(150, 170, 255, 0.36), rgba(150, 170, 255, 0.13) 50%, rgba(150, 170, 255, 0)),
+      /* The fold's crest: a hairline the whole way, a lens of light beside the lamp. */
+      linear-gradient(to right, rgba(251, 243, 228, 0.14), rgba(251, 243, 228, 0.14) 1px, rgba(251, 243, 228, 0) 1px),
+      radial-gradient(7px var(--lamp-ry) at 0 var(--lamp-y), rgba(251, 243, 228, 0.3), rgba(251, 243, 228, 0.12) 45%, rgba(251, 243, 228, 0)),
+      radial-gradient(75vw 80vh at calc(var(--shade-x) - var(--home-seam-x, 50%)) 30%, rgba(10, 14, 42, 0) 30%, rgba(10, 14, 42, 0.12) 52%, rgba(10, 14, 42, 0.3) 70%, rgba(10, 14, 42, 0.46) 86%, rgba(10, 14, 42, 0.56) 100%),
+      radial-gradient(var(--lamp-rx) var(--lamp-ry) at 0 var(--lamp-y), rgba(150, 170, 255, 0.4), rgba(150, 170, 255, 0.35) 14%, rgba(150, 170, 255, 0.25) 30%, rgba(150, 170, 255, 0.14) 48%, rgba(150, 170, 255, 0.06) 66%, rgba(150, 170, 255, 0.015) 84%, rgba(150, 170, 255, 0)),
       var(--indi);
   }
   .home .seam { padding: 10px var(--gutter) 10px 0; align-self: center; }
