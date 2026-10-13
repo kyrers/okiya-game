@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { HOT_SEAT, VS_EASY, continueMatch, findGame, layoutProblems, openHome, saved, seedMatch } from './helpers';
+import { HOT_SEAT, MATCH_KEY, VS_EASY, continueMatch, findGame, layoutProblems, openHome, saved, seatWordBreaks, seedMatch } from './helpers';
 
 /**
  * Layout invariants at every device size: nothing scrolls the page, nothing leaves the viewport,
@@ -72,6 +72,44 @@ test('against the computer: thinking, and the end of a match', async ({ page }) 
   await checkLayout(page, '10-computer-thinking');
   await expect(page.locator('.seat-1.moving .say-order')).toBeVisible({ timeout: 10_000 });
   await checkLayout(page, '11-your-turn');
+});
+
+/**
+ * The side seat of a phone held sideways is about 140px wide: the computer's card there once read
+ * "The / compute / r is / thinking" (a word broken inside, which layoutProblems now catches everywhere). The
+ * card shows only while the computer thinks, so a check that ran after it moved is tried again.
+ */
+test('the computer thinking in the narrow side seat of a phone held sideways', async ({ page, browserName }) => {
+  // WebKit under a parallel run often draws the card only after the computer has moved (it thinks
+  // for 0.7 s); the steady states are swept in WebKit too (sweep.spec.ts, layoutProblems).
+  test.skip(browserName === 'webkit', 'the thinking card is too brief to catch reliably in WebKit');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const open = findGame(() => true, 23);
+  const g = findGame((s) => s.history.length >= 6 && s.history[0].player === 1, 23);
+  const states: [string, { tiles: typeof open.tiles; first: 1 | 2; moves: number[] }][] = [
+    ['the computer opens', { tiles: open.tiles, first: 2, moves: [] }],
+    ['the computer thinking', { tiles: g.tiles, first: 1, moves: g.moves.slice(0, 3) }],
+  ];
+  for (const [w, h] of [[568, 320], [667, 375]]) {
+    await page.setViewportSize({ width: w, height: h });
+    for (const [label, game] of states) {
+      let checked = false;
+      for (let attempt = 0; attempt < 6 && !checked; attempt++) {
+        await page.goto('/');
+        await page.evaluate(([key, value]) => localStorage.setItem(key, value), [MATCH_KEY, JSON.stringify(saved(VS_EASY, [game]))] as const);
+        await continueMatch(page);
+        // A slow engine may draw the card only after the computer has already moved: try again.
+        const seen = await page.locator('.seat-2 .thinking').waitFor({ timeout: 3000 }).then(() => true, () => false);
+        if (!seen) continue;
+        const broken = await seatWordBreaks(page);
+        // Still thinking after the check, so it saw the card.
+        checked = (await page.locator('.seat-2 .thinking').count()) > 0;
+        if (checked) expect(broken, `${label} @ ${w}x${h}`).toEqual([]);
+      }
+      expect(checked, `${label} @ ${w}x${h}: the computer moved before the check`).toBe(true);
+      expect(await layoutProblems(page), `${label} @ ${w}x${h}, after the computer's move`).toEqual([]);
+    }
+  }
 });
 
 test('the end of a match against the computer', async ({ page }) => {

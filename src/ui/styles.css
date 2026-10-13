@@ -448,13 +448,11 @@ button:disabled { cursor: default; }
 .pip { width: 0.95em; height: 0.95em; flex: none; display: block; overflow: visible; }
 .pip.used { border-radius: 50%; width: 0.7em; height: 0.7em; margin: 0 0.125em; box-shadow: inset 0 0 0 1.5px rgba(251, 243, 228, 0.35); }
 
-.seat-say { display: flex; flex-direction: column; gap: 0.4em; min-height: 0; container-type: inline-size; overflow-wrap: anywhere; }
-/* A narrow seat keeps the card in one row with a smaller tile. */
-@container (max-width: 250px) {
-  .say-order { gap: 0.55em; padding: 0.4em 0.65em 0.4em 0.4em; }
-  .say-tile { width: 2.6em; height: 2.6em; }
-  .say-what { font-size: 0.9375em; }
-}
+/* Words never break inside: only a player's name (a <bdi>, up to 16 letters with no space) may
+   break where it must. On the whole seat, overflow-wrap: anywhere let the order's text column
+   shrink below a word in a narrow seat and split it ("compute / r"). */
+.seat-say { display: flex; flex-direction: column; gap: 0.4em; min-height: 0; container-type: inline-size; }
+.seat-say bdi { overflow-wrap: anywhere; }
 /* The thinking ellipsis breathes by opacity alone, which the compositor runs without repainting. */
 .say-what .dots::after { content: '…'; display: inline-block; animation: breathe 1.2s ease-in-out infinite; }
 @keyframes breathe { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
@@ -470,7 +468,8 @@ button:disabled { cursor: default; }
   box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.55);
   min-width: 0;
 }
-.say-text { display: flex; flex-direction: column; gap: 0.1em; min-width: 0; }
+/* Never narrower than its longest word. */
+.say-text { display: flex; flex-direction: column; gap: 0.1em; }
 .say-what { font-size: 1.0625em; line-height: 1.3; text-wrap: balance; }
 .say-what b { font-weight: 700; }
 .say-tile {
@@ -485,6 +484,19 @@ button:disabled { cursor: default; }
 .say-tile .tile-art { width: 100%; height: 100%; display: block; }
 .say-tile.ring { display: grid; place-items: center; background: var(--paper-2); }
 .say-tile.ring svg { width: 78%; height: 78%; }
+/* A narrow seat keeps the card in one row with a smaller tile. (After the card's own rules, so
+   these win.) */
+@container (max-width: 250px) {
+  .say-order { gap: 0.55em; padding: 0.4em 0.65em 0.4em 0.4em; }
+  .say-tile { width: 2.6em; height: 2.6em; }
+  .say-what { font-size: 0.9375em; }
+}
+/* A seat too narrow for the tile and a readable line side by side (a side seat on a phone held
+   sideways, or on a desktop window): the tile stands above the order, which takes the card's
+   whole width, so it reads in two or three lines instead of a word or two per line. */
+@container (max-width: 15em) {
+  .say-order { flex-direction: column; align-items: flex-start; gap: 0.45em; padding: 0.55em 0.75em 0.6em; }
+}
 .ring-on { fill: var(--gold); stroke: var(--gold-2); stroke-width: 1; }
 .ring-off { fill: none; stroke: rgba(31, 27, 24, 0.35); stroke-width: 1; stroke-dasharray: 2 2; }
 .w { white-space: nowrap; font-weight: 700; }
@@ -656,12 +668,19 @@ button:disabled { cursor: default; }
   :root { --gutter: clamp(12px, 1.6vw, 28px); }
   .game {
     --seat-w: calc(clamp(9.5rem, 22vw, 23.75rem) + var(--seat-room, 0px));
+    /* As tall as the screen allows on a large desktop too: the garden, not the cloth, fills it. */
     --board: min(
       calc(var(--vh) - var(--topbar) - var(--sat) - var(--sab) - 2 * var(--board-gap)),
       calc(100vw - 2 * var(--seat-w) - var(--sal) - var(--sar) - 4 * var(--board-gap)),
-      760px
+      1120px
     );
-    grid-template-columns: var(--sal) minmax(0, 1fr) auto minmax(0, 1fr) var(--sar);
+    /* The seats and the garden are one group, centred: on a very wide screen the seats keep to the
+       garden's sides and the top bar spans the group, not the far corners. */
+    grid-template-columns: var(--sal) minmax(0, 44rem) auto minmax(0, 44rem) var(--sar);
+    justify-content: center;
+    /* A seat's content width with no room borrowed (the seat type is sized from it, so borrowing
+       never changes the type): what the garden leaves, less the outer gutter and the inner gap. */
+    --seat-span: calc((100vw - min(var(--vh) - var(--topbar) - var(--sat) - var(--sab) - 2 * var(--board-gap), 100vw - 2 * clamp(9.5rem, 22vw, 23.75rem) - var(--sal) - var(--sar) - 4 * var(--board-gap), 1120px) - var(--sal) - var(--sar) - 4 * var(--board-gap)) / 2 - var(--gutter) - var(--board-gap));
     grid-template-rows: calc(var(--topbar) + var(--sat)) minmax(0, 1fr) var(--sab);
     grid-template-areas: '. top top top .' '. s1 board s2 .' '. . . . .';
     background:
@@ -673,11 +692,18 @@ button:disabled { cursor: default; }
   .glow-1 { top: 0; bottom: 0; left: 0; right: 50%; height: auto; background: var(--cloth) 0 0 / 256px 256px, radial-gradient(80% 90% at 100% 50%, rgba(255, 180, 125, 0.38), transparent 72%), var(--verm); }
   .glow-2 { top: 0; bottom: 0; left: 50%; right: 0; height: auto; background: var(--cloth) -50vw 0 / 256px 256px, radial-gradient(80% 90% at 0% 50%, rgba(150, 170, 255, 0.36), transparent 72%), var(--indi); }
   .seat {
-    --seat-fs: clamp(0.875rem, 0.25rem + 1.2vw, 1.5rem);
+    /* Sized to the seat's width, so a 16-letter name in wide letters stays on one line at its
+       smallest step (fitNames: 58% of the name size): about 13.8em across while that step is set in
+       Source Sans 3 (seat type under 22.5px, see the Eighteen Pixel Rule), 17em once it is set in
+       the wider display face. Larger on large desktops, with the garden. */
+    --seat-fs: clamp(0.875rem, min(1.34vw, max(min(22.5px, var(--seat-span) / 13.8), var(--seat-span) / 17)), 2rem);
     /* Both seats start on the garden's top edge, so the two names share one line. */
     justify-content: flex-start;
     padding: calc((var(--vh) - var(--topbar) - var(--sat) - var(--sab) - var(--board)) / 2) var(--gutter) 12px;
   }
+  /* The seat's content keeps close to the garden: the seam already holds a gap on each side. */
+  .seat-1 { padding-right: var(--board-gap); }
+  .seat-2 { padding-left: var(--board-gap); }
   .seat > * { width: min(100%, calc(20em + var(--seat-room, 0px))); }
   .seat-name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-wrap: balance; }
   .seat-1, .seat-2 { justify-content: flex-start; }
@@ -713,6 +739,13 @@ button:disabled { cursor: default; }
 }
 @media (min-width: 1100px) and (min-height: 760px) {
   :root { --topbar: 4.25rem; }
+}
+/* Large desktops: the top bar grows with the garden. */
+@media (min-width: 1700px) and (min-height: 1000px) and (min-aspect-ratio: 5/4) {
+  :root { --topbar: 5.25rem; }
+  .topbar .icon-btn { width: 56px; height: 56px; }
+  .topbar .icon-btn .icon { width: 28px; height: 28px; }
+  .match-label { font-size: clamp(1.125rem, 0.4rem + 0.6vw, 1.5rem); }
 }
 
 /* Home: option A, one column on every screen */

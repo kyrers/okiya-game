@@ -105,7 +105,7 @@ export function expectedLegal(codes: string[], taken: string | null): number[] {
  * that overflows its box, sheets centred with title and text on one edge and room for content.
  */
 export async function layoutProblems(page: Page): Promise<string[]> {
-  return page.evaluate(() => {
+  return [...(await page.evaluate(() => {
     const out: string[] = [];
     const vw = document.documentElement.clientWidth;
     const vh = window.innerHeight;
@@ -218,6 +218,54 @@ export async function layoutProblems(page: Page): Promise<string[]> {
       if (wide || lines > allowed[i]) out.push(`${name(h)} is cut short: "${(h.textContent ?? '').trim().slice(0, 30)}" (${lines} lines of ${allowed[i]}${wide ? ', too wide' : ''})`);
     });
     lift.remove();
+    return out;
+  })), ...(await seatWordBreaks(page))];
+}
+
+/**
+ * A seat's words are never broken inside ("The compute / r is thinking"): every letter of a word
+ * sits on one line. Only a player's name (a <bdi>) may break where it must. Quick enough to run
+ * while the computer's short-lived thinking card is on screen.
+ */
+export async function seatWordBreaks(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const out: string[] = [];
+    const name = (el: Element) => `${el.tagName.toLowerCase()}.${[...el.classList].join('.')}`;
+    if (!document.querySelector('dialog[open]')) {
+      for (const el of document.querySelectorAll('.game .seat-say p')) {
+        if (getComputedStyle(el).display === 'none' || el.getBoundingClientRect().height === 0) continue;
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        let word: number[] = [];
+        let letters = '';
+        const flush = () => {
+          if (new Set(word).size > 1) out.push(`${name(el)} breaks the word "${letters}" across lines`);
+          word = [];
+          letters = '';
+        };
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+          if (n.parentElement!.closest('bdi')) {
+            flush();
+            continue;
+          }
+          const t = n.nodeValue ?? '';
+          for (let i = 0; i < t.length; i++) {
+            if (/\s/.test(t[i])) {
+              flush();
+              continue;
+            }
+            const range = document.createRange();
+            range.setStart(n, i);
+            range.setEnd(n, i + 1);
+            const r = [...range.getClientRects()].find((x) => x.width > 0);
+            if (r) {
+              word.push(Math.round(r.top + r.height / 2));
+              letters += t[i];
+            }
+          }
+        }
+        flush();
+      }
+    }
     return out;
   });
 }
