@@ -188,7 +188,7 @@ The game is a table shared by two people. Every screen is the same object seen f
 
 The world is made of a few real materials. The dyes and the paper carry raster texture (a plain-weave cloth tile and a fibre paper tile, both 256px seamless tiles, soft-light blended onto flat colour). Tokens are lacquered discs with a radial sheen. The garden's sixteen tiles are the client's own SVG art, kept as drawn; the system frames them and never redraws them. Paper surfaces (the order card, the sheets) are the only places interface text sits on light; everything else is cream type on dye.
 
-The interface recedes. The garden is the largest thing on every screen at every viewport, and every other element is sized from what is left over. Motion belongs to the play itself: the light crossing the seam, a taken tile flying to the mover's card, a token settling into its cell, a brush stroke through a winning formation.
+The interface recedes. The garden is the largest thing on every screen at every viewport, and every other element is sized from what is left over. Motion belongs to the play itself: the light crossing the seam, a taken tile flying to the mover's card, a token settling into its cell, a brush loop drawn round a winning formation.
 
 **Key Characteristics:**
 - Two dyed halves (vermilion, indigo), stacked in portrait and side by side in landscape, meeting at the garden's centre.
@@ -224,7 +224,7 @@ Two saturated dyes, each with a lit and a sunk state, over a warm paper-and-ink 
 - **Tile Face** (tile-face): the face of every garden tile cell, the flying tile, rules diagram cells.
 - **Token Well** (token-well): a cell whose tile has been taken and now holds a token; drawn inset.
 - **Ink** (ink), **Ink 2** (ink-2), **Ink 3** (ink-3): text on paper, from body to secondary (legends, figure captions) to tertiary (details, credits). Ink 3 is the lightest text allowed on paper (5.5:1).
-- **Brush Ink** (brush-ink): the brush stroke drawn through a winning formation, at 0.72 opacity.
+- **Brush Ink** (brush-ink): the thin brush loop drawn round a winning formation, at 0.82 opacity.
 - **Cream** (cream), **Cream 2** (cream-2): text and icons on the dyes; Cream 2 for secondary lines (match label, waiting notes, reasons).
 - Cream at low alpha makes every control surface on the dyes: rgba(251, 243, 228, 0.08) rest, 0.16 to 0.18 hover, 0.28 to 0.4 hairline borders. Warm brown at low alpha, rgba(80, 60, 30, 0.12 to 0.22), makes every hairline on paper.
 
@@ -326,8 +326,10 @@ A player's half: their token chip, name in the display face, match score (three 
 ### End card
 At a game's end, a slip of the garden's paper over the middle of the garden, sealed on its top edge with the winner's token (both tokens, overlapping, for a tie). It says who won in the display face ("Aki wins", "You win", "A tie", "... wins the match") and how, in a caption line, then the buttons stacked at full width: Next game or Play again in ink cloth, Home on paper with a thin outline. The buttons are the same whoever won (an action is neutral); only the seal says who. Laid over the garden, never moving it, and sized from it (type at 4.2% of the garden, 13 to 22px); always inside it. On screens 340px tall or less it keeps the line that says how, with a smaller seal and headline and the two buttons side by side. It comes in once the brush stroke is drawn and cannot be pressed before it is seen.
 
+Under its buttons, a quiet ink link, **See the board** (with a down chevron, 44px tall), folds the slip away so the whole garden can be seen. The slip slides off towards the garden's edge and leaves a **tab** there: a paper pill, straddling the edge, half on the garden's frame and half on the cloth, holding the seal, the headline (cut short with an ellipsis if it must be) and an up chevron, joined to the main button (Next game or Play again) in ink. The tab sits on the bottom edge on an upright screen, and on the top edge from aspect 5/4, where the garden reaches the bottom of the screen and the top bar leaves room above it. A tap on the tab or anywhere on the garden, or Escape, brings the slip back; Escape also folds it. Folding puts focus on the tab, unfolding on the slip's first button. The tab's two halves take their focus ring inside themselves (ink on its paper, cream on its ink).
+
 ### Garden (signature)
-The paper board with sixteen cells in a 4x4 grid, gap 1.8% and padding 3% of the board. Cells are tile faces holding the kept tile art; taken cells become pressed wells holding a lacquered token. States: may be taken (gold ring, lifted, shadow), may not be taken (warm shade), last placed (gold ring inside the cell), refused tap (a short horizontal shake, 0.32s), game over (a brush-ink stroke drawn through the winning formation; dead tiles shaded).
+The paper board with sixteen cells in a 4x4 grid, gap 1.8% and padding 3% of the board. Cells are tile faces holding the kept tile art; taken cells become pressed wells holding a lacquered token. States: may be taken (gold ring, lifted, shadow), may not be taken (warm shade), last placed (gold ring inside the cell), refused tap (a short horizontal shake, 0.32s), game over (a thin brush-ink loop drawn round the winning formation, never across its tokens: a long loop round a line of four, between the tokens and the cells' edges, and a ring round a square of four; about 7.5% of a cell wide, with a rough edge; dead tiles shaded).
 
 ### Sheets
 Dialogs are paper sheets: docked to the bottom with 20px top corners on phones, centred (560px; 38rem, 608px, for rules) from 640px wide and 560px tall. The head is a band of the table's indigo cloth, as the game's top bar is: a cream display-face title, the dye icon button to close, gold focus on the band. Below it the paper page: a scrolling body, with section headings in the display face in indigo, and an optional footer with a hairline above. On short landscape screens the footer's action moves onto the band beside the title and takes the paper button there (a button takes the material opposite its ground), with a short shadow that stays on the cloth. Opening rises 24px and fades in over 0.32s.
@@ -354,7 +356,7 @@ Keyboard focus on the dyes is a 3px gold outline, offset 2px (drawn tight, offse
 Under Windows High Contrast the interface takes the system's colours, but the garden, the order card's tile, the token chips and pips, the sheets' switches and choice wells and the rules' diagrams keep their own: they are a picture, and the gold ring and shade that tell which tiles may be taken would otherwise vanish.
 
 ### Motion
-One exponential ease-out (cubic-bezier(0.16, 1, 0.3, 1)) for the turn light (opacity only, 0.45s), tile lift (0.22s), token set-down (0.42s, drops from above with a small settle) and sheets (0.32s). The taken tile flies to the mover's card over 520ms (360ms when there is no target slot); the winning brush stroke draws over 650ms after a 180ms pause. Under reduced motion (system setting or the in-app setting) every animation and transition collapses to instant; every state change still happens.
+One exponential ease-out (cubic-bezier(0.16, 1, 0.3, 1)) for the turn light (opacity only, 0.45s), tile lift (0.22s), token set-down (0.42s, drops from above with a small settle) and sheets (0.32s). The taken tile flies to the mover's card over 520ms (360ms when there is no target slot); the winning brush stroke draws over 650ms after a 180ms pause. The end card folds away over 0.4s (its tab rising in just after) and comes back the same way. Under reduced motion (system setting or the in-app setting) every animation and transition collapses to instant; every state change still happens.
 
 ## Do's and Don'ts
 

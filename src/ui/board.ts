@@ -189,7 +189,7 @@ export class BoardView {
     this.cells[next].focus();
   }
 
-  /** The brush stroke through a winning formation, in board coordinates measured from the cells. */
+  /** The brush stroke round a winning formation, in board coordinates measured from the cells. */
   private drawBrush(animate: boolean): void {
     const win = this.last?.state.result;
     if (!win || win.cells.length === 0) {
@@ -206,32 +206,35 @@ export class BoardView {
     const pts = win.cells.map(centre);
     const s = pts[0].s;
     const player = win.winner as Player;
-    let shape: SVGElement;
+    // Drawn round the formation, not through it: a thin loop of ink that leaves every token clear.
+    let d: string;
     if (win.reason === 'square') {
       const xs = pts.map((p) => p.x);
       const ys = pts.map((p) => p.y);
       const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
       const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
-      const rad = s * 1.02;
-      shape = document.createElementNS(SVG_NS, 'path');
+      // Outside the four tokens, inside the garden's frame even for a square in a corner.
+      const rad = s * 1.12;
       // A brush circle that overshoots its start, as a hand would draw it.
-      shape.setAttribute(
-        'd',
-        `M ${cx - rad * 0.2} ${cy - rad} A ${rad} ${rad} 0 1 1 ${cx - rad * 0.98} ${cy + rad * 0.12} A ${rad} ${rad} 0 0 1 ${cx + rad * 0.12} ${cy - rad * 0.99}`,
-      );
+      d = `M ${cx - rad * 0.2} ${cy - rad} A ${rad} ${rad} 0 1 1 ${cx - rad * 0.98} ${cy + rad * 0.12} A ${rad} ${rad} 0 0 1 ${cx + rad * 0.12} ${cy - rad * 0.99}`;
     } else {
+      // A long loop round the line of four, closing past its start as a hand would draw it. Its
+      // sides run between the tokens and the cells' edges, so it stays inside the row.
       const a = pts[0];
       const b = pts[pts.length - 1];
-      const dx = b.x - a.x;
-      const dy = b.y - a.y;
-      const len = Math.hypot(dx, dy);
-      const ex = (dx / len) * s * 0.42;
-      const ey = (dy / len) * s * 0.42;
-      shape = document.createElementNS(SVG_NS, 'path');
-      shape.setAttribute('d', `M ${a.x - ex} ${a.y - ey} L ${b.x + ex} ${b.y + ey}`);
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      const ux = (b.x - a.x) / len;
+      const uy = (b.y - a.y) / len;
+      const nx = -uy;
+      const ny = ux;
+      const r = s * 0.44;
+      const at = (p: { x: number; y: number }, along: number, across: number) => `${p.x + ux * along + nx * across} ${p.y + uy * along + ny * across}`;
+      d = `M ${at(a, s * 0.12, -r)} L ${at(b, 0, -r)} A ${r} ${r} 0 0 1 ${at(b, 0, r)} L ${at(a, 0, r)} A ${r} ${r} 0 0 1 ${at(a, 0, -r)} L ${at(a, s * 0.45, -r * 0.94)}`;
     }
+    const shape = document.createElementNS(SVG_NS, 'path');
+    shape.setAttribute('d', d);
     shape.setAttribute('class', `brush-stroke p${player}`);
-    const width = s * 0.26;
+    const width = s * 0.075;
     shape.setAttribute('stroke-width', String(width));
     // The rough edge: a displacement filter whose region is this stroke's own box in user space.
     // (A bounding-box region is empty for a row or column, whose path has zero height; an
@@ -248,13 +251,13 @@ export class BoardView {
       width: Math.max(...xs) - Math.min(...xs) + 2 * pad,
       height: Math.max(...ys) - Math.min(...ys) + 2 * pad,
     })) filter.setAttribute(k, String(v));
-    filter.innerHTML = `<feTurbulence type="fractalNoise" baseFrequency="0.045 0.9" numOctaves="2" seed="7" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="${(s * 0.07).toFixed(1)}" xChannelSelector="R" yChannelSelector="G"/>`;
+    filter.innerHTML = `<feTurbulence type="fractalNoise" baseFrequency="0.35" numOctaves="2" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="${(s * 0.035).toFixed(1)}" xChannelSelector="R" yChannelSelector="G"/>`;
     const defs = document.createElementNS(SVG_NS, 'defs');
     defs.append(filter);
     shape.setAttribute('filter', 'url(#board-brush-edge)');
     this.brush.replaceChildren(defs, shape);
-    const length = (shape as SVGPathElement).getTotalLength?.() ?? 0;
+    const length = shape.getTotalLength?.() ?? 0;
     if (animate && length > 0 && !matchMedia('(prefers-reduced-motion: reduce)').matches && !document.documentElement.classList.contains('reduce-motion')) {
       shape.style.strokeDasharray = `${length}`;
       shape.animate([{ strokeDashoffset: length }, { strokeDashoffset: 0 }], { duration: 650, delay: 180, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' });

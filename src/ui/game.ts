@@ -53,6 +53,10 @@ export class GameScreen {
   private readonly endCard: HTMLElement;
   private endCardHtml = '';
   private endCardTimer = 0;
+  /** The slip folded away to a tab at the garden's edge, so the whole garden can be seen. */
+  private readonly endTab: HTMLElement;
+  private folded = false;
+  private readonly onKey = (ev: KeyboardEvent) => this.escape(ev);
   private animating = false;
   private thinking = false;
   private guardUntil = 0;
@@ -108,7 +112,17 @@ export class GameScreen {
     this.endCard.setAttribute('role', 'group');
     this.endCard.setAttribute('aria-label', 'Game over');
     this.endCard.hidden = true;
-    this.el.querySelector('.seam')!.append(this.board.el, this.endCard);
+    this.endTab = document.createElement('div');
+    this.endTab.className = 'end-tab';
+    this.endTab.setAttribute('role', 'group');
+    this.endTab.setAttribute('aria-label', 'Game over');
+    this.endTab.hidden = true;
+    this.el.querySelector('.seam')!.append(this.board.el, this.endCard, this.endTab);
+    // Folded, a tap anywhere on the garden brings the slip back.
+    this.board.el.addEventListener('click', () => {
+      if (this.folded) this.unfold();
+    });
+    window.addEventListener('keydown', this.onKey);
     this.undoBtn.addEventListener('click', () => this.undo());
     this.el.querySelector('.menu-btn')!.addEventListener('click', () => this.deps.openMenu());
     this.el.addEventListener('click', (ev) => {
@@ -116,6 +130,11 @@ export class GameScreen {
       if (action === 'next') this.next();
       else if (action === 'again') this.again();
       else if (action === 'home') this.deps.goHome();
+      const card = (ev.target as Element).closest<HTMLElement>('[data-card]')?.dataset.card;
+      if (card === 'fold') this.fold();
+      else if (card === 'unfold') this.unfold();
+      else if (card === 'next') this.next();
+      else if (card === 'again') this.again();
     });
     const last = this.view.game.history[this.view.game.history.length - 1];
     this.lastIndex = last ? last.index : null;
@@ -154,6 +173,7 @@ export class GameScreen {
     window.clearTimeout(this.deniedTimer);
     this.resizeObserver?.disconnect();
     this.contentObserver?.disconnect();
+    window.removeEventListener('keydown', this.onKey);
     if (this.onFonts) document.fonts?.removeEventListener('loadingdone', this.onFonts);
   }
 
@@ -406,10 +426,40 @@ export class GameScreen {
     this.endCardHtml = html;
     this.endCard.innerHTML = html;
     this.endCard.hidden = !html;
+    this.endTab.innerHTML = html ? this.tabHtml() : '';
+    this.endTab.hidden = !html;
+    this.setFolded(false);
     // Not to be pressed before it is seen: a quick second tap on the garden's middle would land on it.
     window.clearTimeout(this.endCardTimer);
     this.endCard.classList.toggle('arriving', !!html);
     if (html) this.endCardTimer = window.setTimeout(() => this.endCard.classList.remove('arriving'), END_CARD_IN_MS);
+  }
+
+  /** The slip folds down to its tab (up, on a wide screen), and the whole garden shows. */
+  private fold(): void {
+    if (!this.endCardHtml || this.folded || this.endCard.classList.contains('arriving')) return;
+    this.setFolded(true);
+    this.endTab.querySelector<HTMLButtonElement>('[data-card="unfold"]')?.focus({ preventScroll: true });
+  }
+
+  /** The slip comes back over the garden, focus on its first button. */
+  private unfold(): void {
+    if (!this.folded) return;
+    this.setFolded(false);
+    this.endCard.querySelector<HTMLButtonElement>('[data-action]')?.focus({ preventScroll: true });
+  }
+
+  private setFolded(on: boolean): void {
+    this.folded = on;
+    this.el.querySelector('.seam')!.classList.toggle('card-folded', on);
+  }
+
+  /** Escape sets the slip aside to see the garden, and brings it back; a sheet's Escape is its own. */
+  private escape(ev: KeyboardEvent): void {
+    if (ev.key !== 'Escape' || ev.defaultPrevented || !this.endCardHtml || !this.el.isConnected) return;
+    if (document.querySelector('dialog[open]')) return;
+    if (this.folded) this.unfold();
+    else this.fold();
   }
 
   private updateUndo(): void {
@@ -788,11 +838,24 @@ export class GameScreen {
     const seal = r.winner === null ? `${tokenSvg(1)}${tokenSvg(2)}` : tokenSvg(r.winner);
     const why = reasonWords(r.reason, r.winner === null ? '' : this.setup.names[opponent(r.winner) - 1], nameHtml);
     const head = `<div class="card-seal">${seal}</div><p class="card-head">${this.endHeadline()}</p><p class="card-why">${why}</p>`;
-    if (!m.over) return `${head}<div class="say-actions"><button type="button" class="btn primary" data-action="next">Next game${icon('arrow')}</button></div>`;
+    const see = `<button type="button" class="card-fold" data-card="fold">See the board${FOLD_ICON}</button>`;
+    if (!m.over) return `${head}<div class="say-actions"><button type="button" class="btn primary" data-action="next">Next game${icon('arrow')}</button></div>${see}`;
     return `${head}<div class="say-actions">
       <button type="button" class="btn primary" data-action="again">${icon('restart')} Play again</button>
       <button type="button" class="btn ghost" data-action="home">${icon('home')} Home</button>
-    </div>`;
+    </div>${see}`;
+  }
+
+  /** The folded slip: a tab that still says who won, brings the slip back, and offers the main button. */
+  private tabHtml(): string {
+    const r = this.view.game.result!;
+    const seal = r.winner === null ? `${tokenSvg(1)}${tokenSvg(2)}` : tokenSvg(r.winner);
+    // Its own attribute, not data-action: the slip's buttons stay the only [data-action] ones.
+    const main = this.view.match.over ? '<button type="button" class="btn primary" data-card="again">Play again</button>' : '<button type="button" class="btn primary" data-card="next">Next game</button>';
+    const head = this.endHeadline();
+    // The headline is escaped HTML already; without its tags it is safe in an attribute.
+    const label = `${head.replace(/<[^>]+>/g, '')}: show the result`;
+    return `<button type="button" class="tab-show" data-card="unfold" aria-label="${label}"><span class="tab-seal">${seal}</span><span class="tab-head">${head}</span>${UNFOLD_ICON}</button>${main}`;
   }
 
   /** The card's headline: who won this game, or the match once it is over. */
@@ -850,6 +913,10 @@ interface Fit {
 const UNDO_GUARD_MS = 400;
 /** The end card's delay and entrance (styles.css, .end-card), after which it can be pressed. */
 const END_CARD_IN_MS = 1150;
+/** The slip's fold and unfold marks, drawn as the icons are (art.ts: 24px grid, 1.8 stroke). */
+const chevron = (d: string) => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
+const FOLD_ICON = chevron('M6 9.5l6 6 6-6');
+const UNFOLD_ICON = chevron('M6 14.5l6-6 6 6');
 const NOTE_RANDOM = 'Chosen at random to open the&nbsp;match.';
 const NOTE_RANDOM_AWAY = 'was chosen at random to open the&nbsp;match.';
 

@@ -186,6 +186,61 @@ test.describe('matches', () => {
     expect((await boardCodes(page)).every((c) => /^[MCPI][spbr]$/.test(c))).toBe(true);
   });
 
+  test('the slip folds away to show the whole garden, and comes back by its tab, the garden or Escape', async ({ page, hasTouch }) => {
+    // A square in the middle of the garden: the one formation the slip lies right over.
+    const g = findGame((s) => s.result?.reason === 'square' && [5, 6, 9, 10].every((c) => s.result!.cells.includes(c)));
+    await seedMatch(page, saved({ ...HOT_SEAT, mode: 'sets3' }, [{ tiles: g.tiles, first: g.first, moves: g.moves }]));
+    await continueMatch(page);
+    const act = (l: import('@playwright/test').Locator) => (hasTouch ? l.tap() : l.click());
+    const card = page.locator('.end-card');
+    const see = card.getByRole('button', { name: 'See the board' });
+    const winner = g.final.result!.winner === 1 ? 'Aki' : 'Ren';
+    const tab = page.getByRole('button', { name: `${winner} wins: show the result` });
+    await expect(page.locator('.end-card:not(.arriving)')).toBeVisible();
+    await expect(tab).toBeHidden();
+    // Folded: the slip is gone, its tab is focused, and every token can be seen.
+    await act(see);
+    await expect(card).toBeHidden();
+    await expect(tab).toBeVisible();
+    await expect(tab).toBeFocused();
+    const covered = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('.game .cell.is-token')].filter((c) => {
+        const r = c.getBoundingClientRect();
+        const hits = [[0.5, 0.5], [0.5, 0.25], [0.5, 0.72], [0.25, 0.5], [0.75, 0.5]].map(([x, y]) => document.elementFromPoint(r.left + r.width * x, r.top + r.height * y));
+        return hits.some((h) => !h || !c.contains(h));
+      }).map((c) => c.dataset.index),
+    );
+    expect(covered).toEqual([]);
+    // The tab still offers the main button, as tall as a finger.
+    const tabNext = page.locator('.end-tab [data-card="next"]');
+    await expect(tabNext).toBeVisible();
+    expect((await tabNext.boundingBox())!.height).toBeGreaterThanOrEqual(43.5);
+    expect((await tab.boundingBox())!.height).toBeGreaterThanOrEqual(43.5);
+    // Back by the tab: focus on the slip's first button.
+    await act(tab);
+    await expect(card).toBeVisible();
+    await expect(tab).toBeHidden();
+    await expect(card.locator('[data-action="next"]')).toBeFocused();
+    // Back by a tap on the garden.
+    await act(see);
+    await expect(card).toBeHidden();
+    await tap(page, 0, hasTouch);
+    await expect(card).toBeVisible();
+    // Escape folds it and brings it back.
+    await page.keyboard.press('Escape');
+    await expect(card).toBeHidden();
+    await expect(tab).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(card).toBeVisible();
+    await expect(card.locator('[data-action="next"]')).toBeFocused();
+    // Next game straight from the tab.
+    await act(see);
+    await act(tabNext);
+    await expect(page.locator('.match-label')).toContainText('Game 2');
+    await expect(page.locator('.end-card')).toBeHidden();
+    await expect(page.locator('.end-tab')).toBeHidden();
+  });
+
   test('victory points: a win scores the tiles left in the garden', async ({ page, hasTouch }) => {
     const g = findGame((s) => s.result !== null && s.result.winner !== null && s.result.tilesRemaining >= 3);
     const setup = { ...HOT_SEAT, mode: 'points10' as const };
