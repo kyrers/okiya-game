@@ -22,7 +22,8 @@ import {
 async function expectBrushPainted(page: import('@playwright/test').Page): Promise<void> {
   await page.waitForTimeout(1000);
   // The end card lies over the garden's middle, where a square of four is drawn: set it aside.
-  await page.addStyleTag({ content: '.end-card { visibility: hidden !important; }' });
+  // (and the loop's stepping back while the slip is up: what is checked here is that it is drawn).
+  await page.addStyleTag({ content: '.end-card { visibility: hidden !important; } .seam .board-brush { opacity: 1 !important; transition: none !important; }' });
   const board = page.locator('.game .board');
   const withBrush = await board.screenshot({ animations: 'disabled' });
   await page.addStyleTag({ content: '.board-brush { visibility: hidden !important; }' });

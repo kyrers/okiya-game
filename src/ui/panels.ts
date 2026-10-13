@@ -9,7 +9,7 @@ import { MODE_WORD } from './words';
 const LEVELS: { id: Difficulty; title: string; detail: string }[] = [
   { id: 'easy', title: 'Easy', detail: 'Plays loosely. Good for a first game.' },
   { id: 'medium', title: 'Medium', detail: 'Plays carefully, with the odd slip.' },
-  { id: 'hard', title: 'Hard', detail: 'Looks five moves ahead. Beatable, not easily.' },
+  { id: 'hard', title: 'Hard', detail: 'Looks five moves ahead. Hard to beat.' },
 ];
 
 /**

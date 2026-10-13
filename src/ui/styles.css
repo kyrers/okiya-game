@@ -487,7 +487,15 @@ button:disabled { cursor: default; }
 .end-tab .btn:focus-visible { outline: 3px solid var(--cream); outline-offset: -5px; }
 @media (min-aspect-ratio: 5/4) {
   .seam { --fold-dir: -1; }
+  /* On the top edge there is room above the garden: the tab sits wholly outside it, so folding
+     the slip uncovers the whole garden, the top row included. */
+  .end-tab { translate: -50% calc(-100% - 4px); }
 }
+/* While the slip lies over the garden its loop, partly under the slip, would read as a scorched
+   frame around it: the loop is drawn first, then steps back as the slip comes in, and comes back
+   with the garden when the slip is folded away. */
+.seam:has(> .end-card:not([hidden])) .board-brush { opacity: 0; transition: opacity 0.35s 1.05s; }
+.seam.card-folded .board-brush { opacity: 1; transition: opacity 0.3s; }
 @keyframes card-in {
   from { opacity: 0; transform: translateY(12px) scale(0.96); }
   to { opacity: 1; transform: none; }
@@ -1151,7 +1159,13 @@ dialog.sheet {
 }
 /* The rules sheet is as wide as a comfortable line of text, so its title and text share one edge. */
 dialog.sheet.sheet-rules { width: min(100%, 38rem); }
-dialog.sheet::backdrop { background: rgba(12, 10, 22, 0.6); }
+dialog.sheet::backdrop { background: rgba(12, 10, 22, 0.7); }
+/* A sheet over the home: the home's own title, buttons and links step out of sight, so the sheet
+   never slices the wordmark or shows the buttons' edges at its sides; the picture stays under it. */
+.home .home-title, .home .home-buttons, .home .home-links { transition: opacity 0.2s; }
+body:has(dialog.sheet[open]) .home .home-title,
+body:has(dialog.sheet[open]) .home .home-buttons,
+body:has(dialog.sheet[open]) .home .home-links { opacity: 0; }
 /* A sheet waiting under a confirmation it asked for: out of sight (the question takes its place),
    still focusable, so focus can return to it on Cancel. */
 dialog.sheet.is-behind, dialog.sheet.is-behind::backdrop { opacity: 0; }
@@ -1209,7 +1223,7 @@ dialog.sheet[open].arrived > .sheet-panel { animation: none; }
 }
 @media (min-width: 640px) and (min-height: 560px) {
   dialog.sheet { margin: auto; width: min(560px, 100vw - 48px); }
-  .sheet-panel { border-radius: 20px; max-height: min(calc(var(--vh) - 64px), 860px); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45); }
+  .sheet-panel { border-radius: 20px; max-height: min(calc(var(--vh) - 64px), 980px); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45); }
   .sheet-body { padding-bottom: 24px; }
 }
 
@@ -1526,6 +1540,10 @@ dialog.sheet.sheet-demo { width: min(100%, 40rem); }
   .choices { gap: 4px; }
   .choice { padding: 6px 12px; }
   .choice-detail { line-height: 1.25; }
+  .sheet-setup .sheet-head { padding-block: 10px; }
+  .sheet-setup .sheet-foot { padding-top: 8px; padding-bottom: calc(8px + var(--sab)); }
+  .sheet-setup .setup-foot { gap: 6px; }
+  .sheet-setup .start-btn { min-height: 48px; }
 }
 
 /* Short, wide screens (a phone held sideways): every row of height counts. The sheet takes nearly

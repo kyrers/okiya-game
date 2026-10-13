@@ -34,7 +34,10 @@ test('opens from home: the takeable tiles are lifted, and the line follows each 
 
 test('with motion on, each token set down is painted, even when the browser runs no frames for its drop', async ({ page }) => {
   await openDemo(page);
+  // As in the Pause test: pressed once the sheet is drawn where it stays, and seen to take.
+  await expectSheetPainted(page);
   await sheet(page).getByRole('button', { name: 'Pause' }).click();
+  await expect(sheet(page).getByRole('button', { name: 'Play', exact: true })).toBeVisible();
   const paused = Number(await move(page));
   await sheet(page).getByRole('button', { name: 'Next move' }).click();
   await expect(sheet(page).locator('.demo')).toHaveAttribute('data-move', String(paused + 1));
