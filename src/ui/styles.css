@@ -717,7 +717,7 @@ button:disabled { cursor: default; }
      falls in it, as fractions of the scene's size (measured once from the transform; they change
      only if the angle or the share does). Portrait: */
   --home-table: 0.76;
-  /* Cloth above the board's far edge that the scene gives up, so the buttons sit on that edge. */
+  /* The mat above the board's far edge that the scene gives up, so the buttons sit on that edge. */
   --home-pull: 0.17;
   /* The board's drawn width, and how far right of the scene's centre its centre falls. */
   --home-span: 0.86;
@@ -741,79 +741,112 @@ button:disabled { cursor: default; }
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: var(--sat) minmax(0, 1fr) auto auto auto auto minmax(0, 1fr) var(--sab);
   grid-template-areas: '.' '.' 'top' 'actions' 'board' 'links' '.' '.';
-  /* The halves may differ in height; the dyes meet at the garden's centre, which home.ts measures
-     into --home-seam. One background, so the weave runs unbroken across the screen. */
+  /* The picture's one camera, shared by the garden (.home-garden, .home-table) and the mats under
+     it (.home::before), so the two always lie in one plane: the table tilted back, the eye's
+     distance as a multiple of the garden size, and the eye's height above the garden's centre as
+     a share of it. home.ts reads them too, to size the mats. */
+  --home-tilt: 40deg;
+  --home-depth: 3.2;
+  --home-eye: 0.1;
+  /* The garden's centre (its scene's, where the board turns), which home.ts measures. */
   --home-seam: 50%;
-  background:
-    var(--cloth) 0 0 / 256px 256px,
-    linear-gradient(to bottom, var(--indi) 0, var(--indi) var(--home-seam), var(--verm) var(--home-seam), var(--verm) 100%);
-  background-blend-mode: soft-light, normal;
+  /* The room beyond the lamp's reach: what lies past the mats. */
+  background: #120d08;
+  perspective: calc(var(--home-board) * var(--home-depth));
+  perspective-origin: var(--home-seam-x, 50%) calc(var(--home-seam, 50%) - var(--home-board) * var(--home-eye));
+  /* A tatami's short side, about four boards; its cloth border (heri), about three centimetres. */
+  --mat: calc(var(--home-board) * 2.5);
+  --heri: calc(var(--mat) * 0.027);
   color: var(--cream);
   font-size: var(--act-fs);
 }
 .home:has([data-go="continue"]) { --act-h: calc(8.8 * var(--act-fs) + 10px); }
-/* The cloth lit as a lamp over the table would light it, in the game's own light (the glows of the
-   game screen: cool on the indigo, warm on the vermilion). One lamp, hung a little above the
-   garden's centre: its pool is one ellipse across both halves, so the light runs on over the seam
-   and only the dye changes; it falls off softly (eased stops, no ring), reaches up to the wordmark,
-   which has a light of its own, and leaves the edges to sink into each dye's own shade rather than
-   grey. Light from above: the garden casts a soft shade on the cloth below it, where the links sit,
-   so their cream labels keep their contrast on the brightest thread. The weave shows most where the
-   light falls (soft-light shades it in proportion). At the seam the indigo lies folded over the
-   vermilion: a crest that catches the lamp (brightest under it, gone at the edges), a crease, and
-   a short shadow on the vermilion below. */
+@media (min-aspect-ratio: 5/4) and (min-height: 501px) {
+  /* The board is a larger share of the garden's box here (see .home-table). */
+  .home { --mat: calc(var(--home-board) * 2.9); }
+}
+/* Tatami under the game, as a picture of an evening's game in a Japanese room. The mats lie in the
+   garden's plane (the same tilt, the same eye), so the rush recedes as the board does; they sit
+   square to the viewer, the board laid on them at its slight angle. Two mats meet under the
+   garden's centre, long sides together, so their cloth borders run side by side across the table
+   there: indigo on the far mat, vermilion on the near one, as the game's halves are. The rush runs
+   across each mat (towards the eye, so its lines converge), the warp threads along it (so their
+   spacing closes with distance), and the cloth's own weave lies over both. One lamp hangs over the
+   garden a little beyond its centre, as the board's shadow says: its pool is a circle on the mats
+   and falls off quickly, so the wordmark, the buttons and the links sit in the room's shade. */
 .home::before,
 .home::after {
   content: '';
   position: absolute;
-  left: 0;
-  right: 0;
   /* Under everything: the buttons and links sit in display: contents wrappers, out of .screen > *. */
   z-index: -1;
   pointer-events: none;
-  /* The lamp: its pool's radii, and how far above the garden's centre it hangs. */
-  --lamp-rx: calc(var(--home-board) * 0.8 + 24vw);
-  --lamp-ry: calc(var(--home-board) * 1.05 + 4vh);
-  --lamp-up: calc(var(--home-board) * 0.2);
-  /* The shade at the edges, centred on the lamp, so the near edge of the table (the bottom) sinks most. */
-  --shade-rx: calc(50vw + var(--home-board) * 0.35);
-  --shade-ry: calc(var(--vh) * 0.7);
-  /* One value per layer: a shorter list would repeat, blending every other layer. */
-  background-blend-mode: soft-light, normal, normal, normal, normal, normal, normal;
 }
 .home::before {
-  top: 0;
-  height: var(--home-seam);
+  /* The floor, cut to what the screen shows of it: how far it runs beyond the garden's centre and
+     towards the eye, and its width (home.ts measures these from the screen and the camera; the
+     fallbacks cover any screen up to 2560x1440). It is a large layer drawn in 3D, so no larger. */
+  --far: var(--floor-far, calc(var(--home-board) * 5));
+  --near: var(--floor-near, calc(var(--home-board) * 2));
+  --mid: calc(var(--floor-w, calc(var(--home-board) * 7)) / 2);
+  /* Where the lamp's light falls: a little beyond the garden's centre. */
+  --lamp: 50% calc(var(--far) - var(--home-board) * 0.03);
+  /* The two borders where the mats meet, each running away from that line. */
+  --to-far: to top;
+  --to-near: to bottom;
+  /* Each border is cloth folded over the mat's edge: darker where it turns down, a sheen along its
+     crown. The dyes' fold and sheen, worked out for an engine without color-mix() (below, from the
+     dyes themselves): a property that cannot be computed would lose the whole floor. */
+  --indi-fold: #222e5f;
+  --indi-sheen: #3f4d86;
+  --verm-fold: #8c2c17;
+  --verm-sheen: #bb4a32;
+  --heri-far: linear-gradient(var(--to-far), rgba(8, 6, 10, 0.7) 0 1px, var(--indi-fold) 1px, var(--indi) calc(var(--heri) * 0.3), var(--indi-sheen) calc(var(--heri) * 0.5), var(--indi) calc(var(--heri) * 0.7), var(--indi-fold) var(--heri), rgba(30, 20, 8, 0.45) var(--heri) calc(var(--heri) + 1.5px), rgba(30, 20, 8, 0) calc(var(--heri) + 1.5px));
+  --heri-near: linear-gradient(var(--to-near), rgba(8, 6, 10, 0.7) 0 1px, var(--verm-fold) 1px, var(--verm) calc(var(--heri) * 0.3), var(--verm-sheen) calc(var(--heri) * 0.5), var(--verm) calc(var(--heri) * 0.7), var(--verm-fold) var(--heri), rgba(30, 20, 8, 0.45) var(--heri) calc(var(--heri) + 1.5px), rgba(30, 20, 8, 0) calc(var(--heri) + 1.5px));
+  --heri-band: calc(var(--heri) + 2px);
+  /* The rush: stalks laid side by side, each its own shade (noise drawn long along the stalk). */
+  --rush: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='r' x='0' y='0' width='1' height='1' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.4 .005' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1.6 0 0 0 -.3 1.6 0 0 0 -.3 1.6 0 0 0 -.3 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23r)'/%3E%3C/svg%3E");
+  width: calc(var(--mid) * 2);
+  height: calc(var(--far) + var(--near));
+  left: calc(var(--home-seam-x, 50%) - var(--mid));
+  top: calc(var(--home-seam, 50%) - var(--far));
+  /* Turned about the garden's centre, seen from the garden's eye (.home's perspective). */
+  transform-origin: 50% var(--far);
+  transform: rotateX(var(--home-tilt));
   background:
-    var(--cloth) 0 0 / 256px 256px,
-    /* The fold's crest: a hairline the whole way, and a lens of light under the lamp. */
-    linear-gradient(to top, rgba(251, 243, 228, 0.14), rgba(251, 243, 228, 0.14) 1px, rgba(251, 243, 228, 0) 1px),
-    radial-gradient(var(--lamp-rx) 7px at 50% 100%, rgba(251, 243, 228, 0.3), rgba(251, 243, 228, 0.12) 45%, rgba(251, 243, 228, 0)),
-    radial-gradient(var(--shade-rx) var(--shade-ry) at 50% calc(100% - var(--lamp-up)), rgba(10, 14, 42, 0) 40%, rgba(10, 14, 42, 0.1) 56%, rgba(10, 14, 42, 0.27) 72%, rgba(10, 14, 42, 0.45) 87%, rgba(10, 14, 42, 0.56) 100%),
-    radial-gradient(calc(var(--wm) * 4.8) calc(var(--wm) * 1.8) at 50% calc(100% - var(--home-board) * var(--home-mid) - 12px - var(--act-h) - 0.8 * var(--wm)), rgba(150, 170, 255, 0.2), rgba(150, 170, 255, 0.15) 30%, rgba(150, 170, 255, 0.07) 60%, rgba(150, 170, 255, 0.02) 82%, rgba(150, 170, 255, 0)),
-    radial-gradient(var(--lamp-rx) var(--lamp-ry) at 50% calc(100% - var(--lamp-up)), rgba(150, 170, 255, 0.4), rgba(150, 170, 255, 0.35) 14%, rgba(150, 170, 255, 0.25) 30%, rgba(150, 170, 255, 0.14) 48%, rgba(150, 170, 255, 0.06) 66%, rgba(150, 170, 255, 0.015) 84%, rgba(150, 170, 255, 0)),
-    var(--indi);
+    /* The lamp's pool, and the room beyond it. */
+    radial-gradient(calc(var(--home-board) * 1.2) calc(var(--home-board) * 0.62) at var(--lamp), rgba(14, 9, 4, 0) 30%, rgba(14, 9, 4, 0.2) 45%, rgba(14, 9, 4, 0.45) 60%, rgba(14, 9, 4, 0.62) 78%, rgba(14, 9, 4, 0.7) 100%),
+    radial-gradient(calc(var(--home-board) * 3.6) calc(var(--home-board) * 3) at var(--lamp), rgba(10, 8, 9, 0) 25%, rgba(10, 8, 9, 0.5) 70%, rgba(10, 8, 9, 0.75) 100%),
+    var(--cloth) var(--mid) var(--far) / 256px 256px,
+    var(--heri-far) 0 calc(var(--far) - var(--heri-band)) / 100% var(--heri-band) no-repeat,
+    var(--heri-near) 0 var(--far) / 100% var(--heri-band) no-repeat,
+    /* The rush runs across the mats, towards the eye; the warp threads along them. */
+    repeating-linear-gradient(to right, rgba(60, 40, 12, 0.16) 0 1px, rgba(60, 40, 12, 0) 1px calc(var(--mat) * 0.0065)) var(--mid) 0 / 100% 100%,
+    var(--rush) var(--mid) var(--far) / calc(var(--mat) * 0.3) calc(var(--mat) * 0.3),
+    repeating-linear-gradient(to bottom, rgba(70, 48, 18, 0.2) 0 1px, rgba(70, 48, 18, 0) 1px calc(var(--mat) / 36)) 0 var(--far) / 100% 100%,
+    #bd9d5f;
+  background-blend-mode: normal, normal, soft-light, normal, normal, normal, soft-light, normal;
 }
+@supports (color: color-mix(in srgb, red, blue)) {
+  .home::before {
+    --indi-fold: color-mix(in srgb, var(--indi), #000 22%);
+    --indi-sheen: color-mix(in srgb, var(--indi), #fff 9%);
+    --verm-fold: color-mix(in srgb, var(--verm), #000 22%);
+    --verm-sheen: color-mix(in srgb, var(--verm), #fff 9%);
+  }
+}
+/* The room's shade at the screen's edges, about the lamp. */
 .home::after {
-  top: var(--home-seam);
-  bottom: 0;
-  background:
-    var(--cloth) 0 calc(-1 * var(--home-seam)) / 256px 256px,
-    /* The crease, and the folded edge's short shadow. */
-    linear-gradient(to bottom, rgba(36, 7, 3, 0.5), rgba(36, 7, 3, 0.22) 2px, rgba(36, 7, 3, 0.08) 6px, rgba(36, 7, 3, 0) 12px),
-    /* The garden's shade on the cloth below it, under the links. */
-    radial-gradient(calc(var(--home-board) * 0.6 + 48px) calc(var(--home-board) * 0.16 + 56px) at 50% calc(var(--home-board) * (1 - var(--home-pull) - var(--home-mid)) + 34px), rgba(46, 9, 4, 0.34), rgba(46, 9, 4, 0.27) 35%, rgba(46, 9, 4, 0.12) 68%, rgba(46, 9, 4, 0)),
-    radial-gradient(var(--shade-rx) var(--shade-ry) at 50% calc(-1 * var(--lamp-up)), rgba(48, 10, 5, 0) 40%, rgba(48, 10, 5, 0.1) 56%, rgba(48, 10, 5, 0.27) 72%, rgba(48, 10, 5, 0.45) 87%, rgba(48, 10, 5, 0.56) 100%),
-    radial-gradient(var(--lamp-rx) var(--lamp-ry) at 50% calc(-1 * var(--lamp-up)), rgba(255, 180, 125, 0.36), rgba(255, 180, 125, 0.31) 14%, rgba(255, 180, 125, 0.22) 30%, rgba(255, 180, 125, 0.12) 48%, rgba(255, 180, 125, 0.05) 66%, rgba(255, 180, 125, 0.012) 84%, rgba(255, 180, 125, 0)),
-    var(--verm);
+  inset: 0;
+  background: radial-gradient(farthest-corner at var(--home-seam-x, 50%) calc(var(--home-seam, 50%) - var(--home-board) * 0.1), rgba(10, 7, 6, 0) 40%, rgba(10, 7, 6, 0.36) 75%, rgba(10, 7, 6, 0.68) 100%);
 }
 .home .seam { grid-area: board; padding: 12px 0; }
 /* One column: the title, the way into a game on the garden's top edge, the garden, the links. */
 .home-actions-wrap, .home-actions { display: contents; }
 /* The garden as a picture of the game, not a board to play on: it lies on the table, seen at an
    angle as from a chair, a few moves into a game, with the taken tiles and some spare tokens resting
-   on the cloth beside it. Every piece lies in one plane, the table's, so they share one
-   perspective; the board's shadow and edge are drawn in that plane too, on the cloth. Nothing in it
+   on the mats beside it. Every piece lies in one plane, the mats', so they share one perspective
+   (the camera on .home); the board's shadow and edge are drawn in that plane too. Nothing in it
    answers the pointer (home.ts also makes it inert). */
 .home-garden {
   position: relative;
@@ -821,8 +854,8 @@ button:disabled { cursor: default; }
   height: var(--home-board);
   display: grid;
   place-items: center;
-  perspective: calc(var(--home-board) * 3.2);
-  perspective-origin: 50% 40%;
+  perspective: calc(var(--home-board) * var(--home-depth));
+  perspective-origin: 50% calc(50% - 100% * var(--home-eye));
   /* Up to the buttons, so they sit on the board's far edge rather than above a picture, and over a
      little, so the board, not the scene's square, is centred under them. */
   margin-top: calc(var(--home-board) * -1 * var(--home-pull));
@@ -831,15 +864,15 @@ button:disabled { cursor: default; }
   cursor: default;
 }
 .home-table {
-  /* The board inside the scene: the rest is cloth for the loose pieces. */
+  /* The board inside the scene: the rest is mat for the loose pieces. */
   --b: calc(var(--home-board) * var(--home-table));
   position: relative;
   width: var(--b);
   height: var(--b);
-  transform: rotateX(40deg) rotateZ(-8deg);
+  transform: rotateX(var(--home-tilt)) rotateZ(-8deg);
 }
 .home .board { --board: var(--b); }
-/* The board's edge, a few millimetres of card, and its shadow on the cloth, both in the table's plane. */
+/* The board's edge, a few millimetres of card, and its shadow on the mats, both in the table's plane. */
 .home .board-grid {
   box-shadow:
     0 calc(var(--b) * 0.016) 0 #b19566,
@@ -855,7 +888,7 @@ button:disabled { cursor: default; }
   top: calc(var(--b) * var(--y));
   transform: rotate(var(--r, 0deg));
 }
-/* A taken tile: the garden's own cell, with its thickness and its shadow on the cloth. */
+/* A taken tile: the garden's own cell, with its thickness and its shadow on the mats. */
 .home-tile {
   width: calc(var(--b) * 0.2215);
   height: calc(var(--b) * 0.2215);
@@ -870,7 +903,7 @@ button:disabled { cursor: default; }
 .home-tile .tile-art { width: 100%; height: 100%; display: block; border-radius: inherit; overflow: hidden; }
 .home-token { width: calc(var(--b) * 0.18); height: calc(var(--b) * 0.18); }
 .home-token .token-svg { width: 100%; height: 100%; display: block; overflow: visible; }
-/* Each player's pieces on their own half, beside the board (the buttons have the cloth beyond its
+/* Each player's pieces on their own half, beside the board (the buttons have the mat beyond its
    far edge): indigo's by the far right corner, above the seam, where the turned board leaves the
    most cloth; vermilion's tokens by the near left corner and its tiles under the near edge, below
    it. The later tile lies over the earlier, as it was put down last. */
@@ -1039,46 +1072,26 @@ button:disabled { cursor: default; }
     grid-template-columns: var(--sal) minmax(0, 1fr) auto var(--sar);
     grid-template-rows: var(--sat) minmax(0, 1fr) auto auto auto minmax(0, 1fr) var(--sab);
     grid-template-areas: '. . . .' '. . board .' '. top board .' '. actions board .' '. links board .' '. . board .' '. . . .';
-    background:
-      var(--cloth) 0 0 / 256px 256px,
-      linear-gradient(to right, var(--verm) 0, var(--verm) var(--home-seam-x, 50%), var(--indi) var(--home-seam-x, 50%), var(--indi) 100%);
+    /* The board is a smaller share of the garden's box here (see .home-table). */
+    --mat: calc(var(--home-board) * 2.2);
   }
-  /* Vermilion on the left, under the wordmark and the buttons; indigo on the right. */
-  .home::before,
-  .home::after { top: 0; bottom: 0; height: auto; }
-  /* The lamp over the garden, a little above its centre; the shade centred between the garden and
-     the column, higher than the middle, so the near edge (where the links sit) sinks most. */
-  .home::before,
-  .home::after {
-    --lamp-rx: calc(var(--home-board) * 0.62 + 6vw);
-    --lamp-ry: calc(var(--home-board) * 0.85 + 12vh);
-    --lamp-y: calc(var(--home-seam, 50%) - var(--home-board) * 0.16);
-    --shade-x: calc(var(--home-seam-x, 50%) - var(--home-board) * 0.75);
-  }
+  /* The mats turned a quarter: they meet in a line from the garden's centre to the far wall, the
+     near player's vermilion border on the left, under the wordmark and the buttons, indigo on the
+     right; the rush runs across them, the warp threads towards the far wall. */
   .home::before {
-    right: auto;
-    width: var(--home-seam-x, 50%);
+    --to-far: to right;
+    --to-near: to left;
+    --rush: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='r' x='0' y='0' width='1' height='1' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.005 .4' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1.6 0 0 0 -.3 1.6 0 0 0 -.3 1.6 0 0 0 -.3 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23r)'/%3E%3C/svg%3E");
     background:
-      var(--cloth) 0 0 / 256px 256px,
-      /* The crease, and the folded indigo's short shadow. */
-      linear-gradient(to left, rgba(36, 7, 3, 0.5), rgba(36, 7, 3, 0.22) 2px, rgba(36, 7, 3, 0.08) 6px, rgba(36, 7, 3, 0) 12px),
-      /* The near edge, furthest from the lamp, under the links. */
-      linear-gradient(to bottom, rgba(48, 10, 5, 0) 45%, rgba(48, 10, 5, 0.1) 70%, rgba(48, 10, 5, 0.24) 100%),
-      radial-gradient(75vw 80vh at var(--shade-x) 30%, rgba(48, 10, 5, 0) 30%, rgba(48, 10, 5, 0.12) 52%, rgba(48, 10, 5, 0.3) 70%, rgba(48, 10, 5, 0.46) 86%, rgba(48, 10, 5, 0.56) 100%),
-      radial-gradient(calc((var(--home-seam-x, 50vw) - var(--home-board) / 2) * 0.5) calc(var(--vh) * 0.26) at calc(50% - var(--home-board) / 4) 34%, rgba(255, 180, 125, 0.12), rgba(255, 180, 125, 0.09) 30%, rgba(255, 180, 125, 0.05) 60%, rgba(255, 180, 125, 0.012) 82%, rgba(255, 180, 125, 0)),
-      radial-gradient(var(--lamp-rx) var(--lamp-ry) at 100% var(--lamp-y), rgba(255, 180, 125, 0.36), rgba(255, 180, 125, 0.31) 14%, rgba(255, 180, 125, 0.22) 30%, rgba(255, 180, 125, 0.12) 48%, rgba(255, 180, 125, 0.05) 66%, rgba(255, 180, 125, 0.012) 84%, rgba(255, 180, 125, 0)),
-      var(--verm);
-  }
-  .home::after {
-    left: var(--home-seam-x, 50%);
-    background:
-      var(--cloth) calc(-1 * var(--home-seam-x, 50%)) 0 / 256px 256px,
-      /* The fold's crest: a hairline the whole way, a lens of light beside the lamp. */
-      linear-gradient(to right, rgba(251, 243, 228, 0.14), rgba(251, 243, 228, 0.14) 1px, rgba(251, 243, 228, 0) 1px),
-      radial-gradient(7px var(--lamp-ry) at 0 var(--lamp-y), rgba(251, 243, 228, 0.3), rgba(251, 243, 228, 0.12) 45%, rgba(251, 243, 228, 0)),
-      radial-gradient(75vw 80vh at calc(var(--shade-x) - var(--home-seam-x, 50%)) 30%, rgba(10, 14, 42, 0) 30%, rgba(10, 14, 42, 0.12) 52%, rgba(10, 14, 42, 0.3) 70%, rgba(10, 14, 42, 0.46) 86%, rgba(10, 14, 42, 0.56) 100%),
-      radial-gradient(var(--lamp-rx) var(--lamp-ry) at 0 var(--lamp-y), rgba(150, 170, 255, 0.4), rgba(150, 170, 255, 0.35) 14%, rgba(150, 170, 255, 0.25) 30%, rgba(150, 170, 255, 0.14) 48%, rgba(150, 170, 255, 0.06) 66%, rgba(150, 170, 255, 0.015) 84%, rgba(150, 170, 255, 0)),
-      var(--indi);
+      radial-gradient(calc(var(--home-board) * 0.9) calc(var(--home-board) * 0.95) at var(--lamp), rgba(14, 9, 4, 0) 30%, rgba(14, 9, 4, 0.2) 45%, rgba(14, 9, 4, 0.45) 60%, rgba(14, 9, 4, 0.62) 78%, rgba(14, 9, 4, 0.7) 100%),
+      radial-gradient(calc(var(--home-board) * 3.6) calc(var(--home-board) * 3) at var(--lamp), rgba(10, 8, 9, 0) 25%, rgba(10, 8, 9, 0.5) 70%, rgba(10, 8, 9, 0.75) 100%),
+      var(--cloth) var(--mid) var(--far) / 256px 256px,
+      var(--heri-far) var(--mid) 0 / var(--heri-band) 100% no-repeat,
+      var(--heri-near) calc(var(--mid) - var(--heri-band)) 0 / var(--heri-band) 100% no-repeat,
+      repeating-linear-gradient(to bottom, rgba(60, 40, 12, 0.16) 0 1px, rgba(60, 40, 12, 0) 1px calc(var(--mat) * 0.0065)) 0 var(--far) / 100% 100%,
+      var(--rush) var(--mid) var(--far) / calc(var(--mat) * 0.3) calc(var(--mat) * 0.3),
+      repeating-linear-gradient(to right, rgba(70, 48, 18, 0.2) 0 1px, rgba(70, 48, 18, 0) 1px calc(var(--mat) / 36)) var(--mid) 0 / 100% 100%,
+      #bd9d5f;
   }
   .home .seam { padding: 10px var(--gutter) 10px 0; align-self: center; }
   /* The garden fills the height: a smaller board leaves the loose pieces room around it. Nothing

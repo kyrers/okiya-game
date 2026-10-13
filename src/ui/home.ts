@@ -70,15 +70,40 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
       el.style.setProperty('--home-board-fit', `${Math.max(96, Math.floor(board - over))}px`);
     }
   };
-  // The two dyes meet at the garden's centre line (portrait), wherever the layout puts it.
+  // The mats lie in the garden's plane, wherever the layout puts the garden: they turn about its
+  // scene's centre (where the board turns), and are cut to what the screen shows of them.
   if (typeof ResizeObserver !== 'undefined') {
     const place = () => {
       fit();
-      const g = garden.getBoundingClientRect();
+      const s = scene.getBoundingClientRect();
       const h = el.getBoundingClientRect();
-      if (g.height === 0) return;
-      el.style.setProperty('--home-seam', `${Math.round(g.top - h.top + g.height / 2)}px`);
-      el.style.setProperty('--home-seam-x', `${Math.round(g.left - h.left + g.width / 2)}px`);
+      if (s.height === 0) return;
+      const x = s.left - h.left + s.width / 2;
+      const y = s.top - h.top + s.height / 2;
+      el.style.setProperty('--home-seam', `${Math.round(y)}px`);
+      el.style.setProperty('--home-seam-x', `${Math.round(x)}px`);
+      // The camera the stylesheet gives the picture: tilt, the eye's distance and its height above
+      // the centre. Solve how far along the floor the screen's top and bottom edges fall, and how
+      // wide the floor must be at its far edge to reach both sides.
+      const css = getComputedStyle(el);
+      const tilt = (parseFloat(css.getPropertyValue('--home-tilt')) * Math.PI) / 180;
+      const d = s.width * parseFloat(css.getPropertyValue('--home-depth'));
+      const up = s.width * parseFloat(css.getPropertyValue('--home-eye'));
+      if (!(tilt > 0 && d > 0 && up >= 0)) return;
+      const c = Math.cos(tilt);
+      const sin = Math.sin(tilt);
+      const above = y;
+      const below = h.height - y;
+      const room = c * d - (above - up) * sin;
+      // Beyond the horizon (a very tall, narrow window) the floor stops and the room shows past it.
+      const far = room > 0 ? Math.min((above * d) / room, s.width * 12) : s.width * 12;
+      // An engine that draws the mats flat (Playwright's WebKit does) needs them a little longer
+      // towards the eye: enough for both, so no edge ever shows.
+      const near = Math.max((below * d) / (c * d + (below + up) * sin), below / c);
+      const half = Math.max(x, h.width - x) * (1 + (far * sin) / d);
+      el.style.setProperty('--floor-far', `${Math.ceil(far * 1.06 + 16)}px`);
+      el.style.setProperty('--floor-near', `${Math.ceil(near * 1.06 + 16)}px`);
+      el.style.setProperty('--floor-w', `${2 * Math.ceil(half * 1.04 + 16)}px`);
     };
     new ResizeObserver(place).observe(el);
     // The buttons' text changes size when the fonts arrive; the screen itself does not.
