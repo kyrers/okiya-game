@@ -312,9 +312,10 @@ button:disabled { cursor: default; }
   --card-dye: var(--ink);
   position: relative;
   z-index: 5;
-  max-width: calc(100% - 2 * var(--gutter));
-  padding: 0.75em;
-  border-radius: 0.9em;
+  /* Always inside the garden, never a band across it. */
+  max-width: calc(var(--board) - 1.5em);
+  padding: 0.625em;
+  border-radius: calc(var(--radius) + 0.625em);
   font-size: clamp(0.9375rem, 0.8rem + 0.4vw, 1.125rem);
   color: var(--cream);
   background: var(--cloth) 0 0 / 256px 256px, var(--card-dye);
@@ -326,8 +327,8 @@ button:disabled { cursor: default; }
 .end-card.arriving { pointer-events: none; }
 .game[data-turn='1'] .end-card { --card-dye: var(--verm); }
 .game[data-turn='2'] .end-card { --card-dye: var(--indi); }
-.end-card .say-actions { justify-content: center; }
-.end-card .btn { font-size: 1em; min-height: max(44px, 3em); }
+.end-card .say-actions { justify-content: center; flex-wrap: nowrap; }
+.end-card .btn { font-size: 1em; min-height: max(44px, 3em); padding-inline: 0.875em; }
 @keyframes card-in {
   from { opacity: 0; transform: translateY(12px) scale(0.96); }
   to { opacity: 1; transform: none; }
@@ -665,11 +666,12 @@ button:disabled { cursor: default; }
       linear-gradient(to right, var(--verm) 50%, var(--indi) 50%);
   }
   .home .seam { padding: 0 clamp(16px, 3vw, 40px); }
-  /* The way into a game starts level with the garden's top edge. */
-  .home-actions-wrap { grid-area: bottom; display: flex; align-items: flex-start; padding-top: max(0px, calc((var(--vh) - var(--sat) - var(--sab) - var(--home-board)) / 2)); }
-  .home-actions { display: flex; flex-direction: column; gap: 10px; margin-inline: auto; }
+  /* The column is as tall as the garden: the way into a game level with its top edge, the links
+     with its bottom. A column taller than the garden (a long Continue summary) is centred. */
+  .home-actions-wrap { grid-area: bottom; display: flex; align-items: center; }
+  .home-actions { display: flex; flex-direction: column; gap: 10px; margin-inline: auto; min-height: var(--home-board); }
   .home-buttons { display: contents; }
-  .home-links { padding: 0; align-self: auto; }
+  .home-links { padding: 0; align-self: auto; margin-top: auto; }
   .home-title { justify-content: center; padding: 16px var(--gutter); gap: 14px; }
   /* Landscape: "Paper" over "Garden" (about 4.1em wide), as large as the column allows. */
   .wordmark { font-size: min(5.5rem, 100cqi / 4.1); }
@@ -678,7 +680,7 @@ button:disabled { cursor: default; }
   /* Two lines, like the wordmark above it: a narrow column cannot be trusted to wrap one line that
      only just fits (WebKit kept it whole, 2 px too wide, at 812 x 414). */
   .home-sub .credit-name { display: block; }
-  .home-actions { width: min(100% - 2 * var(--gutter), 24em); padding: 0 0 16px; font-size: clamp(1rem, 0.7rem + 0.45vw, 1.25rem); }
+  .home-actions { width: min(100% - 2 * var(--gutter), 24em); padding: 0; font-size: clamp(1rem, 0.7rem + 0.45vw, 1.25rem); }
 }
 
 /* Short screens: tighten the seats so the garden keeps its size. */
@@ -702,18 +704,19 @@ button:disabled { cursor: default; }
   .say-tile { width: 3em; height: 3em; }
   .wordmark { font-size: min(9vh, 4rem, 100cqi / 4.1); }
   .btn.big { min-height: 54px; padding: 0.45em 1em; }
-  .home-actions { gap: 6px; padding: 0 0 8px; font-size: 1rem; }
+  .home-actions { gap: 6px; font-size: 1rem; }
   .home-title { gap: 6px; }
   /* Room for a long Continue summary: New game's hint repeats what its sheet shows. */
   .btn.big .btn-sub { font-size: 0.8125em; }
   .btn.big.secondary .btn-sub { display: none; }
 }
+/* The shortest screens: the end card's buttons keep to one row inside the garden. */
 @media (max-height: 340px) and (min-aspect-ratio: 5/4) {
-  .home-actions { padding: 0 0 2px; }
+  .end-card .btn .icon { display: none; }
 }
 @media (min-width: 1100px) and (min-height: 760px) {
   :root { --topbar: 4.25rem; }
-  .home-actions { font-size: 1.125rem; }
+  .home-actions { font-size: 1.3125rem; }
 }
 
 /* ==========================================================================
