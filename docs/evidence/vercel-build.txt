@@ -1,4 +1,7 @@
-Vercel build on the final code: npx vercel@44.7.3 build --yes (local; no account, nothing deployed).
+Vercel build of the commit "Paper Garden: the rename, the audit's findings, a provenance check", in a
+clean clone (git clone, npm ci): npx vercel@44.7.3 build --yes, run locally (no account, nothing
+deployed), with the repository's linked project settings (framework vite); local Node 23.5, where
+Vercel's own servers would use the project's Node 22.x.
 Result: Build Completed in .vercel/output [2s]
 Build Output API version: 3
 Routes:
@@ -7,4 +10,5 @@ Routes:
   ^(?:/(.*))$  headers: X-Content-Type-Options, Referrer-Policy, Permissions-Policy, Content-Security-Policy
     {"handle":"error"}
   ^(?!/api).*$  {"status":404,"src":"^(?!/api).*$","dest":"/404.html"}
-static output identical to dist/
+Static output identical to the clean clone's dist/ and to the dist/ every test ran against
+(diff -r: no difference).

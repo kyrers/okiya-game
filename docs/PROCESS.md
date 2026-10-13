@@ -258,8 +258,8 @@ The client ruled (2026-10-13) that the product cannot be called by the published
 | Screen kept awake during a game, released on leaving it | `e2e/ship.spec.ts` | lock acquired at game start and released on Home (desktop and both Android profiles) |
 | Accessibility, axe-core WCAG 2.2 AA rules on home, setup, rules, settings, game, menu | `e2e/ship.spec.ts` | 0 violations |
 | Lighthouse 12.6, mobile and desktop, production build | see `docs/evidence/lighthouse.txt` | mobile 99 / 100 / 100 / 100 (performance, accessibility, best practices, SEO; first paint 1.7 s on simulated slow 4G, 151 KB transferred); desktop 100 / 100 / 100 / 100 |
-| Vercel's own build pipeline on the final commit | `npx vercel@44.7.3 build --yes` (local, no account) | Build Completed; Build Output v3 static files identical to the tested `dist/`; routes carry the immutable asset cache, `no-cache` service worker, security headers and CSP (`docs/evidence/vercel-build.txt`) |
-| Clean clone, as a CI or Vercel would build it | `git clone`, `npm ci`, `npm run build` | passes |
+| Vercel's own build pipeline on the final commit, in a clean clone | `npx vercel@44.7.3 build --yes` (local, no account) | Build Completed; Build Output v3 static files identical to the `dist/` every test ran against; routes carry the immutable asset cache, `no-cache` service worker, security headers and CSP (`docs/evidence/vercel-build.txt`) |
+| Clean clone of the final commit, as a CI or Vercel would build it | `git clone`, `npm ci`, `npm run build` | passes; `dist/` identical to the tested one |
 | `vercel.json` against Vercel's published schema (with a negative control) | ajv 8, draft-07, schema fetched on the day | valid; the broken copy is rejected (`docs/evidence/vercel-schema.txt`) |
 | Every shipped file accounted for: origin and licence | `docs/ASSETS.md` | all original, or OFL-1.1 (two typefaces, licence texts shipped), or MIT (Vite's preload helper); no file loaded from another domain |
 | The page under the exact `vercel.json` headers and CSP | `e2e/vercel.spec.ts` + `scripts/serve-vercel.ts` | no CSP violation in Chromium or WebKit; hashed assets `immutable` |
