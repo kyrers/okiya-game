@@ -1115,6 +1115,15 @@ button:disabled { cursor: default; }
   .home-links { padding: 4px var(--gutter) 0; gap: 4px; }
   .home-links .link-btn { min-height: 44px; }
 }
+/* A phone held sideways and short (360px or less): three labelled links took two rows and pushed
+   the column off the screen. They become one row of round icon buttons; their names stay for
+   screen readers (and for the label a pointer's tooltip would need, there is none on touch). */
+@media (max-height: 360px) and (min-aspect-ratio: 5/4) {
+  .home-links { flex-wrap: nowrap; gap: 10px; }
+  .home-links .link-btn { width: 44px; min-height: 44px; padding: 0; justify-content: center; }
+  .home-links .link-btn .icon { width: 22px; height: 22px; }
+  .home-links .link-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+}
 
 /* ==========================================================================
    Sheets

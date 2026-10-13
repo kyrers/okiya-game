@@ -124,10 +124,16 @@ export async function layoutProblems(page: Page): Promise<string[]> {
     if (de.scrollWidth > vw + 1) out.push(`page scrolls sideways: ${de.scrollWidth} > ${vw}`);
     if (de.scrollHeight > de.clientHeight + 1) out.push(`page scrolls: ${de.scrollHeight} > ${de.clientHeight}`);
     const name = (el: Element) => `${el.tagName.toLowerCase()}.${[...el.classList].join('.')}`;
+    // Text clipped away to nothing (the screen-reader-only pattern, by .sr-only or by a media rule,
+    // as the home's link labels on a short sideways phone) is not on screen to check.
+    const clippedAway = (el: Element) => {
+      for (let a: Element | null = el; a && a !== document.body; a = a.parentElement) if (getComputedStyle(a).clip === 'rect(0px, 0px, 0px, 0px)') return true;
+      return false;
+    };
     const visible = (el: Element) => {
       const cs = getComputedStyle(el);
       const b = el.getBoundingClientRect();
-      return cs.display !== 'none' && cs.visibility !== 'hidden' && b.width > 0 && b.height > 0 && !el.closest('.sr-only');
+      return cs.display !== 'none' && cs.visibility !== 'hidden' && b.width > 0 && b.height > 0 && !el.closest('.sr-only') && !clippedAway(el);
     };
     const dialog = document.querySelector('dialog[open]');
     const scope: Element[] = dialog ? [...dialog.querySelectorAll('.sheet-panel, .sheet-head *, .sheet-foot *')] : [...document.querySelectorAll('.screen *')];

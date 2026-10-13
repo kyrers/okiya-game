@@ -28,9 +28,9 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
         <button type="button" class="btn ${resumable ? 'secondary' : 'primary'} big" data-go="new">${resumable ? icon('restart') : icon('play')}<span><span class="btn-title">New game</span><span class="btn-sub">Against the computer or a&nbsp;friend</span></span></button>
       </div>
       <nav class="home-links" aria-label="More">
-        <button type="button" class="link-btn" data-go="rules">${icon('book')} How to play</button>
-        <button type="button" class="link-btn" data-go="demo">${icon('watch')} Watch a game</button>
-        <button type="button" class="link-btn" data-go="settings">${icon('sliders')} Settings</button>
+        <button type="button" class="link-btn" data-go="rules">${icon('book')} <span class="link-label">How to play</span></button>
+        <button type="button" class="link-btn" data-go="demo">${icon('watch')} <span class="link-label">Watch a game</span></button>
+        <button type="button" class="link-btn" data-go="settings">${icon('sliders')} <span class="link-label">Settings</span></button>
       </nav>
     </section></div>
     <div class="seam home-seam"></div>`;
