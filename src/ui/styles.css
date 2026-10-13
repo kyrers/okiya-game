@@ -749,21 +749,27 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
   user-select: text;
   -webkit-user-select: text;
 }
+/* The head is a band of the table's own cloth, as the game's top bar is: cream title, the dye
+   icon button, gold focus. The paper below it is the sheet's page. */
 .sheet-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px calc(var(--gutter) + var(--sar)) 12px calc(var(--gutter) + var(--sal));
-  border-bottom: 1px solid rgba(80, 60, 30, 0.14);
+  padding: 14px calc(var(--gutter) + var(--sar)) 14px calc(var(--gutter) + var(--sal));
+  border-radius: 20px 20px 0 0;
+  background: var(--cloth) 0 0 / 256px 256px, var(--indi-dim);
+  background-blend-mode: soft-light, normal;
+  color: var(--cream);
+  box-shadow: inset 0 1px 0 rgba(251, 243, 228, 0.16), inset 0 -1px 0 rgba(8, 6, 14, 0.35);
 }
-.sheet-title { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.2; }
-.sheet .icon-btn { color: var(--ink); background: rgba(31, 27, 24, 0.05); border-color: rgba(31, 27, 24, 0.18); }
-.sheet .icon-btn:hover { background: rgba(31, 27, 24, 0.1); }
+.sheet-title { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.2; color: var(--cream); }
 .sheet-panel:focus { outline: none; }
 .sheet-body:focus-visible { outline: 3px solid var(--verm); outline-offset: -3px; }
-/* On paper the focus mark is vermilion (gold reads 1.6:1 there; vermilion over 5:1). */
+/* On paper the focus mark is vermilion (gold reads 1.6:1 there; vermilion over 5:1). On the
+   cloth band it is gold, as everywhere on the dyes. */
 .sheet :focus-visible { outline-color: var(--verm); }
+.sheet .sheet-head :focus-visible { outline-color: var(--gold); }
 .sheet-foot {
   padding: 12px calc(var(--gutter) + var(--sar)) calc(12px + var(--sab)) calc(var(--gutter) + var(--sal));
   border-top: 1px solid rgba(80, 60, 30, 0.14);
@@ -816,7 +822,7 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 
 .setup { display: flex; flex-direction: column; gap: 22px; }
 .setup fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
-.setup legend { font-weight: 700; font-size: 0.9375rem; margin-bottom: 8px; padding: 0; color: var(--ink-2); }
+.setup legend { font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; line-height: 1.25; margin-bottom: 8px; padding: 0; color: var(--indi); }
 .seg { display: flex; gap: 4px; border-radius: var(--radius); background: var(--paper-2); padding: 4px; }
 .seg-opt { flex: 1 1 0; min-width: 0; position: relative; }
 .seg-opt input, .choice input { position: absolute; opacity: 0; inset: 0; margin: 0; pointer-events: none; }
@@ -841,15 +847,46 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 .seg.small .seg-opt span { min-height: 40px; font-size: 0.875rem; }
 
 .choices { display: flex; flex-direction: column; gap: 8px; }
-.choice { position: relative; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius); background: var(--paper); box-shadow: inset 0 0 0 1px rgba(80, 60, 30, 0.22); cursor: pointer; transition: box-shadow 0.15s, background-color 0.15s; }
-.choice:hover { background: #fbf5ea; }
+/* Each choice is a tile raised on the paper, as a setting is; its mark is a pressed token well,
+   empty until the choice is made, then holding the vermilion token. */
+.choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--paper-grain) 0 0 / 256px 256px, var(--tile-face);
+  background-blend-mode: soft-light, normal;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 0 0 1px rgba(80, 60, 30, 0.16) inset, 0 2px 3px rgba(60, 40, 15, 0.22);
+  cursor: pointer;
+  transition: box-shadow 0.15s, background-color 0.15s;
+}
+@media (hover: hover) { .choice:hover { background-color: #fffaf0; } }
 .choice-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .choice-title { font-weight: 700; }
 .choice-detail { font-size: 0.875rem; color: var(--ink-3); }
-.choice-mark { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; flex: none; box-shadow: inset 0 0 0 1.5px rgba(80, 60, 30, 0.35); color: transparent; }
-.choice-mark .icon { width: 16px; height: 16px; stroke-width: 2.6; }
-.choice:has(input:checked) { box-shadow: inset 0 0 0 2px var(--verm); background: #fbf3e6; }
-.choice input:checked ~ .choice-mark { background: var(--verm); color: var(--cream); box-shadow: none; }
+.choice-mark {
+  position: relative;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--paper-grain) 0 0 / 256px 256px, var(--token-well);
+  background-blend-mode: soft-light, normal;
+  box-shadow: inset 0 0 0 1.5px var(--ink-3), inset 0 2px 4px rgba(70, 50, 20, 0.32);
+}
+.choice-mark .token-svg {
+  position: absolute;
+  inset: 1px;
+  width: 28px;
+  height: 28px;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.86);
+  transition: transform 0.3s var(--ease-out), opacity 0.16s;
+}
+.choice:has(input:checked) { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, inset 0 0 0 2px var(--verm), 0 2px 3px rgba(60, 40, 15, 0.22); }
+.choice input:checked ~ .choice-mark .token-svg { opacity: 1; transform: none; }
 .choice:has(input:focus-visible) { outline: 3px solid var(--verm); outline-offset: 2px; }
 
 .names { display: flex; flex-direction: column; gap: 8px; }
@@ -875,15 +912,21 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
   .sheet-panel:has(.sheet-foot) .sheet-close { position: absolute; top: 6px; right: calc(var(--gutter) + var(--sar)); }
   .sheet-title { font-size: 1.25rem; }
   .sheet-body { grid-column: 1 / -1; grid-row: 2; padding-top: 10px; }
-  .sheet-foot { grid-column: 2; grid-row: 1; border-top: 0; border-bottom: 1px solid rgba(80, 60, 30, 0.14); display: flex; align-items: center; padding: 6px calc(var(--gutter) + var(--sar) + 56px) 6px 8px; }
+  .sheet-panel:has(.sheet-foot) .sheet-head { border-top-right-radius: 0; }
+  /* The action shares the head's row, so it sits on the same cloth, and takes the paper button
+     there (a button takes the material opposite to its ground). */
+  .sheet-foot { grid-column: 2; grid-row: 1; border-top: 0; border-radius: 0 20px 0 0; background: var(--cloth) 0 0 / 256px 256px, var(--indi-dim); background-blend-mode: soft-light, normal; box-shadow: inset 0 1px 0 rgba(251, 243, 228, 0.16), inset 0 -1px 0 rgba(8, 6, 14, 0.35); display: flex; align-items: center; padding: 6px calc(var(--gutter) + var(--sar) + 56px) 6px 8px; }
   .sheet-foot .start-btn { width: auto; min-height: 44px; padding: 0 22px; }
+  .sheet .sheet-foot .btn.primary { background: var(--paper); color: var(--ink); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 2px 4px -1px rgba(8, 6, 14, 0.45); }
+  .sheet .sheet-foot .btn.primary:hover { background: #fff8ea; }
+  .sheet .sheet-foot :focus-visible { outline-color: var(--gold); }
   .setup { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: 'opp match' 'level match' 'names match' 'note match'; gap: 12px 20px; align-items: start; }
   .setup .f-opp { grid-area: opp; }
   .setup .f-level { grid-area: level; }
   .setup .f-names { grid-area: names; }
   .setup .f-match { grid-area: match; }
   .setup .setup-note { grid-area: note; }
-  .setup legend { margin-bottom: 6px; }
+  .setup legend { font-size: 1.125rem; line-height: 1.2; margin-bottom: 6px; }
   .choice { padding: 7px 12px; gap: 10px; }
   .choice-detail { font-size: 0.8125rem; line-height: 1.3; }
   .choices { gap: 6px; }
@@ -896,35 +939,110 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 
 /* ---------- settings ---------- */
 
-.settings { display: flex; flex-direction: column; gap: 6px; }
-.toggle-row { position: relative; display: flex; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid rgba(80, 60, 30, 0.12); cursor: pointer; }
+/* Each setting is a tile, raised on the paper as the garden's tiles are; its switch is a pressed
+   well in which the player's own token is set down (on) or a plain tile waits (off). */
+.settings { display: flex; flex-direction: column; gap: 10px; }
+.toggle-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 64px;
+  padding: 12px 14px 12px 16px;
+  border-radius: var(--radius);
+  background: var(--paper-grain) 0 0 / 256px 256px, var(--tile-face);
+  background-blend-mode: soft-light, normal;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 0 0 1px rgba(80, 60, 30, 0.16) inset, 0 2px 3px rgba(60, 40, 15, 0.22);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+@media (hover: hover) { .toggle-row:hover { background-color: #fffaf0; } }
 .toggle-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .toggle-title { font-weight: 700; }
-.toggle-detail { font-size: 0.875rem; color: var(--ink-3); }
+.toggle-detail { font-size: 0.875rem; line-height: 1.35; color: var(--ink-3); }
 .toggle-row input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.switch { width: 50px; height: 30px; border-radius: 999px; background: #cbbb9c; position: relative; flex: none; transition: background-color 0.2s; }
-.switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); transition: transform 0.2s var(--ease-out); }
-.toggle-row input:checked + .switch { background: var(--verm); }
-.toggle-row input:checked + .switch::after { transform: translateX(20px); }
-.toggle-row input:focus-visible + .switch { outline: 3px solid var(--verm); outline-offset: 2px; }
-.about { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; font-size: 0.9375rem; color: var(--ink-2); }
-.about h3 { font-family: var(--font-display); font-size: 1.2rem; color: var(--ink); }
+/* The switch is a strip of two garden cells, pressed in and edged in ink-3 (5:1 on the tile) so it
+   reads in both states: off, a plain tile waits in the near cell; on, the vermilion token is set
+   down in the far one. */
+.switch {
+  position: relative;
+  flex: none;
+  width: 64px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--paper-grain) 0 0 / 256px 256px, var(--token-well);
+  background-blend-mode: soft-light, normal;
+  box-shadow: inset 0 0 0 1.5px var(--ink-3), inset 0 3px 5px rgba(70, 50, 20, 0.32);
+}
+/* The seam between the two cells. */
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 50%;
+  width: 1px;
+  margin-left: -0.5px;
+  background: rgba(80, 60, 30, 0.18);
+}
+/* Off: a plain tile in the near cell, edged in ink-3. */
+.switch::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: 5px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--tile-face);
+  box-shadow: inset 0 0 0 1.5px var(--ink-3), 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 2px 3px rgba(60, 40, 15, 0.3);
+  transition: transform 0.22s var(--ease-out), opacity 0.16s;
+}
+/* On: the vermilion token, set down in the far cell. */
+.switch .token-svg {
+  position: absolute;
+  z-index: 1;
+  top: 3px;
+  right: 2px;
+  width: 28px;
+  height: 28px;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.86);
+  transition: transform 0.3s var(--ease-out), opacity 0.16s;
+}
+.toggle-row input:checked + .switch::before { opacity: 0; transform: translateX(32px); }
+.toggle-row input:checked + .switch .token-svg { opacity: 1; transform: none; }
+.toggle-row input:focus-visible + .switch { outline: 3px solid var(--verm); outline-offset: 3px; }
+.about { margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(80, 60, 30, 0.18); display: flex; flex-direction: column; gap: 8px; font-size: 0.9375rem; color: var(--ink-2); }
+.about h3 { font-family: var(--font-display); font-size: 1.2rem; line-height: 1.25; color: var(--indi); }
 .about a { color: var(--ink); text-decoration-thickness: 1px; text-underline-offset: 0.15em; }
 .about a:hover { color: var(--verm); }
 
 /* ---------- rules ---------- */
 
 .rules { display: flex; flex-direction: column; gap: 12px; font-size: 1rem; line-height: 1.55; }
-.rules h3 { font-family: var(--font-display); font-size: 1.3rem; margin-top: 14px; line-height: 1.2; }
+.rules h3 { font-family: var(--font-display); font-size: 1.3rem; margin-top: 14px; line-height: 1.2; color: var(--indi); }
 .rules-lede { font-size: 1.0625rem; }
 .rules-figs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 @media (min-width: 640px) { .rules-figs { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .rules figure { margin: 0; display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center; }
 .rules figcaption { font-size: 0.875rem; color: var(--ink-2); line-height: 1.3; }
-.mini-garden { width: 100%; max-width: 132px; height: auto; display: block; }
-.mg-cell { fill: var(--tile-face); stroke: rgba(80, 60, 30, 0.3); stroke-width: 0.8; }
+/* Every diagram is a small garden board: the board's paper and grain, its edge and cast shadow. */
+.mini-garden {
+  width: 100%;
+  max-width: 132px;
+  height: auto;
+  display: block;
+  padding: 3%;
+  border-radius: 7px;
+  background: var(--paper-grain) 0 0 / 128px 128px, var(--paper-3);
+  background-blend-mode: soft-light, normal;
+  box-shadow: 0 5px 9px -4px rgba(40, 25, 5, 0.45), 0 1px 2px rgba(40, 25, 5, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(90, 64, 30, 0.25);
+}
+.mg-cell { fill: var(--tile-face); stroke: rgba(80, 60, 30, 0.28); stroke-width: 0.8; }
 .mg-open { fill: #fbe7b0; stroke: var(--gold-2); stroke-width: 1.4; }
-.mg-closed { fill: #ddd0b6; stroke: rgba(80, 60, 30, 0.25); }
+.mg-closed { fill: #c6baa6; stroke: rgba(80, 60, 30, 0.3); }
 .mg-taken { fill: var(--gold); }
 .mg-brush { fill: none; stroke: var(--brush-ink); stroke-opacity: 0.7; stroke-width: 7; stroke-linecap: round; }
 .rules-row { display: flex; gap: 16px; align-items: center; }
@@ -942,10 +1060,10 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 .rules-aside { font-size: 0.9375rem; color: var(--ink-2); padding-left: 0.9em; box-shadow: inset 1px 0 0 rgba(80, 60, 30, 0.35); }
 
 .eg { display: flex; gap: 10px; align-items: flex-start; }
-.eg-board { display: grid; grid-template-columns: repeat(4, 34px); gap: 3px; padding: 4px; border-radius: 8px; background: var(--paper-3); }
-.eg-cell { width: 34px; height: 34px; border-radius: 5px; background: var(--tile-face); display: block; overflow: hidden; }
+.eg-board { display: grid; grid-template-columns: repeat(4, 34px); gap: 3px; padding: 4px; border-radius: 8px; background: var(--paper-grain) 0 0 / 128px 128px, var(--paper-3); background-blend-mode: soft-light, normal; box-shadow: 0 5px 9px -4px rgba(40, 25, 5, 0.45), 0 1px 2px rgba(40, 25, 5, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(90, 64, 30, 0.25); }
+.eg-cell { width: 34px; height: 34px; border-radius: 5px; background: var(--tile-face); display: block; overflow: hidden; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 0 0 1px rgba(80, 60, 30, 0.14) inset, 0 1px 2px rgba(60, 40, 15, 0.22); }
 .eg-cell .tile-art { width: 100%; height: 100%; display: block; }
-.eg-token { background: var(--token-well); padding: 3px; }
+.eg-token { background: var(--token-well); padding: 3px; box-shadow: inset 0 2px 4px rgba(70, 50, 20, 0.35), inset 0 0 0 1px rgba(80, 60, 30, 0.16); }
 .eg-token .token-svg { width: 100%; height: 100%; display: block; }
 .eg-open { box-shadow: 0 0 0 2px var(--gold); transform: translateY(-2px); }
 .eg-cell { position: relative; }
@@ -955,7 +1073,7 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 .garden-key { display: grid; grid-template-columns: auto repeat(4, minmax(0, 1fr)); gap: 6px; align-items: center; }
 .key-head { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.75rem; color: var(--ink-2); text-align: center; }
 .key-head .glyph { width: 1.8em; height: 1.8em; }
-.key-tile { aspect-ratio: 1; border-radius: 6px; overflow: hidden; background: var(--tile-face); box-shadow: inset 0 0 0 1px rgba(31, 27, 24, 0.12); }
+.key-tile { aspect-ratio: 1; border-radius: 6px; overflow: hidden; background: var(--tile-face); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 0 0 1px rgba(80, 60, 30, 0.16) inset, 0 2px 3px rgba(60, 40, 15, 0.22); }
 .key-tile .tile-art { width: 100%; height: 100%; display: block; }
 
 /* ==========================================================================
@@ -1026,7 +1144,12 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 /* Forced colours (Windows High Contrast): the garden is a picture, so it keeps its own colours,
    including the gold ring and shade that tell which tiles may be taken. */
 @media (forced-colors: active) {
-  .board, .board *, .say-tile, .say-tile *, .seat-chip, .seat-chip *, .seat-pips, .seat-pips *, .flyer, .flyer *, .glyph, .glyph * {
+  .board, .board *, .say-tile, .say-tile *, .seat-chip, .seat-chip *, .seat-pips, .seat-pips *, .flyer, .flyer *, .glyph, .glyph *,
+  .switch, .switch *, .choice-mark, .choice-mark *, .name-chip, .name-chip *,
+  .mini-garden, .mini-garden *, .eg-board, .eg-board *, .key-tile, .key-tile * {
     forced-color-adjust: none;
   }
+  .toggle-row input:focus-visible + .switch { outline-color: Highlight; }
+  /* The chosen option keeps a frame when its shadow and fill are taken away. */
+  .seg-opt input:checked + span { outline: 2px solid SelectedItem; outline-offset: -2px; }
 }

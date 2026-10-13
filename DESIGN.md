@@ -163,12 +163,10 @@ components:
     rounded: "{rounded.control}"
     padding: "6px 6px 6px 10px"
   switch:
-    backgroundColor: "#cbbb9c"
-    rounded: "{rounded.pill}"
-    width: "50px"
-    height: "30px"
-  switch-on:
-    backgroundColor: "{colors.verm}"
+    backgroundColor: "{colors.token-well}"
+    rounded: "8px"
+    width: "64px"
+    height: "34px"
   menu-item:
     backgroundColor: "transparent"
     textColor: "{colors.ink}"
@@ -205,7 +203,7 @@ The interface recedes. The garden is the largest thing on every screen at every 
 Two saturated dyes, each with a lit and a sunk state, over a warm paper-and-ink neutral family, with one gold for marks and focus.
 
 ### Primary
-- **Vermilion Dye** (verm): Player 1's half when lit, player 1's lacquered tokens, and the one action colour on paper: primary sheet buttons, the checked switch, the selected choice ring, menu icons, the name field's focus ring.
+- **Vermilion Dye** (verm): Player 1's half when lit, player 1's lacquered tokens, and the one action colour on paper: primary sheet buttons, the token in the checked switch and the chosen choice's well, the selected choice ring, menu icons, the name field's focus ring.
 - **Sunk Vermilion** (verm-dim): player 1's half while waiting; also the selected segmented-option label on paper.
 - **Pressed Vermilion** (verm-press): hover state of the vermilion button on paper.
 
@@ -298,7 +296,7 @@ Depth is physical, as on a table: cloth is the ground, the paper board lies on i
 
 ## Shapes
 
-Soft rectangles throughout, with circles for things you hold. Controls and cards share one 12px radius; the segmented control's inner options use 9px so they nest; sheets use 20px (top corners only when docked to the bottom). The garden board and its cells take radii proportional to the board (4.5% and 2.4% of its size) so they look the same at every scale. Icon buttons, tokens, pips, switch knobs and the last-move ring are circles; link buttons and switches are pills. Won-game seals are small squares rotated 45 degrees, pressed in gold like a stamp; an unwon seal is an empty cream frame.
+Soft rectangles throughout, with circles for things you hold. Controls and cards share one 12px radius; the segmented control's inner options use 9px so they nest; sheets use 20px (top corners only when docked to the bottom). The garden board and its cells take radii proportional to the board (4.5% and 2.4% of its size) so they look the same at every scale. Icon buttons, tokens, pips, choice wells and the last-move ring are circles; link buttons are pills; the switch is a strip of two garden cells (8px radius). Won-game seals are small squares rotated 45 degrees, pressed in gold like a stamp; an unwon seal is an empty cream frame.
 
 Icons are authored SVG on a 24px grid, 1.8 stroke, round caps and joins, drawn in currentColor.
 
@@ -328,20 +326,21 @@ A player's half: their token chip, name in the display face, match score (three 
 The paper board with sixteen cells in a 4x4 grid, gap 1.8% and padding 3% of the board. Cells are tile faces holding the kept tile art; taken cells become pressed wells holding a lacquered token. States: may be taken (gold ring, lifted, shadow), may not be taken (warm shade), last placed (gold ring inside the cell), refused tap (a short horizontal shake, 0.32s), game over (a brush-ink stroke drawn through the winning formation; dead tiles shaded).
 
 ### Sheets
-Dialogs are paper sheets: docked to the bottom with 20px top corners on phones, centred (560px; 38rem, 608px, for rules) from 640px wide and 560px tall. Head with a display-face title and a close icon button, a hairline below; a scrolling body; an optional footer with a hairline above. Opening rises 24px and fades in over 0.32s.
+Dialogs are paper sheets: docked to the bottom with 20px top corners on phones, centred (560px; 38rem, 608px, for rules) from 640px wide and 560px tall. The head is a band of the table's indigo cloth, as the game's top bar is: a cream display-face title, the dye icon button to close, gold focus on the band. Below it the paper page: a scrolling body, with section headings in the display face in indigo, and an optional footer with a hairline above. On short landscape screens the footer's action moves onto the band beside the title and takes the paper button there (a button takes the material opposite its ground), with a short shadow that stays on the cloth. Opening rises 24px and fades in over 0.32s.
 
 ### Inputs / Fields
 - **Segmented control:** paper-tray with 4px padding and 12px radius; options 44px tall, bold, ink-2; the selected option becomes paper with a sunk-vermilion label, a small shadow and a 2px vermilion underline inset.
-- **Choice card:** paper, 12px radius, warm hairline inset; a 26px circular mark on the right fills vermilion with a cream check when selected, and the card gains a 2px vermilion inset ring.
+- **Choice card:** a raised tile on the paper (tile face with paper grain, the garden tile's shadow), 12px radius; on the right a 30px pressed token well edged 1.5px ink-3, empty when unselected and holding the vermilion token when selected, when the card also gains a 2px vermilion inset ring. Fieldset labels are the display face in indigo.
 - **Name field:** paper, 12px radius, warm hairline inset; the player's token chip at the left, the ink-3 colour label above the input, so the input has the field's whole width (16px text, which iOS does not zoom); focus thickens the inset ring to 2px vermilion.
-- **Switch:** 50 x 30px pill, warm tan off, vermilion on, white 24px knob sliding 20px.
+- **Toggle row:** each setting is a raised tile like a choice card, at least 64px tall; hover lightens it only where a pointer can hover.
+- **Switch:** a 64 x 34px strip of two pressed garden cells (8px radius, token-well paper, 1.5px ink-3 edge, a faint seam between the cells). Off: a plain 24px tile waits in the near cell. On: the tile is taken and the vermilion token is set down in the far cell.
 - **Menu item:** 52px row, 600 weight, ink text, vermilion icon, warm hairline between rows; disabled at 40% ink.
 
 ### Focus
 Keyboard focus on the dyes is a 3px gold outline, offset 2px (drawn tight, offset -1px, on the top bar's buttons so the screen edge never cuts it); on the garden it is a 3px ink outline, offset 3px; on paper (sheets and their controls) it is a 3px vermilion outline. Every focus mark reaches 3:1 against what it sits on; gold on paper would not (1.6:1), so it is never used there. When a game starts, continues or moves on, focus goes into the garden for a player using the keyboard; after a touch it is left alone, as WebKit would draw a ring on the tile.
 
 ### Forced colours
-Under Windows High Contrast the interface takes the system's colours, but the garden, the order card's tile, the token chips and pips keep their own: they are a picture, and the gold ring and shade that tell which tiles may be taken would otherwise vanish.
+Under Windows High Contrast the interface takes the system's colours, but the garden, the order card's tile, the token chips and pips, the sheets' switches and choice wells and the rules' diagrams keep their own: they are a picture, and the gold ring and shade that tell which tiles may be taken would otherwise vanish.
 
 ### Motion
 One exponential ease-out (cubic-bezier(0.16, 1, 0.3, 1)) for the turn light (opacity only, 0.45s), tile lift (0.22s), token set-down (0.42s, drops from above with a small settle) and sheets (0.32s). The taken tile flies to the mover's card over 520ms (360ms when there is no target slot); the winning brush stroke draws over 650ms after a 180ms pause. Under reduced motion (system setting or the in-app setting) every animation and transition collapses to instant; every state change still happens.

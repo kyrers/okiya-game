@@ -100,7 +100,7 @@ function seg(name: string, value: string, label: string, checked: boolean): stri
 }
 
 function choice(name: string, value: string, title: string, detail: string, checked: boolean): string {
-  return `<label class="choice"><input type="radio" name="${name}" value="${value}"${checked ? ' checked' : ''}><span class="choice-text"><span class="choice-title">${title}</span><span class="choice-detail">${detail}</span></span><span class="choice-mark" aria-hidden="true">${icon('check')}</span></label>`;
+  return `<label class="choice"><input type="radio" name="${name}" value="${value}"${checked ? ' checked' : ''}><span class="choice-text"><span class="choice-title">${title}</span><span class="choice-detail">${detail}</span></span><span class="choice-mark" aria-hidden="true">${tokenSvg(1)}</span></label>`;
 }
 
 function nameField(p: 1 | 2, value: string, placeholder: string): string {
@@ -136,7 +136,7 @@ function toggle(name: string, title: string, detail: string, on: boolean): strin
   return `<label class="toggle-row">
     <span class="toggle-text"><span class="toggle-title">${title}</span><span class="toggle-detail">${detail}</span></span>
     <input type="checkbox" role="switch" name="${name}"${on ? ' checked' : ''}>
-    <span class="switch" aria-hidden="true"></span>
+    <span class="switch" aria-hidden="true">${tokenSvg(1)}</span>
   </label>`;
 }
 
