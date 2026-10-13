@@ -367,6 +367,9 @@ Under Windows High Contrast the interface takes the system's colours, but the ga
 ### Motion
 One exponential ease-out (cubic-bezier(0.16, 1, 0.3, 1)) for the turn light (opacity only, 0.45s), tile lift (0.22s), token set-down (0.42s, drops from above with a small settle) and sheets (0.32s). The taken tile flies to the mover's card over 520ms (360ms when there is no target slot); the winning brush stroke draws over 650ms after a 180ms pause. The end card folds away over 0.4s (its tab rising in just after) and comes back the same way. Under reduced motion (system setting or the in-app setting) every animation and transition collapses to instant; every state change still happens.
 
+### Sound
+The sounds are a game on a wooden board, synthesised at run time (src/ui/sound.ts; no audio files): a token is set down like a go stone on a goban, a short, dry, bright "pachi" (a crack of filtered noise, the stone's brief ring, two wood modes and a small low body, about 70ms); a tile lifts with a lighter paper-and-wood tick (about 40ms, some 15dB under the pachi, over before the token lands 90ms later); a refused tap is a soft, muted knock, low-passed, like a finger on wood (about 80ms); a game ends on a small struck bell, a rin, its four partials inharmonic (1 : 2.71 : 5.36 : 8.86) and each a slightly split pair so it shimmers as it rings away. A win is two strikes rising a fourth, a tie one strike, a loss one strike a fourth lower, darker and softer. Nothing lasts longer than 1.2s above -60dBFS; peaks sit at about -11dBFS for the pachi, -14 to -18dBFS for the bell and -20dBFS for the knock. Pitches and the stone's crack vary by a hair each time, so no two moves sound stamped. With Sound off nothing is built; every node is disconnected when its sound ends.
+
 ## Do's and Don'ts
 
 ### Do:
