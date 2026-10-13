@@ -130,7 +130,9 @@ test.describe('every control reachable by a real tap @sweep', () => {
       await act(setup.getByText('Easy'));
       await act(setup.getByText('Single game'));
       await act(page.getByRole('button', { name: 'Start' }));
-      // A match is saved, so starting another asks first.
+      // A match is saved, so starting another asks first, in the New game sheet's place.
+      await expect(dialog('Start a new game?')).toBeVisible();
+      expect(await page.locator('dialog.sheet-setup').evaluate((d) => getComputedStyle(d).opacity)).toBe('0');
       await act(dialog('Start a new game?').getByRole('button', { name: 'Start new game' }));
       await expect(page.getByRole('dialog')).toHaveCount(0);
       await playToEnd();

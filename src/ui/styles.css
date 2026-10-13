@@ -760,6 +760,9 @@ dialog.sheet {
 /* The rules sheet is as wide as a comfortable line of text, so its title and text share one edge. */
 dialog.sheet.sheet-rules { width: min(100%, 38rem); }
 dialog.sheet::backdrop { background: rgba(12, 10, 22, 0.6); }
+/* A sheet waiting under a confirmation it asked for: out of sight (the question takes its place),
+   still focusable, so focus can return to it on Cancel. */
+dialog.sheet.is-behind, dialog.sheet.is-behind::backdrop { opacity: 0; }
 dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 @keyframes sheet-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 .sheet-panel {

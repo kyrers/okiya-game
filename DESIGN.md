@@ -29,9 +29,9 @@ colors:
 typography:
   display:
     fontFamily: "'Garden Ellipsis', 'Shippori Mincho B1', 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif"
-    fontSize: "clamp(3rem, 15vw, 6rem)"
+    fontSize: "min(6rem, (100vw - gutters) / 7.6, 10vh)"
     fontWeight: 800
-    lineHeight: 0.95
+    lineHeight: 1.1
     letterSpacing: "0.04em"
   headline:
     fontFamily: "'Garden Ellipsis', 'Shippori Mincho B1', 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif"
@@ -243,7 +243,7 @@ Two saturated dyes, each with a lit and a sunk state, over a warm paper-and-ink 
 **Character:** A heavy brush-cut Mincho gives names, results and the wordmark the voice of the printed game; a clean humanist sans carries every instruction and control, legible at 13 to 16px on every engine. Both are self-hosted.
 
 ### Hierarchy
-- **Display** (800, 0.95, 0.04em tracking): the Paper Garden wordmark on home only, with a soft 0 4px 24px shadow. It is sized from the width of its column (container query units), so it always fits: on one line in portrait (min(6rem, 100cqi / 7.6)), "Paper" over "Garden" in landscape (min(5.5rem, 100cqi / 4.1)).
+- **Display** (800, 1.1, 0.04em tracking): the Paper Garden wordmark on home only, always on one line, with a soft 0 4px 24px shadow and 0.22em of room under its descenders, so it never meets the button below. Sized from the screen: min(6rem, the width less gutters / 7.6, a tenth of the height); beside the garden on a phone held sideways, min(3.5rem, the width left / 7.6, 13vh).
 - **Headline** (800, 1.5rem, 1.2): sheet titles. Rules section heads use the same face at 1.3rem; the about heading at 1.2rem.
 - **Title** (800, 1.375em of the seat size, 1.5): player names in the seats, the line tall enough for Shippori's descenders. A long name shrinks a little to fit beside its token count and score (down to 80%; to 58% on the tightest portrait screens, where a line cannot be spared); then the count and score move to a line of their own and the name may shrink further (to 58%); then it wraps onto two or three lines; a name taken under 18px is set in Source Sans 3 bold (see the Eighteen Pixel Rule); both names are always at one size, decided once for the whole match; an ellipsis (the Latin one, on the baseline) is a last resort no tested screen reaches. Game results use the display face at 1.6em (1.3em for a quiet result such as a tie). Points totals use it at 1.45em.
 - **Body** (400, 1rem, 1.45): default text. Rules prose runs at 1.55 line height, its measure set by the 38rem rules sheet; the order card's instruction at 1.0625em, 1.3, balanced.
@@ -266,7 +266,7 @@ The screen is fixed to the visual viewport (100dvh where supported) and never sc
 
 **Landscape (aspect 5/4 and wider):** vermilion seat left, garden centre, indigo seat right, the top bar spanning above. Seats are clamp(9.5rem, 22vw, 23.75rem) wide; the garden takes what remains up to 760px. Both seats start level with the garden's top edge so the two names share a line.
 
-**Home** repeats the same composition: wordmark in the indigo half, a freshly dealt garden on the seam, the actions in the vermilion half (side by side in landscape, up to 600px garden).
+**Home** is one centred column on every screen but a phone held sideways: the wordmark, the way into a game exactly as wide as the garden and sitting on its top edge (Continue and New game side by side on wider screens, stacked on phones), a freshly dealt garden on the seam (indigo above its middle line, vermilion below), then How to play and Settings as 48px pill buttons with a faint cream fill. The garden grows with the window's height. On a phone held sideways the garden sits on the right and everything else beside it.
 
 **Rhythm:** gutters are clamp(12px, 3.6vw, 32px) in portrait and clamp(12px, 1.6vw, 28px) in landscape. The garden keeps a 10px gap to the halves (6px on very short landscape screens). Component spacing uses 4, 8, 10, 12, 16 and 20px; inside seats spacing is in em.
 
@@ -321,6 +321,9 @@ The paper card in the mover's half that says what to take. Paper with paper text
 
 ### Seat (signature)
 A player's half: their token chip, name in the display face, match score (three gold seals, or points in the display face), a row of eight token pips (spent pips become empty cream rings), then the order card, a waiting line, or the result. Results use the display face in cream with a cream-2 reason line; points scored are gold on indigo and cream on vermilion, where gold text would be too faint (3.3:1).
+
+### End card
+At a game's end, a slip of the garden's paper over the middle of the garden, sealed on its top edge with the winner's token (both tokens, overlapping, for a tie). It says who won in the display face ("Aki wins", "You win", "A tie", "... wins the match") and how, in a caption line, then the buttons stacked at full width: Next game or Play again in the winner's dyed cloth (ink for a tie), Home on paper with a thin outline. Always inside the garden; it comes in once the brush stroke is drawn and cannot be pressed before it is seen.
 
 ### Garden (signature)
 The paper board with sixteen cells in a 4x4 grid, gap 1.8% and padding 3% of the board. Cells are tile faces holding the kept tile art; taken cells become pressed wells holding a lacquered token. States: may be taken (gold ring, lifted, shadow), may not be taken (warm shade), last placed (gold ring inside the cell), refused tap (a short horizontal shake, 0.32s), game over (a brush-ink stroke drawn through the winning formation; dead tiles shaded).

@@ -129,14 +129,18 @@ export class App {
 
   private openSetup(): void {
     const saved = this.savedMatch();
+    let sheet: Sheet | null = null;
     const form = setupForm(loadSetup(), async (setup) => {
       if (saved && !saved.match.over) {
+        // The question takes the New game sheet's place; Cancel brings the sheet back as it was.
+        sheet?.dialog.classList.add('is-behind');
         const ok = await confirmSheet('Start a new game?', 'The match in progress will be replaced.', 'Start new game');
+        sheet?.dialog.classList.remove('is-behind');
         if (!ok) return;
       }
       this.startNew(setup);
     }, saveSetup);
-    this.open('New game', form, 'sheet-setup', startButton());
+    sheet = this.open('New game', form, 'sheet-setup', startButton());
   }
 
   private openRules(): void {
