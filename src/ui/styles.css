@@ -1417,8 +1417,67 @@ dialog.sheet.sheet-demo { width: min(100%, 40rem); }
 .name-label { grid-area: label; font-size: 0.8125rem; font-weight: 700; line-height: 1.2; color: var(--ink-3); padding-left: 6px; }
 .name-field input { grid-area: input; width: 100%; min-width: 0; min-height: 40px; border: 0; background: transparent; font-size: 1rem; padding: 0 6px; outline: none; color: var(--ink); }
 .name-field input::placeholder { color: var(--ink-3); }
-.setup-note { font-size: 0.875rem; color: var(--ink-3); }
+/* The kind of match waits behind a row headed like the sections above it, its current choice in a
+   tray at the right (the segmented control's paper), with a chevron that turns over when open. The
+   whole row is the target. */
+.setup-side { display: contents; }
+.more-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+}
+.more-label { font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; line-height: 1.25; color: var(--indi); }
+.more-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 4px 10px 4px 14px;
+  border-radius: var(--radius);
+  background: var(--paper-2);
+  box-shadow: inset 0 0 0 1px rgba(80, 60, 30, 0.12);
+  font-weight: 700;
+  font-size: 0.9375rem;
+  line-height: 1.2;
+  color: var(--ink);
+  transition: background-color 0.15s;
+}
+.more-chevron { width: 20px; height: 20px; color: var(--verm-dim); transition: transform 0.24s var(--ease-out); }
+.more-toggle[aria-expanded='true'] .more-chevron { transform: rotate(180deg); }
+@media (hover: hover) { .more-toggle:hover .more-value { background-color: var(--token-well); } }
+.more-options { margin-top: 10px; }
+.more-options:not([hidden]) { animation: more-open 0.24s var(--ease-out); }
+@keyframes more-open { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+/* Who opens: beside Start in the sheet's footer, always in view; in the form only on a phone held
+   sideways, where Start moves onto the title band. Its parts follow the choices. */
+.setup-note { font-size: 0.875rem; line-height: 1.35; color: var(--ink-3); text-wrap: pretty; }
+.setup-side .setup-note { display: none; }
+.sheet-setup:has(input[name='opponent'][value='human']:checked) .note-cpu,
+.sheet-setup:has(input[name='match'][value='single']:checked) .note-match,
+.sheet-setup:not(:has(input[name='match'][value='single']:checked)) .note-single { display: none; }
+.setup-foot { display: flex; flex-direction: column; gap: 10px; }
 .start-btn { justify-content: center; width: 100%; min-height: 56px; }
+/* Short phones in portrait: a little closer together, so the three levels show whole above the
+   note and Start, with the Match row just under them. */
+@media (max-height: 620px) and (max-aspect-ratio: 5/4) {
+  .sheet-setup .sheet-body { padding-top: 12px; }
+  .setup { gap: 12px; }
+  .setup legend { margin-bottom: 4px; }
+  .choices { gap: 6px; }
+  .choice { padding: 8px 14px; }
+  .choice-detail { line-height: 1.3; }
+}
 
 /* Short, wide screens (a phone held sideways): every row of height counts. The sheet takes nearly
    the whole height, its action moves into the title row, and the setup form uses two columns.
@@ -1438,13 +1497,17 @@ dialog.sheet.sheet-demo { width: min(100%, 40rem); }
   .sheet .sheet-foot .btn.primary { background: var(--paper); color: var(--ink); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 2px 4px -1px rgba(8, 6, 14, 0.45); }
   .sheet .sheet-foot .btn.primary:hover { background: #fff8ea; }
   .sheet .sheet-foot :focus-visible { outline-color: var(--gold); }
-  .setup { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: 'opp match' 'level match' 'names match' 'note match'; gap: 12px 20px; align-items: start; }
+  .setup { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: 'opp side' 'level side' 'names side' '. side'; grid-template-rows: auto auto auto 1fr; gap: 12px 20px; align-items: start; }
   .setup .f-opp { grid-area: opp; }
   .setup .f-level { grid-area: level; }
   .setup .f-names { grid-area: names; }
-  .setup .f-match { grid-area: match; }
-  .setup .setup-note { grid-area: note; }
-  .setup legend { font-size: 1.125rem; line-height: 1.2; margin-bottom: 6px; }
+  /* The Match row and, under it, who opens: the right-hand column. */
+  .setup .setup-side { grid-area: side; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .setup-side .setup-note { display: block; }
+  .setup-foot .setup-note { display: none; }
+  .setup legend, .more-label { font-size: 1.125rem; line-height: 1.2; margin-bottom: 6px; }
+  .more-label { margin-bottom: 0; }
+  .more-options { margin-top: 6px; }
   .choice { padding: 7px 12px; gap: 10px; }
   .choice-detail { font-size: 0.8125rem; line-height: 1.3; }
   .choices { gap: 6px; }

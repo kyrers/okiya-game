@@ -10,6 +10,7 @@ import {
   findGame,
   legalIndices,
   openHome,
+  pickMatch,
   saved,
   seedMatch,
   tap,
@@ -35,7 +36,11 @@ test.describe('starting', () => {
     await expect(sheet).toBeVisible();
     await sheet.getByText('The computer').click();
     await sheet.getByText('Easy', { exact: true }).click();
-    await sheet.getByText('Single game').click();
+    // The kind of match waits behind the Match row, which names the current choice; who opens is
+    // said beside Start, in view without scrolling.
+    await expect(sheet.getByRole('button', { name: 'Match: Single game' })).toHaveAttribute('aria-expanded', 'false');
+    await expect(sheet.locator('.setup-note:visible')).toBeInViewport({ ratio: 1 });
+    await pickMatch(sheet, 'Single game');
     await page.getByRole('button', { name: 'Start' }).click();
     await expect(page.locator('.game')).toBeVisible();
     // Either the person opens (12 outer tiles) or the computer opens and then the constraint applies.
@@ -54,7 +59,7 @@ test.describe('the New game sheet', () => {
     await page.getByRole('button', { name: /New game/ }).click();
     const sheet = page.getByRole('dialog', { name: 'New game' });
     await sheet.getByText('A friend, on this device').click();
-    await sheet.getByText('First to 3 wins').click();
+    await pickMatch(sheet, 'First to 3 wins');
     await sheet.locator('input[name="name1"]').fill('Diogo');
     await sheet.locator('input[name="name2"]').fill('Ana');
     await page.keyboard.press('Escape');
@@ -64,6 +69,8 @@ test.describe('the New game sheet', () => {
       await page.getByRole('button', { name: /New game/ }).click();
       await expect(sheet.locator('input[name="opponent"][value="human"]')).toBeChecked();
       await expect(sheet.locator('input[name="match"][value="sets3"]')).toBeChecked();
+      // Closed again, naming the choice remembered.
+      await expect(sheet.getByRole('button', { name: 'Match: First to 3 wins' })).toHaveAttribute('aria-expanded', 'false');
       await expect(sheet.locator('input[name="name1"]')).toHaveValue('Diogo');
       await expect(sheet.locator('input[name="name2"]')).toHaveValue('Ana');
       await page.keyboard.press('Escape');
@@ -71,13 +78,13 @@ test.describe('the New game sheet', () => {
     }
     // A points target picked, then another kind of match looked at: the target is still there.
     await page.getByRole('button', { name: /New game/ }).click();
-    await sheet.getByText('Victory points').click();
-    await sheet.getByText('20 points').click();
-    await sheet.getByText('Single game').click();
+    await pickMatch(sheet, 'Victory points', '20 points');
+    await expect(sheet.getByRole('button', { name: 'Match: First to 20 points' })).toBeVisible();
+    await pickMatch(sheet, 'Single game');
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: /New game/ }).click();
     await expect(sheet.locator('input[name="match"][value="single"]')).toBeChecked();
-    await sheet.getByText('Victory points').click();
+    await pickMatch(sheet, 'Victory points');
     await expect(sheet.locator('input[name="target"][value="points20"]')).toBeChecked();
   });
 });

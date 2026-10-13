@@ -90,8 +90,10 @@ test.describe('every control reachable by a real tap @sweep', () => {
       await act(name2);
       // The longest name the form takes, with no space to break at.
       await name2.fill(LONG_NAMES[1]);
-      await act(setup.getByText('Victory points'));
-      await act(setup.getByText('10 points'));
+      // The kind of match waits behind the Match row.
+      await act(setup.getByRole('button', { name: /^Match/ }));
+      await act(setup.locator('.choice').getByText('Victory points'));
+      await act(setup.locator('.seg.small').getByText('10 points'));
       await act(page.getByRole('button', { name: 'Start' }));
       await expect(page.locator('.game')).toBeVisible();
       await expect(page.locator('.seat-1 .seat-name')).toHaveText('Diogo');
@@ -128,7 +130,8 @@ test.describe('every control reachable by a real tap @sweep', () => {
       await act(page.getByRole('button', { name: /New game/ }));
       await act(setup.getByText('The computer'));
       await act(setup.getByText('Easy'));
-      await act(setup.getByText('Single game'));
+      await act(setup.getByRole('button', { name: /^Match/ }));
+      await act(setup.locator('.choice').getByText('Single game'));
       await act(page.getByRole('button', { name: 'Start' }));
       // A match is saved, so starting another asks first, in the New game sheet's place.
       await expect(dialog('Start a new game?')).toBeVisible();

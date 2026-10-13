@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Locator, type Page } from '@playwright/test';
 import { applyMove, legalMoves, mulberry32, newGame, type GameState, type Player, type Tile } from '../src/engine/garden';
 import type { MatchSetup, SavedMatch } from '../src/game/match';
 
@@ -61,6 +61,17 @@ export async function continueMatch(page: Page): Promise<void> {
   await openHome(page);
   await page.getByRole('button', { name: /Continue/ }).click();
   await expect(page.locator('.game')).toBeVisible();
+}
+
+/**
+ * Picks a kind of match in the New game sheet (and a points target), opening its Match row first
+ * if it is closed: the kind of match waits behind that row.
+ */
+export async function pickMatch(sheet: Locator, title: string, target?: string): Promise<void> {
+  const row = sheet.getByRole('button', { name: /^Match/ });
+  if ((await row.getAttribute('aria-expanded')) !== 'true') await row.click();
+  await sheet.locator('.choice').getByText(title, { exact: true }).click();
+  if (target) await sheet.locator('.seg.small').getByText(target, { exact: true }).click();
 }
 
 /** Tile codes on the board, or 'p1'/'p2' for tokens, from the DOM. */

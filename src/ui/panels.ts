@@ -4,6 +4,7 @@ import type { MatchMode } from '../engine/garden';
 import { NAME_MAX, defaultNames, type Opponent } from '../game/match';
 import { icon, tokenSvg, type IconName } from './art';
 import type { SetupDraft, Settings } from './prefs';
+import { MODE_WORD } from './words';
 
 const LEVELS: { id: Difficulty; title: string; detail: string }[] = [
   { id: 'easy', title: 'Easy', detail: 'Plays loosely. Good for a first game.' },
@@ -11,19 +12,35 @@ const LEVELS: { id: Difficulty; title: string; detail: string }[] = [
   { id: 'hard', title: 'Hard', detail: 'Looks five moves ahead. Beatable, not easily.' },
 ];
 
-/** The Start button lives in the sheet footer and submits the form by id. */
-export function startButton(): HTMLButtonElement {
+/**
+ * Who opens, said once beside Start (and in the form itself on a phone held sideways, where Start
+ * moves onto the title band). Its parts follow the choices through CSS (.sheet-setup:has(...)):
+ * the colour against the computer; the loser's turn to open only when there is a next game.
+ */
+const OPENER_NOTE =
+  '<span class="note-cpu">You play vermilion. </span>' +
+  '<span class="note-single">Who opens is drawn at random.</span>' +
+  '<span class="note-match">Who opens the first game is drawn at random; after that, the loser of each game opens the next (after a tie, the other player opens).</span>';
+
+/** The New game sheet's footer: the opener's note, then Start, which submits the form by id. */
+export function startButton(): HTMLElement {
+  const foot = document.createElement('div');
+  foot.className = 'setup-foot';
+  foot.innerHTML = `<p class="setup-note">${OPENER_NOTE}</p>`;
   const b = document.createElement('button');
   b.type = 'submit';
   b.className = 'btn primary big start-btn';
   b.setAttribute('form', 'setup-form');
   b.innerHTML = `${icon('play')}<span class="btn-title">Start</span>`;
-  return b;
+  foot.append(b);
+  return foot;
 }
 
 /**
  * The New game form. Its choices go to onDraft as they are made, not only to onStart, so closing
- * the sheet (to read the rules, or to come back later) keeps them.
+ * the sheet (to read the rules, or to come back later) keeps them. Who plays, and the level or the
+ * names, are always in view; the kind of match waits behind a Match row that names the current
+ * choice, closed each time the sheet opens.
  */
 export function setupForm(initial: SetupDraft, onStart: (s: SetupDraft) => void, onDraft?: (s: SetupDraft) => void): HTMLFormElement {
   const form = document.createElement('form');
@@ -50,18 +67,34 @@ export function setupForm(initial: SetupDraft, onStart: (s: SetupDraft) => void,
       ${nameField(1, names[0] === humanDefaults[0] ? '' : names[0], humanDefaults[0])}
       ${nameField(2, names[1] === humanDefaults[1] ? '' : names[1], humanDefaults[1])}
     </fieldset>
-    <fieldset class="choices f-match">
-      <legend>Match</legend>
-      ${choice('match', 'single', 'Single game', 'One game decides it.', matchKind === 'single')}
-      ${choice('match', 'sets3', 'First to 3 wins', 'Play on until someone has won three games.', matchKind === 'sets3')}
-      ${choice('match', 'points', 'Victory points', 'A win scores one point per tile still in the garden.', matchKind === 'points')}
-      <div class="seg small" data-for="points" role="radiogroup" aria-label="Points to win">
-        ${(['points10', 'points15', 'points20'] as const).map((m) => seg('target', m, `${m.slice(6)} points`, pointsTarget === m)).join('')}
+    <div class="setup-side">
+      <div class="f-match">
+        <button type="button" class="more-toggle" aria-expanded="false" aria-controls="setup-match">
+          <span class="more-label">Match</span>
+          <span class="more-value"><span class="more-current"></span>${CHEVRON}</span>
+        </button>
+        <fieldset class="choices more-options" id="setup-match" hidden>
+          <legend class="sr-only">Match</legend>
+          ${choice('match', 'single', 'Single game', 'One game decides it.', matchKind === 'single')}
+          ${choice('match', 'sets3', 'First to 3 wins', 'Play on until someone has won three games.', matchKind === 'sets3')}
+          ${choice('match', 'points', 'Victory points', 'A win scores one point per tile still in the garden.', matchKind === 'points')}
+          <div class="seg small" data-for="points" role="radiogroup" aria-label="Points to win">
+            ${(['points10', 'points15', 'points20'] as const).map((m) => seg('target', m, `${m.slice(6)} points`, pointsTarget === m)).join('')}
+          </div>
+        </fieldset>
       </div>
-    </fieldset>
-    <p class="setup-note" data-for="computer">You play vermilion. Who opens the first game is drawn at random; after that, the loser of each game opens the next (after a tie, the other player opens).</p>
-    <p class="setup-note" data-for="human">Who opens the first game is drawn at random; after that, the loser of each game opens the next (after a tie, the other player opens).</p>`;
+      <p class="setup-note">${OPENER_NOTE}</p>
+    </div>`;
   form.id = 'setup-form';
+
+  const more = form.querySelector<HTMLButtonElement>('.more-toggle')!;
+  const options = form.querySelector<HTMLElement>('.more-options')!;
+  const current = form.querySelector<HTMLElement>('.more-current')!;
+  more.addEventListener('click', () => {
+    const open = more.getAttribute('aria-expanded') !== 'true';
+    more.setAttribute('aria-expanded', String(open));
+    options.hidden = !open;
+  });
 
   const sync = () => {
     const opp = (form.elements.namedItem('opponent') as RadioNodeList).value as Opponent;
@@ -70,6 +103,8 @@ export function setupForm(initial: SetupDraft, onStart: (s: SetupDraft) => void,
       const f = el.dataset.for;
       el.hidden = f === 'points' ? match !== 'points' : f !== opp;
     });
+    current.textContent = MODE_WORD[read().mode];
+    more.setAttribute('aria-label', `Match: ${current.textContent}`);
   };
   const read = (): SetupDraft => {
     const val = (n: string) => (form.elements.namedItem(n) as RadioNodeList | HTMLInputElement).value;
@@ -94,6 +129,9 @@ export function setupForm(initial: SetupDraft, onStart: (s: SetupDraft) => void,
   });
   return form;
 }
+
+/** A chevron on the icons' 24px grid; it turns over when the Match row opens. */
+const CHEVRON = '<svg class="icon more-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.5l5.5 5.5 5.5-5.5"/></svg>';
 
 function seg(name: string, value: string, label: string, checked: boolean): string {
   return `<label class="seg-opt"><input type="radio" name="${name}" value="${value}"${checked ? ' checked' : ''}><span>${label}</span></label>`;

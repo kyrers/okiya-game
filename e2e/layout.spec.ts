@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { SavedMatch } from '../src/game/match';
-import { HOT_SEAT, LONG_NAMES, MATCH_KEY, VS_EASY, continueMatch, findGame, layoutProblems, openHome, saved, seatWordBreaks, seedMatch } from './helpers';
+import { HOT_SEAT, LONG_NAMES, MATCH_KEY, VS_EASY, continueMatch, findGame, layoutProblems, openHome, pickMatch, saved, seatWordBreaks, seedMatch } from './helpers';
 
 /**
  * Layout invariants at every device size: nothing scrolls the page, nothing leaves the viewport,
@@ -39,7 +39,7 @@ test('home, setup and the sheets', async ({ page }) => {
   await page.getByRole('button', { name: /New game/ }).click();
   await checkLayout(page, '2-setup-computer');
   await page.getByText('A friend, on this device').click();
-  await page.getByText('Victory points').click();
+  await pickMatch(page.getByRole('dialog', { name: 'New game' }), 'Victory points');
   await checkLayout(page, '3-setup-friend');
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'How to play' }).click();

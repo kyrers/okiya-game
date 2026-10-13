@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { HOT_SEAT, LONG_NAMES, MATCH_KEY, VS_EASY, continueMatch, findGame, layoutProblems, openHome, saved, seedMatch } from './helpers';
+import { HOT_SEAT, LONG_NAMES, MATCH_KEY, VS_EASY, continueMatch, findGame, layoutProblems, openHome, pickMatch, saved, seedMatch } from './helpers';
 import type { MatchSetup } from '../src/game/match';
 
 /**
@@ -207,7 +207,7 @@ test.describe('size sweep @sweep', () => {
     await setup.getByText('A friend, on this device').click();
     await setup.locator('input[name="name1"]').fill(LONG_NAMES[0]);
     await setup.locator('input[name="name2"]').fill(LONG_NAMES[1]);
-    await setup.getByText('Victory points').click();
+    await pickMatch(setup, 'Victory points');
     // Each name field shows the whole name typed in it.
     const namesWhole = () => page.evaluate(() => [...document.querySelectorAll<HTMLInputElement>('dialog[open] .name-field input')]
       .filter((i) => i.scrollWidth > i.clientWidth + 1)
