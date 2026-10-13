@@ -494,7 +494,7 @@ button:disabled { cursor: default; }
 /* While the slip lies over the garden its loop, partly under the slip, would read as a scorched
    frame around it: the loop is drawn first, then steps back as the slip comes in, and comes back
    with the garden when the slip is folded away. */
-.seam:has(> .end-card:not([hidden])) .board-brush { opacity: 0; transition: opacity 0.35s 1.05s; }
+.seam:not(.card-folded):has(> .end-card:not([hidden])) .board-brush { opacity: 0; transition: opacity 0.35s 1.05s; }
 .seam.card-folded .board-brush { opacity: 1; transition: opacity 0.3s; }
 @keyframes card-in {
   from { opacity: 0; transform: translateY(12px) scale(0.96); }

@@ -268,6 +268,8 @@ test.describe('matches', () => {
     const tab = page.getByRole('button', { name: `${winner} wins: show the result` });
     await expect(page.locator('.end-card:not(.arriving)')).toBeVisible();
     await expect(tab).toBeHidden();
+    // With the slip over the garden, its loop steps back.
+    await expect.poll(() => page.locator('.game .board-brush').evaluate((b) => getComputedStyle(b).opacity)).toBe('0');
     // Folded: the slip is gone, its tab is focused, and every token can be seen.
     await act(see);
     await expect(card).toBeHidden();
@@ -281,6 +283,8 @@ test.describe('matches', () => {
       }).map((c) => c.dataset.index),
     );
     expect(covered).toEqual([]);
+    // The win's loop, stepped back while the slip lay over it, is back with the garden.
+    await expect.poll(() => page.locator('.game .board-brush').evaluate((b) => getComputedStyle(b).opacity)).toBe('1');
     // The tab still offers the main button, as tall as a finger.
     const tabNext = page.locator('.end-tab [data-card="next"]');
     await expect(tabNext).toBeVisible();
