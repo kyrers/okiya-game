@@ -814,11 +814,25 @@ export class GameScreen {
 
   private actionsHtml(): string {
     const m = this.view.match;
-    if (!m.over) return `<div class="say-actions"><button type="button" class="btn primary" data-action="next">Next game${icon('arrow')}</button></div>`;
-    return `<div class="say-actions">
+    const r = this.view.game.result!;
+    // A paper slip sealed with the winner's token (both for a tie), saying who won and how.
+    const seal = r.winner === null ? `${tokenSvg(1)}${tokenSvg(2)}` : tokenSvg(r.winner);
+    const why = reasonWords(r.reason, r.winner === null ? '' : this.setup.names[opponent(r.winner) - 1], nameHtml);
+    const head = `<div class="card-seal">${seal}</div><p class="card-head">${this.endHeadline()}</p><p class="card-why">${why}</p>`;
+    if (!m.over) return `${head}<div class="say-actions"><button type="button" class="btn primary" data-action="next">Next game${icon('arrow')}</button></div>`;
+    return `${head}<div class="say-actions">
       <button type="button" class="btn primary" data-action="again">${icon('restart')} Play again</button>
       <button type="button" class="btn ghost" data-action="home">${icon('home')} Home</button>
     </div>`;
+  }
+
+  /** The card's headline: who won this game, or the match once it is over. */
+  private endHeadline(): string {
+    const r = this.view.game.result!;
+    if (r.winner === null) return 'A tie';
+    const w = this.setup.names[r.winner - 1];
+    const match = this.view.match.over && this.setup.mode !== 'single';
+    return verb(w, match ? 'You win the match' : 'You win', `${nameHtml(w)} ${match ? 'wins the match' : 'wins'}`);
   }
 
   /* ---------- words for screen readers ---------- */

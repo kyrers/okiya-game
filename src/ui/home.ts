@@ -39,7 +39,9 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
     const place = () => {
       const g = garden.getBoundingClientRect();
       const h = el.getBoundingClientRect();
-      if (g.height > 0) el.style.setProperty('--home-seam', `${Math.round(g.top - h.top + g.height / 2)}px`);
+      if (g.height === 0) return;
+      el.style.setProperty('--home-seam', `${Math.round(g.top - h.top + g.height / 2)}px`);
+      el.style.setProperty('--home-seam-x', `${Math.round(g.left - h.left + g.width / 2)}px`);
     };
     new ResizeObserver(place).observe(el);
   }
