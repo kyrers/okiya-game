@@ -22,7 +22,8 @@ in its place.
   garden) to 10, 15 or 20.
 
 The full rules, their sources and the one interpretation this edition makes are in
-[docs/RULES.md](docs/RULES.md); the game has an illustrated "How to play" sheet too.
+[docs/RULES.md](docs/RULES.md); the game has an illustrated "How to play" sheet too, and "Watch a
+game", a demonstration that plays a whole game and says, move by move, what each player may take.
 
 ## Run it
 
