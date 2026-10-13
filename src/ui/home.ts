@@ -1,8 +1,9 @@
-/** The home screen: the two halves again, the way into a game, and the garden on the seam. */
-import { newGame } from '../engine/garden';
+/** The home screen: the two halves again, the way into a game, and a picture of the game on the seam. */
+import { applyMove, legalMoves, mulberry32, newGame, type GameState, type Player, type Tile } from '../engine/garden';
 import type { MatchView } from '../game/match';
-import { icon } from './art';
+import { icon, tokenSvg } from './art';
 import { staticGarden } from './board';
+import { tileSvg } from './tileArt';
 import { DIFFICULTY_WORD, MODE_WORD } from './words';
 
 export interface HomeActions {
@@ -31,9 +32,27 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
       </nav>
     </section></div>
     <div class="seam home-seam"></div>`;
-  // A different garden each visit, all sixteen tiles face up.
-  const garden = staticGarden(newGame(Math.floor(Math.random() * 2 ** 31)));
-  el.querySelector('.home-seam')!.append(garden);
+  // A picture of the game, not a board to play on: a garden lying on the table, seen at an angle, a
+  // few moves into a game (a different one each visit), the taken tiles and some spare tokens
+  // resting on the cloth beside it. Inert: nothing in it can be pressed, focused or read out.
+  const { state, taken } = gameInProgress(Math.floor(Math.random() * 2 ** 31));
+  const garden = staticGarden(state);
+  const scene = document.createElement('div');
+  scene.className = 'home-garden';
+  scene.setAttribute('aria-hidden', 'true');
+  scene.inert = true;
+  const table = document.createElement('div');
+  table.className = 'home-table';
+  // Each player's taken tiles and spare tokens lie on their own half: vermilion near, indigo far.
+  const pieces = [
+    ...taken.map(({ tile, player }, k) => `<span class="home-piece home-tile p${player} n${k >> 1}">${tileSvg(tile)}</span>`),
+    ...[0, 1, 2].map((k) => `<span class="home-piece home-token p1 n${k}">${tokenSvg(1)}</span>`),
+    ...[0, 1].map((k) => `<span class="home-piece home-token p2 n${k}">${tokenSvg(2)}</span>`),
+  ];
+  table.innerHTML = pieces.join('');
+  table.prepend(garden);
+  scene.append(table);
+  el.querySelector('.home-seam')!.append(scene);
   // The garden takes what the title, the buttons and the links leave. The stylesheet estimates their
   // height; a long Continue summary (long names) can need more, and then the garden gives the
   // difference. The buttons are as wide as the garden, so they may grow again: a few passes settle it.
@@ -44,7 +63,8 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
       const rows = getComputedStyle(el).gridTemplateRows.split(' ').map(parseFloat);
       const over = rows.reduce((a, b) => a + b, 0) - el.clientHeight;
       if (!(over > 0.5)) return;
-      const board = garden.getBoundingClientRect().width;
+      // The scene's own width: the garden inside it is drawn at an angle, so its box is not its size.
+      const board = scene.offsetWidth;
       el.style.setProperty('--home-board-fit', `${Math.max(96, Math.floor(board - over))}px`);
     }
   };
@@ -70,6 +90,23 @@ export function homeScreen(saved: MatchView | null, actions: HomeActions): HTMLE
     else if (go === 'settings') actions.settings();
   });
   return el;
+}
+
+/** A game a few moves in: four legal moves (two each), so no formation yet and twelve tiles still face up. */
+function gameInProgress(seed: number): { state: GameState; taken: { tile: Tile; player: Player }[] } {
+  const rnd = mulberry32(seed ^ 0x5bd1e995);
+  let state = newGame(seed);
+  const taken: { tile: Tile; player: Player }[] = [];
+  for (let k = 0; k < 4; k++) {
+    const moves = legalMoves(state);
+    if (moves.length === 0) break;
+    const i = moves[Math.floor(rnd() * moves.length)];
+    const cell = state.board[i];
+    if (cell.kind === 'tile') taken.push({ tile: cell.tile, player: state.current });
+    state = applyMove(state, i);
+  }
+  // Very rarely the next player is left with no tile to take, which ends the game: deal again.
+  return state.result || taken.length < 4 ? gameInProgress(seed + 1) : { state, taken };
 }
 
 function summary(v: MatchView): string {

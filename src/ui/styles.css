@@ -699,7 +699,87 @@ button:disabled { cursor: default; }
 .home .seam { grid-area: board; padding: 12px 0; }
 /* One column: the title, the way into a game on the garden's top edge, the garden, the links. */
 .home-actions-wrap, .home-actions { display: contents; }
-.home .board { --board: var(--home-board); }
+/* The garden as a picture of the game, not a board to play on: it lies on the table, seen at an
+   angle as from a chair, a few moves into a game, with the taken tiles and some spare tokens resting
+   on the cloth beside it. Every piece lies in one plane, the table's, so they share one
+   perspective; the board's shadow and edge are drawn in that plane too, on the cloth. Nothing in it
+   answers the pointer (home.ts also makes it inert). */
+.home-garden {
+  position: relative;
+  width: var(--home-board);
+  height: var(--home-board);
+  display: grid;
+  place-items: center;
+  perspective: calc(var(--home-board) * 3.2);
+  perspective-origin: 50% 40%;
+  pointer-events: none;
+  cursor: default;
+}
+.home-table {
+  /* The board inside the scene: the rest is cloth for the loose pieces. */
+  --b: calc(var(--home-board) * var(--home-table, 0.7));
+  position: relative;
+  width: var(--b);
+  height: var(--b);
+  transform: rotateX(40deg) rotateZ(-8deg);
+}
+.home .board { --board: var(--b); }
+/* The board's edge, a few millimetres of card, and its shadow on the cloth, both in the table's plane. */
+.home .board-grid {
+  box-shadow:
+    0 calc(var(--b) * 0.016) 0 #b19566,
+    0 calc(var(--b) * 0.016 + 1px) 0 #8d7247,
+    0 calc(var(--b) * 0.05) calc(var(--b) * 0.06) calc(var(--b) * -0.01) rgba(8, 6, 14, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 0 rgba(90, 64, 30, 0.25);
+}
+.home .cell { transition: none; }
+.home-piece {
+  position: absolute;
+  left: calc(var(--b) * var(--x));
+  top: calc(var(--b) * var(--y));
+  transform: rotate(var(--r, 0deg));
+}
+/* A taken tile: the garden's own cell, with its thickness and its shadow on the cloth. */
+.home-tile {
+  width: calc(var(--b) * 0.2215);
+  height: calc(var(--b) * 0.2215);
+  border-radius: calc(var(--b) * 0.024);
+  background: var(--tile-face);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 0 0 1px rgba(80, 60, 30, 0.14) inset,
+    0 calc(var(--b) * 0.008) 0 #cdb88f,
+    0 calc(var(--b) * 0.02) calc(var(--b) * 0.03) rgba(8, 6, 14, 0.5);
+}
+.home-tile .tile-art { width: 100%; height: 100%; display: block; border-radius: inherit; overflow: hidden; }
+.home-token { width: calc(var(--b) * 0.18); height: calc(var(--b) * 0.18); }
+.home-token .token-svg { width: 100%; height: 100%; display: block; overflow: visible; }
+/* Vermilion's on the near side of the table, indigo's on the far side. The later tile lies over
+   the earlier, as it was put down last. */
+.home-tile.p1.n0 { --x: 0.5; --y: 1.04; --r: -11deg; }
+.home-tile.p1.n1 { --x: 0.68; --y: 1.06; --r: 6deg; }
+.home-token.p1.n0 { --x: 0.06; --y: 1.06; }
+.home-token.p1.n1 { --x: 0.21; --y: 1.04; }
+.home-token.p1.n2 { --x: 0.13; --y: 1.15; }
+.home-tile.p2.n0 { --x: 0.06; --y: -0.27; --r: 9deg; }
+.home-tile.p2.n1 { --x: 0.26; --y: -0.25; --r: -5deg; }
+.home-token.p2.n0 { --x: -0.13; --y: -0.04; }
+.home-token.p2.n1 { --x: -0.08; --y: -0.17; }
+/* Wide screens have cloth to spare beside the garden: a larger board, the pieces at its sides,
+   each on its own half (indigo above the seam, vermilion below). */
+@media (min-aspect-ratio: 5/4) and (min-height: 501px) {
+  .home-table { --home-table: 0.8; }
+  .home-tile.p2.n0 { --x: 1.09; --y: 0.02; --r: 8deg; }
+  .home-tile.p2.n1 { --x: 1.15; --y: 0.15; --r: -6deg; }
+  .home-token.p2.n0 { --x: -0.25; --y: 0.08; }
+  .home-token.p2.n1 { --x: -0.19; --y: 0.2; }
+  .home-tile.p1.n0 { --x: -0.36; --y: 0.66; --r: -9deg; }
+  .home-tile.p1.n1 { --x: -0.27; --y: 0.79; --r: 5deg; }
+  .home-token.p1.n0 { --x: 1.08; --y: 0.68; }
+  .home-token.p1.n1 { --x: 1.21; --y: 0.74; }
+  .home-token.p1.n2 { --x: 1.12; --y: 0.82; }
+}
 .home-title { grid-area: top; display: flex; justify-content: center; text-align: center; padding: 12px var(--gutter) 0; }
 .wordmark {
   font-family: var(--font-display);
@@ -882,6 +962,11 @@ button:disabled { cursor: default; }
       var(--indi);
   }
   .home .seam { padding: 10px var(--gutter) 10px 0; align-self: center; }
+  /* The garden fills the height: a smaller board leaves the loose pieces room above and below it. */
+  .home-table { --home-table: 0.62; }
+  /* Indigo is the right half here: its spare tokens rest by the garden's far right corner. */
+  .home-token.p2.n0 { --x: 0.95; --y: -0.22; }
+  .home-token.p2.n1 { --x: 1.05; --y: -0.09; }
   .home-title { padding: 0 var(--gutter); }
   .home-buttons { width: min(100% - 2 * var(--gutter), 26em); gap: 6px; }
   .home-buttons .btn.big { min-height: 52px; padding: 0.4em 1em; }
@@ -1321,7 +1406,7 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 @media (forced-colors: active) {
   .board, .board *, .say-tile, .say-tile *, .seat-chip, .seat-chip *, .seat-pips, .seat-pips *, .flyer, .flyer *, .glyph, .glyph *,
   .switch, .switch *, .choice-mark, .choice-mark *, .name-chip, .name-chip *,
-  .mini-garden, .mini-garden *, .eg-board, .eg-board *, .key-tile, .key-tile * {
+  .mini-garden, .mini-garden *, .eg-board, .eg-board *, .key-tile, .key-tile *, .home-piece, .home-piece * {
     forced-color-adjust: none;
   }
   .toggle-row input:focus-visible + .switch { outline-color: Highlight; }
