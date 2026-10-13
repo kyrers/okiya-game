@@ -59,6 +59,8 @@ export class GameScreen {
   private contentObserver: ResizeObserver | null = null;
   private fitPending = false;
   private fitSize = '';
+  /** Whether this screen's seats are tight (see fitNames), decided once per screen size. */
+  private fitTight: boolean | null = null;
   private readonly fitStore = new Map<string, { level: number; room: number; maxRoom: number; lastRoom: number }>();
   private onFonts: (() => void) | null = null;
   private deniedIndex: number | null = null;
@@ -413,11 +415,15 @@ export class GameScreen {
    * and only ever go up, so the garden keeps its size for a whole game.
    */
   private fitSeats(): void {
+    // Nothing to measure until the screen is on the page.
+    if (!this.el.isConnected || this.board.el.getBoundingClientRect().width === 0) return;
     const size = `${innerWidth}x${innerHeight}`;
     if (size !== this.fitSize) {
       this.fitSize = size;
       this.fitStore.clear();
+      this.fitTight = null;
     }
+    if (this.fitTight === null) this.fitTight = this.seatsTight();
     const key = this.view.game.result ? 'over' : 'playing';
     const fit = this.fitStore.get(key) ?? { level: 0, room: 0, maxRoom: -1, lastRoom: -1 };
     this.applyFit(fit);
@@ -459,16 +465,35 @@ export class GameScreen {
   private applyFit(fit: { level: number; room: number }): void {
     for (const n of [1, 2, 3]) this.el.classList.toggle(`fit-${n}`, fit.level >= n);
     this.el.style.setProperty('--seat-room', `${fit.room}px`);
-    this.fitNames();
+    this.fitNames(this.fitTight ?? false);
+  }
+
+  /**
+   * Tight seats cannot spare a line for the token count and score: a portrait screen whose garden,
+   * as it is in play with no extra room, can give the seats less than 30 px more before a tile
+   * would drop under 44 px. Decided from the screen alone, so every match, game and phase on it
+   * shows the same header.
+   */
+  private seatsTight(): boolean {
+    if (matchMedia('(min-aspect-ratio: 5/4)').matches) return false;
+    const over = this.el.classList.contains('is-over');
+    const room = this.el.style.getPropertyValue('--seat-room');
+    this.el.classList.remove('is-over');
+    this.el.style.setProperty('--seat-room', '0px');
+    const garden = this.board.el.getBoundingClientRect().width;
+    this.el.classList.toggle('is-over', over);
+    this.el.style.setProperty('--seat-room', room);
+    return (garden - 44 / 0.22) / 2 < 30;
   }
 
   /**
    * Both names at one size, whole, by one rule: the name shares its line with the token count and
-   * the score down to 58%; then the count and score go to the line below and the name has the line
+   * the score down to 80% (58% where the seats are tight, see seatsTight); then the count and
+   * score go to the line below and the name has the line
    * to itself, down to 58%; then it wraps onto two lines, breaking inside a word if it must, and
    * finally three. Only a name that fits none of these would be cut short; the sweep shows none is.
    */
-  private fitNames(): void {
+  private fitNames(tight: boolean): void {
     const names = [1, 2].map((p) => this.seats[p as Player].querySelector<HTMLElement>('.seat-name')).filter((n): n is HTMLElement => !!n);
     // Measured with the clamp lifted, where the name is laid out in full: a clamped box in Chromium
     // draws an ellipsis while reporting neither a scroll overflow nor text past its edge. Too wide
@@ -498,10 +523,12 @@ export class GameScreen {
       this.el.classList.remove('names-measuring');
       return result;
     };
-    // One rule in every phase and on every screen, so the header keeps its shape through a match:
-    // the name shrinks beside the count and score before they move to a line of their own.
+    // One rule in every phase and on every screen, measured with the name's line as full as any
+    // phase makes it, so the header keeps its shape through a match: the name shrinks a little
+    // beside the count and score, then they move to a line of their own.
+    const shared = tight ? [1, 0.9, 0.8, 0.72, 0.64, 0.58] : [1, 0.9, 0.8];
     const steps: [string, number][] = [
-      ['', 1], ['', 0.9], ['', 0.8], ['', 0.72], ['', 0.64], ['', 0.58],
+      ...shared.map((k): [string, number] => ['', k]),
       ['ids-stacked', 1], ['ids-stacked', 0.9], ['ids-stacked', 0.8], ['ids-stacked', 0.72], ['ids-stacked', 0.64], ['ids-stacked', 0.58],
       ['ids-stacked names-wrap', 0.72], ['ids-stacked names-wrap', 0.64], ['ids-stacked names-wrap', 0.58],
       ['ids-stacked names-wrap names-wrap-3', 0.58],

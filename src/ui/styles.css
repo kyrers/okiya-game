@@ -379,8 +379,7 @@ button:disabled { cursor: default; }
 .seat-count { display: none; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 0.95em; color: var(--cream-2); flex: none; }
 .seat-count-of { opacity: 0.7; font-weight: 400; }
 .seat-score.points { font-variant-numeric: tabular-nums; font-size: 0.95em; color: var(--cream-2); gap: 1px; align-items: baseline; }
-/* Two digits' width from the first game, so the header keeps its shape as the score grows. */
-.seat-score.points b { font-family: var(--font-display); font-size: 1.45em; color: var(--cream); font-weight: 800; display: inline-block; min-width: 2ch; text-align: right; }
+.seat-score.points b { font-family: var(--font-display); font-size: 1.45em; color: var(--cream); font-weight: 800; }
 
 .seat-pips { display: flex; flex-wrap: wrap; gap: 0.22em; align-items: center; min-height: 1em; }
 .pip { width: 0.95em; height: 0.95em; flex: none; display: block; overflow: visible; }
@@ -451,8 +450,12 @@ button:disabled { cursor: default; }
 /* A name too long for one line even at its smallest wraps, anywhere if it must, onto two. */
 .game.names-wrap .seat-name { white-space: normal; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .game.names-wrap-3 .seat-name { -webkit-line-clamp: 3; }
-/* While game.ts measures the names: every line laid out and nothing clipped. */
+/* While game.ts measures the names: every line laid out and nothing clipped, and the name's line
+   as full as it can be in any phase of a match (the token count shown, the score two digits wide),
+   so the layout chosen holds through the match while only what is there is drawn. */
 .game.names-measuring .seat-name { display: block; -webkit-line-clamp: none; overflow: visible; text-overflow: clip; }
+.game.names-measuring .seat-count { display: inline; }
+.game.names-measuring .seat-score.points b { display: inline-block; min-width: 2ch; }
 /* A long name takes the whole line beside its token; the count and score go below it, after an
    empty full-width break (so the token never ends up alone on a line above the name). */
 .seat-break { display: none; }
