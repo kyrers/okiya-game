@@ -307,20 +307,25 @@ button:disabled { cursor: default; }
 
 /* The end of a game: its buttons in a card over the middle of the garden, dyed in the winner's
    colour (ink for a tie), coming in once the brush stroke is drawn. */
-.seam > .board, .seam > .end-card { grid-area: 1 / 1; }
+/* Laid over the garden, never part of the layout: however tall it is, the garden keeps its place. */
+.seam { position: relative; }
 .end-card {
   --card-dye: var(--ink);
-  position: relative;
+  position: absolute;
+  inset: 0;
+  height: fit-content;
+  margin: auto;
   z-index: 5;
   display: flex;
   flex-direction: column;
   gap: 0.25em;
-  /* Always inside the garden, never a band across it; the seal stands above its top edge. */
+  /* Always inside the garden, never a band across it; the seal stands above its top edge. Sized
+     from the garden, so it reads the same on a phone and on a large desktop garden. */
   width: min(15em, calc(var(--board) - 2.5em));
-  margin-top: 1.25em;
+  max-height: calc(var(--board) - 1em);
   padding: 1.75em 1em 1em;
   border-radius: calc(var(--radius) + 0.5em);
-  font-size: clamp(0.9375rem, 0.8rem + 0.4vw, 1.125rem);
+  font-size: clamp(0.8125rem, calc(var(--board) * 0.042), 1.375rem);
   color: var(--ink);
   text-align: center;
   background: var(--paper-grain) 0 0 / 256px 256px, #fff8ea;
@@ -358,6 +363,15 @@ button:disabled { cursor: default; }
 .end-card .btn.ghost { color: var(--ink); background: transparent; border-color: rgba(31, 27, 24, 0.3); }
 .end-card .btn.ghost:hover { background: rgba(31, 27, 24, 0.06); }
 .end-card :focus-visible { outline-color: var(--card-dye); }
+/* A small garden (a phone held sideways, 340px tall or less): the slip says who won, the halves
+   say how. */
+@media (max-height: 340px) and (min-aspect-ratio: 5/4) {
+  .end-card { padding-top: 1.4em; gap: 0; }
+  .end-card .card-seal .token-svg { width: 2.4em; height: 2.4em; }
+  .end-card .card-head { font-size: 1.25em; margin-bottom: 0.4em; }
+  .end-card .card-why { display: none; }
+  .end-card .btn { min-height: 44px; }
+}
 @keyframes card-in {
   from { opacity: 0; transform: translateY(12px) scale(0.96); }
   to { opacity: 1; transform: none; }
