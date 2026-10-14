@@ -1,10 +1,12 @@
 /** The app shell: switches between home and the game, and owns the sheets and saved state. */
 import { restore, startMatch, type MatchView } from '../game/match';
 import { installSprite } from './art';
+import { Demo } from './demo';
 import { GameScreen } from './game';
 import { homeScreen } from './home';
 import { menuList, settingsPanel, setupForm, startButton, type MenuItem } from './panels';
 import { MATCH_KEY, loadSettings, loadSetup, saveSettings, saveSetup, type Settings, type SetupDraft } from './prefs';
+import { recordHtml } from './record';
 import { rulesHtml } from './rules';
 import { closeAllSheets, confirmSheet, openSheet, type Sheet } from './sheet';
 import { setSoundEnabled, unlockAudio } from './sound';
@@ -65,6 +67,7 @@ export class App {
       continueMatch: () => this.continueMatch(),
       newMatch: () => this.openSetup(),
       rules: () => this.openRules(),
+      demo: () => this.openDemo(),
       settings: () => this.openSettings(),
     });
     this.mount(el);
@@ -81,10 +84,12 @@ export class App {
       settings: () => this.settings,
       save: (v) => saveRaw(MATCH_KEY, v.saved),
       openMenu: () => this.openMenu(),
+      openRecord: () => this.openRecord(),
       goHome: () => this.showHome(true),
       onChange: () => this.updateMenu(),
     });
     this.mount(this.game.el);
+    this.game.attached();
     if (history.state?.screen !== 'game') history.pushState({ screen: 'game' }, '');
     this.game.focusBoard();
     keepAwake(true);
@@ -110,7 +115,7 @@ export class App {
     this.sheet = null;
   }
 
-  private open(title: string, body: Node | string, className?: string, footer?: Node): Sheet {
+  private open(title: string, body: Node | string, className?: string, footer?: Node, onClose?: () => void): Sheet {
     this.closeSheet();
     const s = openSheet({
       title,
@@ -118,6 +123,7 @@ export class App {
       className,
       footer,
       onClose: () => {
+        onClose?.();
         if (this.sheet === s) this.sheet = null;
         // Moves made while the sheet was open were not heard (the game behind it was inert).
         this.game?.reannounce();
@@ -129,18 +135,45 @@ export class App {
 
   private openSetup(): void {
     const saved = this.savedMatch();
+    let sheet: Sheet | null = null;
     const form = setupForm(loadSetup(), async (setup) => {
       if (saved && !saved.match.over) {
+        // The question takes the New game sheet's place; Cancel brings the sheet back as it was.
+        sheet?.dialog.classList.add('is-behind');
         const ok = await confirmSheet('Start a new game?', 'The match in progress will be replaced.', 'Start new game');
+        sheet?.dialog.classList.remove('is-behind');
         if (!ok) return;
       }
       this.startNew(setup);
     }, saveSetup);
-    this.open('New game', form, 'sheet-setup', startButton());
+    sheet = this.open('New game', form, 'sheet-setup', startButton());
   }
 
   private openRules(): void {
-    this.open('How to play', rulesHtml(), 'sheet-rules');
+    const rules = this.open('How to play', rulesHtml(), 'sheet-rules');
+    // Watch a game, from the rules: it opens over them, and closing it brings them back as they were.
+    rules.body.addEventListener('click', (ev) => {
+      if (!(ev.target as Element).closest('[data-go="demo"]')) return;
+      rules.dialog.classList.add('is-behind');
+      const demo = new Demo();
+      openSheet({
+        title: 'Watch a game',
+        body: demo.el,
+        className: 'sheet-demo',
+        onClose: () => {
+          demo.destroy();
+          rules.dialog.classList.remove('is-behind');
+        },
+      });
+      demo.start();
+    });
+  }
+
+  /** Watch a game: the engine plays a whole game, slowly, saying what happens. */
+  private openDemo(): void {
+    const demo = new Demo();
+    this.open('Watch a game', demo.el, 'sheet-demo', undefined, () => demo.destroy());
+    demo.start();
   }
 
   private openSettings(): void {
@@ -161,6 +194,7 @@ export class App {
     if (!g) return;
     const items: MenuItem[] = [
       { id: 'resume', label: 'Back to the game', icon: 'play' },
+      ...(g.match.game.result ? [{ id: 'record', label: 'Play by play', icon: 'record' } as MenuItem] : []),
       ...(g.hasUndo ? [{ id: 'undo', label: 'Undo', icon: 'undo', disabled: !g.canUndo } as MenuItem] : []),
       { id: 'rules', label: 'How to play', icon: 'book' },
       { id: 'settings', label: 'Settings', icon: 'sliders' },
@@ -174,6 +208,7 @@ export class App {
         this.closeSheet();
         return g.undo();
       }
+      if (id === 'record') return this.openRecord();
       if (id === 'rules') return this.openRules();
       if (id === 'settings') return this.openSettings();
       if (id === 'home') return this.showHome(true);
@@ -184,6 +219,13 @@ export class App {
       }
     });
     this.open('Menu', list, 'sheet-menu');
+  }
+
+  /** The finished game, move by move. */
+  private openRecord(): void {
+    const view = this.game?.match;
+    if (!view?.game.result) return;
+    this.open('Play by play', recordHtml(view.game, view.saved.setup.names), 'sheet-record');
   }
 
   /** The menu's Undo follows the game while the menu is open (a flight landing, the computer's reply). */

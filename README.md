@@ -1,7 +1,7 @@
 # Paper Garden
 
-**Paper Garden** is a two-player garden game, played exactly by the rules of the abstract game
-designed by Bruno Cathala. Two people on one device, or one person against the
+**Paper Garden** is a two-player garden game, played exactly by the rules of a published abstract
+game. Two people on one device, or one person against the
 computer at three levels. Phones, tablets and desktops; portrait and landscape; works offline
 once loaded. A static site with no backend, accounts, keys or tracking.
 
@@ -22,7 +22,10 @@ in its place.
   garden) to 10, 15 or 20.
 
 The full rules, their sources and the one interpretation this edition makes are in
-[docs/RULES.md](docs/RULES.md); the game has an illustrated "How to play" sheet too.
+[docs/RULES.md](docs/RULES.md); the game has an illustrated "How to play" sheet too, and "Watch a
+game", a demonstration that plays a whole game and says, move by move, what each player may take.
+When a game ends, "Play by play" lists every move of it in order: who took which tile, and how the
+game was won.
 
 ## Run it
 
@@ -71,10 +74,9 @@ docs/                 rules, process, evidence, screenshots
 
 ## Credits and licences
 
-- **Game design** by Bruno Cathala. Paper Garden plays by his rules (sources in
-  [docs/RULES.md](docs/RULES.md)); it uses none of the published game's name, art, logos or trade
-  dress, is not affiliated with or endorsed by its designer, illustrator or any publisher, and is
-  not for sale.
+- **Rules**: those of a published abstract game (sources in [docs/RULES.md](docs/RULES.md)).
+  Paper Garden uses none of that game's name, art, logos or trade dress, is not affiliated with or
+  endorsed by its designer, illustrator or any publisher, and is not for sale.
 - **Art**: the garden tiles, tokens, icons and app icon are original SVG drawn for this project.
 - **Sounds**: synthesised at run time with the Web Audio API; there are no audio files.
 - **Typefaces**, both under the SIL Open Font License 1.1 and self-hosted (the licence texts ship

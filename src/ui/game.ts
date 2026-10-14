@@ -17,10 +17,10 @@ import {
 } from '../engine/garden';
 import { computerMove } from '../game/aiClient';
 import { COMPUTER_SEAT, HUMAN_SEAT, isComputer, nextGame, play, startMatch, undo, type MatchView } from '../game/match';
-import { icon, tokenSvg } from './art';
-import { BoardView } from './board';
+import { icon, ringDiagram, tokenSvg } from './art';
+import { BoardView, flyTile } from './board';
 import { motionReduced, type Settings } from './prefs';
-import { soundDenied, soundEnd, soundLift, soundPlace } from './sound';
+import { PLACE_LEAD_MS, soundDenied, soundEnd, soundPlace } from './sound';
 import { tileLabel, tileSvg } from './tileArt';
 import { DIFFICULTY_WORD, MODE_SHORT, MODE_WORD, orderHtml, orderText, possessive, reasonWords, tileWords, verb } from './words';
 
@@ -28,6 +28,8 @@ export interface GameScreenDeps {
   settings(): Settings;
   save(view: MatchView): void;
   openMenu(): void;
+  /** The finished game's play by play, move by move. */
+  openRecord(): void;
   goHome(): void;
   /** Called whenever what the menu shows may have changed (Undo's availability). */
   onChange?(): void;
@@ -53,6 +55,10 @@ export class GameScreen {
   private readonly endCard: HTMLElement;
   private endCardHtml = '';
   private endCardTimer = 0;
+  /** The slip folded away to a tab at the garden's edge, so the whole garden can be seen. */
+  private readonly endTab: HTMLElement;
+  private folded = false;
+  private readonly onKey = (ev: KeyboardEvent) => this.escape(ev);
   private animating = false;
   private thinking = false;
   private guardUntil = 0;
@@ -108,7 +114,17 @@ export class GameScreen {
     this.endCard.setAttribute('role', 'group');
     this.endCard.setAttribute('aria-label', 'Game over');
     this.endCard.hidden = true;
-    this.el.querySelector('.seam')!.append(this.board.el, this.endCard);
+    this.endTab = document.createElement('div');
+    this.endTab.className = 'end-tab';
+    this.endTab.setAttribute('role', 'group');
+    this.endTab.setAttribute('aria-label', 'Game over');
+    this.endTab.hidden = true;
+    this.el.querySelector('.seam')!.append(this.board.el, this.endCard, this.endTab);
+    // Folded, a tap anywhere on the garden brings the slip back.
+    this.board.el.addEventListener('click', () => {
+      if (this.folded) this.unfold();
+    });
+    window.addEventListener('keydown', this.onKey);
     this.undoBtn.addEventListener('click', () => this.undo());
     this.el.querySelector('.menu-btn')!.addEventListener('click', () => this.deps.openMenu());
     this.el.addEventListener('click', (ev) => {
@@ -116,6 +132,12 @@ export class GameScreen {
       if (action === 'next') this.next();
       else if (action === 'again') this.again();
       else if (action === 'home') this.deps.goHome();
+      const card = (ev.target as Element).closest<HTMLElement>('[data-card]')?.dataset.card;
+      if (card === 'fold') this.fold();
+      else if (card === 'unfold') this.unfold();
+      else if (card === 'record') this.deps.openRecord();
+      else if (card === 'next') this.next();
+      else if (card === 'again') this.again();
     });
     const last = this.view.game.history[this.view.game.history.length - 1];
     this.lastIndex = last ? last.index : null;
@@ -123,7 +145,8 @@ export class GameScreen {
     // Continuing a finished game: say how it ended, not whose turn it would be.
     if (this.view.game.result) this.say(this.resultSentence(this.view.game.result));
     else this.announceTurn();
-    this.maybeComputer();
+    // The computer's first move waits for attached(), so its time to think is counted from a
+    // screen that is fitted and can be drawn.
     // Refit the seats whenever the screen changes size (rotation, browser bars), when a seat's
     // content changes size (text reflowing), and when any font finishes loading.
     if (typeof ResizeObserver !== 'undefined') {
@@ -154,6 +177,7 @@ export class GameScreen {
     window.clearTimeout(this.deniedTimer);
     this.resizeObserver?.disconnect();
     this.contentObserver?.disconnect();
+    window.removeEventListener('keydown', this.onKey);
     if (this.onFonts) document.fonts?.removeEventListener('loadingdone', this.onFonts);
   }
 
@@ -175,6 +199,19 @@ export class GameScreen {
   /** Re-read settings (playable-tile marking) after they change. */
   refresh(): void {
     this.render(null);
+  }
+
+  /**
+   * Call once the screen is on the page: fits the seats before it is first drawn. The constructor
+   * cannot (nothing is laid out yet), and the ResizeObserver's first call may come only after the
+   * screen has been drawn, in headless WebKit hundreds of milliseconds later: until then the seats
+   * showed unfitted, a long name over the top bar and an order card under the screen's foot.
+   * Then, if it is the computer's turn, it starts to think: the fit (which can take a few hundred
+   * milliseconds on a slow phone) is not taken out of the time the player sees it thinking.
+   */
+  attached(): void {
+    this.fitSeats();
+    this.maybeComputer();
   }
 
   focusBoard(): void {
@@ -325,9 +362,9 @@ export class GameScreen {
     this.deps.save(this.view);
     this.lastIndex = index;
     this.deniedIndex = null;
-    soundLift();
     this.render(index);
-    window.setTimeout(soundPlace, 90);
+    // The card lands 90ms in, as the token drops into place.
+    window.setTimeout(soundPlace, 90 - PLACE_LEAD_MS);
     const g = this.view.game;
     const name = this.setup.names[mover - 1];
     if (g.result) {
@@ -370,40 +407,7 @@ export class GameScreen {
   /** The taken tile lifts out of the garden and lands where the next player reads it. */
   private fly(from: DOMRect, tile: Tile, target: HTMLElement | null): Promise<void> {
     if (motionReduced(this.deps.settings()) || from.width === 0) return Promise.resolve();
-    const fly = document.createElement('div');
-    fly.className = 'flyer';
-    fly.innerHTML = tileSvg(tile);
-    Object.assign(fly.style, { left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px` });
-    document.body.append(fly);
-    let frames: Keyframe[];
-    if (target && target.getBoundingClientRect().width > 0) {
-      const to = target.getBoundingClientRect();
-      const dx = to.left + to.width / 2 - (from.left + from.width / 2);
-      const dy = to.top + to.height / 2 - (from.top + from.height / 2);
-      const sc = to.width / from.width;
-      target.style.visibility = 'hidden';
-      frames = [
-        { transform: 'translate(0,0) scale(1) rotate(0deg)', boxShadow: '0 2px 4px rgba(0,0,0,.2)' },
-        { transform: 'translate(0,-8px) scale(1.08) rotate(-2deg)', boxShadow: '0 18px 30px rgba(0,0,0,.35)', offset: 0.22 },
-        { transform: `translate(${dx}px,${dy}px) scale(${sc}) rotate(0deg)`, boxShadow: '0 2px 4px rgba(0,0,0,.25)' },
-      ];
-    } else {
-      frames = [
-        { transform: 'translate(0,0) scale(1)', opacity: 1 },
-        { transform: 'translate(0,-14px) scale(1.08)', opacity: 0 },
-      ];
-    }
-    const anim = fly.animate(frames, { duration: target ? 520 : 360, easing: 'cubic-bezier(.22,.8,.24,1)', fill: 'forwards' });
-    return new Promise((resolve) => {
-      const done = () => {
-        fly.remove();
-        if (target) target.style.visibility = '';
-        resolve();
-      };
-      anim.onfinish = done;
-      anim.oncancel = done;
-      window.setTimeout(done, 900); // never leave the board locked
-    });
+    return flyTile(from, tile, target);
   }
 
   /* ---------- rendering ---------- */
@@ -439,10 +443,40 @@ export class GameScreen {
     this.endCardHtml = html;
     this.endCard.innerHTML = html;
     this.endCard.hidden = !html;
+    this.endTab.innerHTML = html ? this.tabHtml() : '';
+    this.endTab.hidden = !html;
+    this.setFolded(false);
     // Not to be pressed before it is seen: a quick second tap on the garden's middle would land on it.
     window.clearTimeout(this.endCardTimer);
     this.endCard.classList.toggle('arriving', !!html);
     if (html) this.endCardTimer = window.setTimeout(() => this.endCard.classList.remove('arriving'), END_CARD_IN_MS);
+  }
+
+  /** The slip folds down to its tab (up, on a wide screen), and the whole garden shows. */
+  private fold(): void {
+    if (!this.endCardHtml || this.folded || this.endCard.classList.contains('arriving')) return;
+    this.setFolded(true);
+    this.endTab.querySelector<HTMLButtonElement>('[data-card="unfold"]')?.focus({ preventScroll: true });
+  }
+
+  /** The slip comes back over the garden, focus on its first button. */
+  private unfold(): void {
+    if (!this.folded) return;
+    this.setFolded(false);
+    this.endCard.querySelector<HTMLButtonElement>('[data-action]')?.focus({ preventScroll: true });
+  }
+
+  private setFolded(on: boolean): void {
+    this.folded = on;
+    this.el.querySelector('.seam')!.classList.toggle('card-folded', on);
+  }
+
+  /** Escape sets the slip aside to see the garden, and brings it back; a sheet's Escape is its own. */
+  private escape(ev: KeyboardEvent): void {
+    if (ev.key !== 'Escape' || ev.defaultPrevented || !this.endCardHtml || !this.el.isConnected) return;
+    if (document.querySelector('dialog[open]')) return;
+    if (this.folded) this.unfold();
+    else this.fold();
   }
 
   private updateUndo(): void {
@@ -566,7 +600,7 @@ export class GameScreen {
     const tile: Tile = { veg: 'cherry', sym: 'sun' };
     return [
       {
-        mover: `<div class="say-order"><span class="say-tile ring">${ringIcon()}</span><p class="say-what">Take any tile on the <b>outer ring</b></p></div><p class="say-note">${NOTE_RANDOM}</p>`,
+        mover: `<div class="say-order"><span class="say-tile ring">${ringDiagram()}</span><p class="say-what">Take any tile on the <b>outer ring</b></p></div><p class="say-note">${NOTE_RANDOM}</p>`,
         waiting: `<p class="say-wait">${waitWords}</p><p class="say-note say-note-away">${awayWho} ${NOTE_RANDOM_AWAY}</p>`,
       },
       {
@@ -740,7 +774,7 @@ export class GameScreen {
             ? `${only} a tile on the <b>outer ring</b>`
             : `Take any tile on the <b>outer ring</b>`;
         return `<div class="say-order${computer ? ' thinking' : ''}">
-            <span class="say-tile ring" aria-hidden="true">${ringIcon()}</span>
+            <span class="say-tile ring" aria-hidden="true">${ringDiagram()}</span>
             <p class="say-what">${what}</p>
           </div>
           <p class="say-note">${this.openerNote()}</p>`;
@@ -775,12 +809,14 @@ export class GameScreen {
       reason = reasonWords(r.reason, loserName, nameHtml);
       if (setup.mode.startsWith('points')) reason += `&nbsp;· <b class="say-points">+${r.tilesRemaining}&nbsp;${r.tilesRemaining === 1 ? 'point' : 'points'}</b>`;
     } else if (state === 'lost') {
+      // The same reason as the winner's half: a player who lost (against the computer, the person)
+      // reads why in their own half too. Then who opens the next game, as after a tie.
       quiet = true;
       result = matchOver ? verb(name, 'You lose the match', 'Loses the match') : verb(name, 'You lose', 'Loses');
-      reason = m.over ? '' : verb(name, 'You open the next&nbsp;game', 'Opens the next&nbsp;game');
+      reason = reasonWords(r.reason, name, nameHtml) + (m.over ? '' : `&nbsp;· ${verb(name, 'you&nbsp;open&nbsp;next', 'opens&nbsp;next')}`);
     } else {
       result = 'Tie';
-      reason = reasonWords('full', '') + (!m.over && m.nextFirst === p ? `&nbsp;· ${verb(name, 'you open&nbsp;next', 'opens&nbsp;next')}` : '');
+      reason = reasonWords('full', '') + (!m.over && m.nextFirst === p ? `&nbsp;· ${verb(name, 'you&nbsp;open&nbsp;next', 'opens&nbsp;next')}` : '');
     }
     return `<div class="say-over${m.over ? ' match-over' : ''}">
         <div class="say-text"><p class="say-result${quiet ? ' quiet' : ''}">${result}</p>${reason ? `<p class="say-reason">${reason}</p>` : ''}</div>
@@ -814,11 +850,38 @@ export class GameScreen {
 
   private actionsHtml(): string {
     const m = this.view.match;
-    if (!m.over) return `<div class="say-actions"><button type="button" class="btn primary" data-action="next">Next game${icon('arrow')}</button></div>`;
-    return `<div class="say-actions">
+    const r = this.view.game.result!;
+    // A paper slip sealed with the winner's token (both for a tie), saying who won and how.
+    const seal = r.winner === null ? `${tokenSvg(1)}${tokenSvg(2)}` : tokenSvg(r.winner);
+    const why = reasonWords(r.reason, r.winner === null ? '' : this.setup.names[opponent(r.winner) - 1], nameHtml);
+    const head = `<div class="card-seal">${seal}</div><p class="card-head">${this.endHeadline()}</p><p class="card-why">${why}</p>`;
+    const see = `<div class="card-links"><button type="button" class="card-fold" data-card="fold">See the board</button><button type="button" class="card-record" data-card="record">Play by play</button></div>`;
+    if (!m.over) return `${head}<div class="say-actions"><button type="button" class="btn primary" data-action="next">Next game${icon('arrow')}</button></div>${see}`;
+    return `${head}<div class="say-actions">
       <button type="button" class="btn primary" data-action="again">${icon('restart')} Play again</button>
       <button type="button" class="btn ghost" data-action="home">${icon('home')} Home</button>
-    </div>`;
+    </div>${see}`;
+  }
+
+  /** The folded slip: a tab that still says who won, brings the slip back, and offers the main button. */
+  private tabHtml(): string {
+    const r = this.view.game.result!;
+    const seal = r.winner === null ? `${tokenSvg(1)}${tokenSvg(2)}` : tokenSvg(r.winner);
+    // Its own attribute, not data-action: the slip's buttons stay the only [data-action] ones.
+    const main = this.view.match.over ? '<button type="button" class="btn primary" data-card="again">Play again</button>' : '<button type="button" class="btn primary" data-card="next">Next game</button>';
+    const head = this.endHeadline();
+    // The headline is escaped HTML already; without its tags it is safe in an attribute.
+    const label = `${head.replace(/<[^>]+>/g, '')}: show the result`;
+    return `<button type="button" class="tab-show" data-card="unfold" aria-label="${label}"><span class="tab-seal">${seal}</span><span class="tab-head">${head}</span>${UNFOLD_ICON}</button>${main}`;
+  }
+
+  /** The card's headline: who won this game, or the match once it is over. */
+  private endHeadline(): string {
+    const r = this.view.game.result!;
+    if (r.winner === null) return 'A tie';
+    const w = this.setup.names[r.winner - 1];
+    const match = this.view.match.over && this.setup.mode !== 'single';
+    return verb(w, match ? 'You win the match' : 'You win', `${nameHtml(w)} ${match ? 'wins the match' : 'wins'}`);
   }
 
   /* ---------- words for screen readers ---------- */
@@ -867,18 +930,10 @@ interface Fit {
 const UNDO_GUARD_MS = 400;
 /** The end card's delay and entrance (styles.css, .end-card), after which it can be pressed. */
 const END_CARD_IN_MS = 1150;
+/** The folded slip's mark that brings it back, drawn as the icons are (art.ts: 24px grid, 1.8 stroke). */
+const UNFOLD_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14.5l6-6 6 6"/></svg>';
 const NOTE_RANDOM = 'Chosen at random to open the&nbsp;match.';
 const NOTE_RANDOM_AWAY = 'was chosen at random to open the&nbsp;match.';
-
-function ringIcon(): string {
-  const cells = Array.from({ length: 16 }, (_, i) => {
-    const r = Math.floor(i / 4);
-    const c = i % 4;
-    const ring = r === 0 || r === 3 || c === 0 || c === 3;
-    return `<rect x="${3 + c * 11}" y="${3 + r * 11}" width="9" height="9" rx="2" class="${ring ? 'ring-on' : 'ring-off'}"/>`;
-  }).join('');
-  return `<svg viewBox="0 0 48 48" aria-hidden="true">${cells}</svg>`;
-}
 
 function escape(s: string): string {
   return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);

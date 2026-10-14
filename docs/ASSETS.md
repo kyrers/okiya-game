@@ -16,7 +16,7 @@ Every file a player downloads, from `dist/` after `npm run build` (identical to 
 | The 16 garden tiles, tokens, icons, rules diagrams, brush stroke | Inline SVG inside the JS | Drawn for this project (`src/ui/tileArt.ts`, `src/ui/art.ts`); the tiles are the client-approved designs of the earlier attempt | Project's own |
 | `icon.svg`, `favicon-32.png`, `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png` | App icons | `public/icon.svg` drawn for this project; PNGs rendered from it by `scripts/render-icons.ts`; provenance embedded in each PNG | Project's own |
 | `og-image.jpg` | Link-preview image | A capture of this game's own home screen by `scripts/capture.ts`, which writes its provenance into the file (a JPEG comment) | Project's own |
-| Sounds | Wood clicks, paper slide, chimes | Synthesised at run time with the Web Audio API (`src/ui/sound.ts`); there are no audio files | Project's own |
+| Sounds | A flower card snapped onto tatami, a knock on wood, a small bell | Synthesised at run time with the Web Audio API (`src/ui/sound.ts`); there are no audio files | Project's own |
 | `manifest.webmanifest`, `robots.txt` | App manifest, crawler rules | Written for this project | Project's own |
 | `licenses/*.txt` | The two font licences | Copied from the font projects | The OFL text itself |
 
@@ -25,5 +25,5 @@ allows only the site itself (`default-src 'self'`), and the e2e suite runs a gam
 with no violation.
 
 The published game, its name and its art belong to its publisher, designer and illustrator. This
-edition is called Paper Garden, credits the game's designer by name, uses none of the published game's name, art or
+edition is called Paper Garden, names no one from the published game, uses none of the published game's name, art or
 marks, claims no endorsement, and is not for sale.

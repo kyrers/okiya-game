@@ -127,6 +127,10 @@ test.describe('accessibility (axe-core, WCAG 2.2 AA rules)', () => {
     await page.getByRole('button', { name: 'How to play' }).click();
     await scan(page, 'rules');
     await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Watch a game' }).click();
+    await expect(page.locator('dialog.sheet-demo .cell.show-legal').first()).toBeVisible();
+    await scan(page, 'watch a game');
+    await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Settings' }).click();
     await scan(page, 'settings');
     await page.keyboard.press('Escape');

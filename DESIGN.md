@@ -29,9 +29,9 @@ colors:
 typography:
   display:
     fontFamily: "'Garden Ellipsis', 'Shippori Mincho B1', 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif"
-    fontSize: "clamp(3rem, 15vw, 6rem)"
+    fontSize: "min(6rem, (100vw - gutters) / 7.6, 10vh)"
     fontWeight: 800
-    lineHeight: 0.95
+    lineHeight: 1.1
     letterSpacing: "0.04em"
   headline:
     fontFamily: "'Garden Ellipsis', 'Shippori Mincho B1', 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif"
@@ -163,12 +163,10 @@ components:
     rounded: "{rounded.control}"
     padding: "6px 6px 6px 10px"
   switch:
-    backgroundColor: "#cbbb9c"
-    rounded: "{rounded.pill}"
-    width: "50px"
-    height: "30px"
-  switch-on:
-    backgroundColor: "{colors.verm}"
+    backgroundColor: "{colors.token-well}"
+    rounded: "8px"
+    width: "64px"
+    height: "34px"
   menu-item:
     backgroundColor: "transparent"
     textColor: "{colors.ink}"
@@ -188,13 +186,13 @@ components:
 
 The game is a table shared by two people. Every screen is the same object seen from above: a vermilion cloth half and an indigo cloth half, meeting at a seam, with a warm paper garden board lying across that seam. The half whose turn it is lights up; the waiting half sinks to a darker, muted dye. Nothing floats on a neutral page. A thin top bar carries only the match label and its icon buttons (Menu, and Undo against the computer); everything about a player (their name, tokens in hand, the tile they must answer, the result) sits in their own half of the cloth.
 
-The world is made of a few real materials. The dyes and the paper carry raster texture (a plain-weave cloth tile and a fibre paper tile, both 256px seamless tiles, soft-light blended onto flat colour). Tokens are lacquered discs with a radial sheen. The garden's sixteen tiles are the client's own SVG art, kept as drawn; the system frames them and never redraws them. Paper surfaces (the order card, the sheets) are the only places interface text sits on light; everything else is cream type on dye.
+The world is made of a few real materials. The dyes and the paper carry raster texture (a plain-weave cloth tile and a fibre paper tile, both 256px seamless tiles, soft-light blended onto flat colour); the home's tatami carries a third, the rush, drawn as SVG noise. Tokens are lacquered discs with a radial sheen. The garden's sixteen tiles are the client's own SVG art, kept as drawn; the system frames them and never redraws them. Paper surfaces (the order card, the sheets) are the only places interface text sits on light; everything else is cream type on dye.
 
-The interface recedes. The garden is the largest thing on every screen at every viewport, and every other element is sized from what is left over. Motion belongs to the play itself: the light crossing the seam, a taken tile flying to the mover's card, a token settling into its cell, a brush stroke through a winning formation.
+The interface recedes. The garden is the largest thing on every screen at every viewport, and every other element is sized from what is left over. Motion belongs to the play itself: the light crossing the seam, a taken tile flying to the mover's card, a token settling into its cell, a brush loop drawn round a winning formation.
 
 **Key Characteristics:**
 - Two dyed halves (vermilion, indigo), stacked in portrait and side by side in landscape, meeting at the garden's centre.
-- One paper garden on the seam, as large as the viewport allows (up to 640px portrait, 760px landscape).
+- One paper garden on the seam, as large as the viewport allows (up to 640px portrait, 1120px landscape).
 - Lit versus sunk dye is the turn indicator; players are also told apart by token pattern (crest versus plain).
 - Cream type on cloth, ink type on paper; controls invert their colours when they land on paper.
 - A serif display face for names, results and titles only; a humanist sans for everything else.
@@ -205,7 +203,7 @@ The interface recedes. The garden is the largest thing on every screen at every 
 Two saturated dyes, each with a lit and a sunk state, over a warm paper-and-ink neutral family, with one gold for marks and focus.
 
 ### Primary
-- **Vermilion Dye** (verm): Player 1's half when lit, player 1's lacquered tokens, and the one action colour on paper: primary sheet buttons, the checked switch, the selected choice ring, menu icons, the name field's focus ring.
+- **Vermilion Dye** (verm): Player 1's half when lit, player 1's lacquered tokens, and the one action colour on paper: primary sheet buttons, the token in the checked switch and the chosen choice's well, the selected choice ring, menu icons, the name field's focus ring.
 - **Sunk Vermilion** (verm-dim): player 1's half while waiting; also the selected segmented-option label on paper.
 - **Pressed Vermilion** (verm-press): hover state of the vermilion button on paper.
 
@@ -216,17 +214,17 @@ Two saturated dyes, each with a lit and a sunk state, over a warm paper-and-ink 
 ### Tertiary
 - **Seal Gold** (gold): the marks the game makes: the ring on tiles that may be taken, the ring on the last token placed, won-game seals, earned points, the outer-ring cells in the opening diagram, and the keyboard focus ring on the dyes.
 - **Deep Gold** (gold-2): gold's outline where gold sits on paper (ring diagram strokes, open cells in rules diagrams).
-- **Tile pigments** (maple, cherry, cherry-2, pine, iris): belong to the garden tile art and its glyphs. They appear only inside tile art, inline tile glyphs and the rules key.
+- **Tile pigments** (maple, cherry, cherry-2, pine, iris): belong to the garden tile art and its glyphs. They appear only inside tile art, inline tile glyphs and the rules' two keys.
 
 ### Neutral
 - **Garden Paper** (paper): sheets, the order card, primary buttons on the dyes, choice cards and name fields.
 - **Lit Paper** (paper-lit): hover state of the paper button.
-- **Paper Tray** (paper-2): the segmented control's tray and the opening-ring card well.
+- **Paper Tray** (paper-2): the segmented control's tray, the opening-ring card well and the rules' names key.
 - **Board Paper** (paper-3): the garden board, sheet scrollbars, rules diagram boards.
 - **Tile Face** (tile-face): the face of every garden tile cell, the flying tile, rules diagram cells.
 - **Token Well** (token-well): a cell whose tile has been taken and now holds a token; drawn inset.
 - **Ink** (ink), **Ink 2** (ink-2), **Ink 3** (ink-3): text on paper, from body to secondary (legends, figure captions) to tertiary (details, credits). Ink 3 is the lightest text allowed on paper (5.5:1).
-- **Brush Ink** (brush-ink): the brush stroke drawn through a winning formation, at 0.72 opacity.
+- **Brush Ink** (brush-ink): the thin brush loop drawn round a winning formation, at 0.82 opacity.
 - **Cream** (cream), **Cream 2** (cream-2): text and icons on the dyes; Cream 2 for secondary lines (match label, waiting notes, reasons).
 - Cream at low alpha makes every control surface on the dyes: rgba(251, 243, 228, 0.08) rest, 0.16 to 0.18 hover, 0.28 to 0.4 hairline borders. Warm brown at low alpha, rgba(80, 60, 30, 0.12 to 0.22), makes every hairline on paper.
 
@@ -245,7 +243,7 @@ Two saturated dyes, each with a lit and a sunk state, over a warm paper-and-ink 
 **Character:** A heavy brush-cut Mincho gives names, results and the wordmark the voice of the printed game; a clean humanist sans carries every instruction and control, legible at 13 to 16px on every engine. Both are self-hosted.
 
 ### Hierarchy
-- **Display** (800, 0.95, 0.04em tracking): the Paper Garden wordmark on home only, with a soft 0 4px 24px shadow. It is sized from the width of its column (container query units), so it always fits: on one line in portrait (min(6rem, 100cqi / 7.6)), "Paper" over "Garden" in landscape (min(5.5rem, 100cqi / 4.1)).
+- **Display** (800, 1.1, 0.04em tracking): the Paper Garden wordmark on home only, always on one line, with a soft 0 4px 24px shadow and 0.22em of room under its descenders, so it never meets the button below. Sized from the screen: min(6rem, the width less gutters / 7.6, a tenth of the height); beside the garden on a phone held sideways, min(3.5rem, the width left / 7.6, 13vh).
 - **Headline** (800, 1.5rem, 1.2): sheet titles. Rules section heads use the same face at 1.3rem; the about heading at 1.2rem.
 - **Title** (800, 1.375em of the seat size, 1.5): player names in the seats, the line tall enough for Shippori's descenders. A long name shrinks a little to fit beside its token count and score (down to 80%; to 58% on the tightest portrait screens, where a line cannot be spared); then the count and score move to a line of their own and the name may shrink further (to 58%); then it wraps onto two or three lines; a name taken under 18px is set in Source Sans 3 bold (see the Eighteen Pixel Rule); both names are always at one size, decided once for the whole match; an ellipsis (the Latin one, on the baseline) is a last resort no tested screen reaches. Game results use the display face at 1.6em (1.3em for a quiet result such as a tie). Points totals use it at 1.45em.
 - **Body** (400, 1rem, 1.45): default text. Rules prose runs at 1.55 line height, its measure set by the 38rem rules sheet; the order card's instruction at 1.0625em, 1.3, balanced.
@@ -256,7 +254,7 @@ Two saturated dyes, each with a lit and a sunk state, over a warm paper-and-ink 
 ### Named Rules
 **The Eighteen Pixel Rule.** The display face is set at 18px or above only; below that everything is Source Sans 3. Seat names are the one display use that can shrink under 18px (a long name on a small screen); when the fit takes them there, both names switch to Source Sans 3 bold together.
 
-**The Seat Scale Rule.** Everything in a seat is sized in em from one seat font size (1rem default; 0.9375rem and 0.875rem on short screens; clamp(0.875rem, 0.25rem + 1.2vw, 1.5rem) in landscape), so a seat scales as a whole.
+**The Seat Scale Rule.** Everything in a seat is sized in em from one seat font size (1rem default; 0.9375rem and 0.875rem on short screens; in landscape, sized from the seat's own width so a 16-letter name keeps one line: about 13.8em across while the smallest name step is in Source Sans 3, 17em once it is in Shippori, between 0.875rem and 2rem), so a seat scales as a whole.
 
 **The Tabular Count Rule.** Token counts and points use tabular figures.
 
@@ -266,13 +264,13 @@ The screen is fixed to the visual viewport (100dvh where supported) and never sc
 
 **Portrait (aspect below 5/4):** a single column grid of top bar, indigo seat, garden, vermilion seat, bottom inset. The garden takes the smaller of the full width minus gutters, the height left after the top bar and two minimum seat heights, and 640px. The two dyes meet at the garden's centre line, computed from the top bar and insets (home measures it live). The indigo seat aligns its contents to the garden's top edge, the vermilion seat to its bottom edge, so each player's information sits against the garden on their side.
 
-**Landscape (aspect 5/4 and wider):** vermilion seat left, garden centre, indigo seat right, the top bar spanning above. Seats are clamp(9.5rem, 22vw, 23.75rem) wide; the garden takes what remains up to 760px. Both seats start level with the garden's top edge so the two names share a line.
+**Landscape (aspect 5/4 and wider):** vermilion seat left, garden centre, indigo seat right, the top bar spanning above. Seats are clamp(9.5rem, 22vw, 23.75rem) wide (at most 44rem columns on very wide screens, the seat-garden-seat group centred); the garden takes what remains up to 1120px. A seat has no gutter on the garden side, so its content sits beside the garden. Both seats start level with the garden's top edge so the two names share a line. From 1700x1000 the top bar grows (5.25rem, 56px buttons).
 
-**Home** repeats the same composition: wordmark in the indigo half, a freshly dealt garden on the seam, the actions in the vermilion half (side by side in landscape, up to 600px garden).
+**Home** is one centred column on every screen but a phone held sideways: the wordmark, the way into a game (with a match to resume, Continue above New game on every screen; the garden gives way to a long summary), a picture of the garden on the seam, then How to play, Watch a game and Settings as 48px pill buttons with a faint cream fill (on a phone, Settings wraps to a second row and the garden gives the height). The garden on the home is **a picture of a game, not a board to play on**: it lies on the table seen at an angle (tilted back 40 degrees and turned 8), a few moves into a game dealt afresh each visit, with its card edge and a soft shadow on the mats; it cannot be pressed, focused or read out. Each player's taken tiles and spare tokens rest beside it on their own half: in one column indigo's by the far right corner (above the seam) and vermilion's by the near left corner and under the near edge (below it); on wide screens at the board's sides; on a phone held sideways vermilion's left of the seam and indigo's right of it. Nothing lies between the buttons and the board: the scene gives up the mat beyond the far edge, so the buttons sit on that edge, and they are as wide as the tilted board is drawn, centred on it (on phones in portrait they keep the column's width, which a long Continue summary needs, and overhang the board a little). The scene's square is the garden size: it grows with the window's height (up to 680px); the board is 76% of it in one column, 80% on wide screens, 62% beside the column on a phone held sideways. Under it, tatami (below, Depth): two mats meet under the garden's centre, which home measures live (their borders run across the screen in one column, and stand upright through the garden on a phone held sideways, where the garden sits on the right and everything else beside it).
 
 **Rhythm:** gutters are clamp(12px, 3.6vw, 32px) in portrait and clamp(12px, 1.6vw, 28px) in landscape. The garden keeps a 10px gap to the halves (6px on very short landscape screens). Component spacing uses 4, 8, 10, 12, 16 and 20px; inside seats spacing is in em.
 
-**Short screens** step the layout down rather than scrolling: at 760px tall and 620px tall (portrait) the top bar and minimum seat height shrink and the seat font steps down. Beyond that the seats fit themselves by measurement, both together, planned once per screen size from the tallest content a game can show (the opening card with its note, the longest order), so the garden holds its size through a game: (1) the row of token pips gives way to a numeric count, then the seats take room from the garden, at most a tenth of it; (2) the seat type steps down a size (90%), and the seats may take up to 15% of the garden; (3) the opener's note moves to the waiting player's seat, which has room to spare at an opening move; (4) the type steps down again (80%); (5) only as a last resort, the note is left out (reached only on the smallest phones with the largest text and the longest names). The garden never gives so much that a tile drops under 44px. The instruction and the result are never dropped. A finished game raises the minimum seat height so the result and its buttons fit; the garden steps back a little to make room, and the seats keep their width so the header keeps its shape.
+**Short screens** step the layout down rather than scrolling: at 760px tall and 620px tall (portrait) the top bar and minimum seat height shrink and the seat font steps down. Beyond that the seats fit themselves by measurement, both together, planned once per screen size from the tallest content a game can show (the opening card with its note, the longest order), so the garden holds its size through a game, and fitted as the screen is put on the page, before it is first drawn: (1) the row of token pips gives way to a numeric count, then the seats take room from the garden, at most a tenth of it; (2) the seat type steps down a size (90%), and the seats may take up to 15% of the garden; (3) the opener's note moves to the waiting player's seat, which has room to spare at an opening move; (4) the type steps down again (80%); (5) only as a last resort, the note is left out (reached only on the smallest phones with the largest text and the longest names). The garden never gives so much that a tile drops under 44px. The instruction and the result are never dropped. A finished game raises the minimum seat height so the result and its buttons fit; the garden steps back a little to make room, and the seats keep their width so the header keeps its shape.
 
 **Layout reserves are in rem**, so a larger default text size shrinks the garden, never the seats.
 
@@ -290,15 +288,16 @@ Depth is physical, as on a table: cloth is the ground, the paper board lies on i
 - **Lifted tile** (gold ring plus `0 calc(var(--board)*.02) calc(var(--board)*.035) rgba(40,25,5,.42)`, translateY -4%, -6% on hover): a tile that may be taken.
 - **Card on cloth** (`0 6px 16px -8px rgba(0,0,0,.55)`): the order card. Paper buttons on dye use `0 1px 0 rgba(255,255,255,.7) inset, 0 8px 18px -8px rgba(0,0,0,.6)`.
 - **Sheet** (`0 -12px 40px rgba(0,0,0,.35)` as a bottom sheet; `0 30px 80px rgba(0,0,0,.45)` centred on wide screens), over a rgba(12,10,22,.6) backdrop.
+- **Tatami under one lamp (home):** the home is an evening's game in a Japanese room. **The mats** lie in the garden's own plane, seen from the same eye: the board picture and the mats share one camera (`--home-tilt` 40deg, `--home-depth` 3.2 garden sizes, `--home-eye` a tenth of the garden above its centre), so they cannot drift apart; the mats sit square to the viewer, the board laid on them at its slight angle. A tatami's short side is about four boards (2.5 garden sizes; 2.9 on wide screens, 2.2 on a phone held sideways). The rush runs across each mat, towards the eye, so its lines converge; the warp threads run along it, closing with distance. **The heri:** two mats meet, long sides together, under the garden's centre, so their cloth borders (about 3cm, 2.7% of a mat) run side by side there: indigo on the far mat, vermilion on the near one, as the game's halves are (on a phone held sideways the mats are turned a quarter, vermilion's border on the left under the wordmark and buttons, indigo's on the right). Each border is cloth folded over the mat's edge: dark where it turns down, a sheen along its crown, a hairline of shadow on the rush (the fold and sheen are mixed from the dyes, with worked-out colours for an engine without color-mix()). **The lamp** hangs over the garden, just beyond its centre, as the board's shadow says: its pool on the mats is wide across the table and short along it, and falls off quickly, so the wordmark, the buttons and the links sit in the room's shade: cream type keeps at least 4.5:1 on the brightest rush behind it (the wordmark 3:1), measured with the text hidden at every listed size in Chromium and WebKit. **The room:** beyond the pool a wider shade, then the room's own dark (#120d08) at the screen's edges, about the lamp. The mats are one 3D layer under everything, cut to what the screen shows of them (home solves the screen's edges back onto the floor), so a phone's GPU never draws more than it shows; a second pseudo-element darkens the screen's corners.
 
 ### Named Rules
 **The Shade Layer Rule.** Tiles that may not be taken sink under a warm shade layer (rgba(70,54,36,.3), .38 once the game is over) drawn as a pseudo-element, never a CSS filter: filters on these SVG-filled buttons crashed WebKit during play.
 
-**The Texture Rule.** Cloth and paper texture is a 256px seamless tile in grey light and shade, soft-light blended over flat colour. A new surface of cloth or paper uses the same tiles the same way; texture is never a photograph or a gradient imitation.
+**The Texture Rule.** Cloth and paper texture is a 256px seamless tile in grey light and shade, soft-light blended over flat colour. A new surface of cloth or paper uses the same tiles the same way; texture is never a photograph or a gradient imitation. The third texture, the tatami's rush, is drawn rather than photographed: an SVG feTurbulence (fractal noise stretched long along the stalk, 0.4 by 0.005, its contrast lifted by a colour matrix), tiled at 0.3 of a mat and soft-light blended over the rush's straw colour (#bd9d5f), under the cloth tile's weave.
 
 ## Shapes
 
-Soft rectangles throughout, with circles for things you hold. Controls and cards share one 12px radius; the segmented control's inner options use 9px so they nest; sheets use 20px (top corners only when docked to the bottom). The garden board and its cells take radii proportional to the board (4.5% and 2.4% of its size) so they look the same at every scale. Icon buttons, tokens, pips, switch knobs and the last-move ring are circles; link buttons and switches are pills. Won-game seals are small squares rotated 45 degrees, pressed in gold like a stamp; an unwon seal is an empty cream frame.
+Soft rectangles throughout, with circles for things you hold. Controls and cards share one 12px radius; the segmented control's inner options use 9px so they nest; sheets use 20px (top corners only when docked to the bottom). The garden board and its cells take radii proportional to the board (4.5% and 2.4% of its size) so they look the same at every scale. Icon buttons, tokens, pips, choice wells and the last-move ring are circles; link buttons are pills; the switch is a strip of two garden cells (8px radius). Won-game seals are small squares rotated 45 degrees, pressed in gold like a stamp; an unwon seal is an empty cream frame.
 
 Icons are authored SVG on a 24px grid, 1.8 stroke, round caps and joins, drawn in currentColor.
 
@@ -319,32 +318,60 @@ Paper on cloth, cloth on paper: a button takes the material opposite to the grou
 - **Link button:** pill, 44px tall, transparent, 600 weight, 20px icon; hover fills translucent cream.
 
 ### Order card (signature)
-The paper card in the mover's half that says what to take. Paper with paper texture, 12px radius, a small cast shadow; the opponent's last tile at the left (3.4em square tile face), the instruction to its right, with inline tile glyphs and bold tile names. On the opening move the tile becomes a 4x4 ring diagram with gold outer cells. In narrow seats (container under 250px) the tile shrinks to 2.6em and the card stays one row. The computer's thinking state shows a breathing ellipsis (opacity 0.25 to 1, 1.2s).
+The paper card in the mover's half that says what to take. Paper with paper texture, 12px radius, a small cast shadow; the opponent's last tile at the left (3.4em square tile face), the instruction to its right, with inline tile glyphs and bold tile names. On the opening move the tile becomes a 4x4 ring diagram with gold outer cells. In narrow seats (container under 250px) the tile shrinks to 2.6em; under 15em the card stacks, the tile above the order, so a word never breaks inside and an order takes one or two lines. The computer's thinking state shows a breathing ellipsis (opacity 0.25 to 1, 1.2s).
 
 ### Seat (signature)
 A player's half: their token chip, name in the display face, match score (three gold seals, or points in the display face), a row of eight token pips (spent pips become empty cream rings), then the order card, a waiting line, or the result. Results use the display face in cream with a cream-2 reason line; points scored are gold on indigo and cream on vermilion, where gold text would be too faint (3.3:1).
 
+### End card
+At a game's end, a slip of the garden's paper over the middle of the garden, sealed on its top edge with the winner's token (both tokens, overlapping, for a tie). It says who won in the display face ("Aki wins", "You win", "A tie", "... wins the match") and how, in a caption line, then the buttons stacked at full width: Next game or Play again in ink cloth, Home on paper with a thin outline. The buttons are the same whoever won (an action is neutral); only the seal says who. Laid over the garden, never moving it, and sized from it (type at 4.2% of the garden, 13 to 22px); always inside it. On a garden under 320px across (a phone held sideways, a 320px-wide phone, a short window; decided by the garden's own size, not the screen's; phones from 360px wide keep the stacked buttons) it keeps the line that says how, with a smaller seal and headline and the two buttons side by side, so the slip, its seal and See the board stay inside the garden. It comes in once the brush stroke is drawn and cannot be pressed before it is seen.
+
+Under its buttons, two quiet ink links, each 44px tall: **See the board** and **Play by play**, side by side on one line, so the slip is no taller than with See the board alone. Play by play opens the game's play by play (see Sheets). See the board folds the slip away so the whole garden can be seen. The slip slides off towards the garden's edge and leaves a **tab** there: a paper pill, straddling the edge, half on the garden's frame and half on the cloth, holding the seal, the headline (cut short with an ellipsis if it must be) and an up chevron, joined to the main button (Next game or Play again) in ink. The tab sits on the bottom edge on an upright screen, and on the top edge from aspect 5/4, where the garden reaches the bottom of the screen and the top bar leaves room above it. A tap on the tab or anywhere on the garden, or Escape, brings the slip back; Escape also folds it. Folding puts focus on the tab, unfolding on the slip's first button. The tab's two halves take their focus ring inside themselves (ink on its paper, cream on its ink).
+
 ### Garden (signature)
-The paper board with sixteen cells in a 4x4 grid, gap 1.8% and padding 3% of the board. Cells are tile faces holding the kept tile art; taken cells become pressed wells holding a lacquered token. States: may be taken (gold ring, lifted, shadow), may not be taken (warm shade), last placed (gold ring inside the cell), refused tap (a short horizontal shake, 0.32s), game over (a brush-ink stroke drawn through the winning formation; dead tiles shaded).
+The paper board with sixteen cells in a 4x4 grid, gap 1.8% and padding 3% of the board. Cells are tile faces holding the kept tile art; taken cells become pressed wells holding a lacquered token. States: may be taken (gold ring, lifted, shadow), may not be taken (warm shade), last placed (gold ring inside the cell), refused tap (a short horizontal shake, 0.32s), game over (a thin brush-ink loop drawn round the winning formation, never across its tokens: a long loop round a line of four, between the tokens and the cells' edges, and a ring round a square of four; about 7.5% of a cell wide, with a rough edge; dead tiles shaded).
 
 ### Sheets
-Dialogs are paper sheets: docked to the bottom with 20px top corners on phones, centred (560px; 38rem, 608px, for rules) from 640px wide and 560px tall. Head with a display-face title and a close icon button, a hairline below; a scrolling body; an optional footer with a hairline above. Opening rises 24px and fades in over 0.32s.
+Dialogs are paper sheets: docked to the bottom with 20px top corners on phones, centred (560px; 38rem, 608px, for rules) from 640px wide and 560px tall. The head is a band of the table's indigo cloth, as the game's top bar is: a cream display-face title, the dye icon button to close, gold focus on the band. Below it the paper page: a scrolling body, with section headings in the display face in indigo, and an optional footer with a hairline above. On short landscape screens the footer's action moves onto the band beside the title and takes the paper button there (a button takes the material opposite its ground), with a short shadow that stays on the cloth. Opening rises 24px over 0.32s, the panel only and without a fade, so a sheet is never drawn invisible while the engine is slow to draw its next frame; once in, the entrance is taken off, so nothing of it can hold the sheet short of its place.
+
+### Play by play (sheet)
+The finished game, move by move, opened from the end slip's Play by play link and from the Menu once a game is over (its icon a short list with dots). A sheet 30rem (480px) wide, docked on phones. A legend first: each player's token and name. Then one row per move, 52px tall, with hairline rules between them: the move's number (tabular, ink 3, right-aligned), the mover's token (1.5em), the tile taken as a 2.5em thumbnail of its face (6px radius, the rules key's shadow), and the tile's words in Source Sans 600 ("pine and rising sun"). Only the last row says how the game ended, under its words, in vermilion ("Four in a row", "Ren has no tile to take", "The garden is full"). Screen readers hear the mover's name before each tile. Only the current game; earlier games of a match are not listed.
+
+### Watch a game (demonstration sheet)
+A sheet (600px centred, docked on phones) in which the engine plays a whole game between Vermilion and Indigo, a move about every 2.8 seconds. Opened from the home's Watch a game pill (a play mark in a ring, so it is not taken for Continue or New game) and from a small ghost button at the top of How to play, over which it opens and to which closing it returns.
+- **The garden** is the game's own, on a piece of the table's cloth with 12px radius: indigo above the seam, vermilion below (left and right on a phone held sideways), the half of the player to move lit and the other sunk, as on the game screen. The tiles that may be taken are lifted with the gold ring, the last token carries its ring, tokens set down and the taken tile flies off as in play, the brush goes through a winning formation. It is a picture: inert, hidden from screen readers, never focused or pressed.
+- **The line** above the garden says what just happened and what the other may now take, in the game's words: the tile just taken at the left (where the flying tile lands; the ring diagram at the opening), then "Vermilion took maple with rain." in ink 2 and "Indigo may now take any maple or any rain tile: the five lifted ones." in ink, each name after its token, each tile word after its glyph. At the end: "Indigo wins: a square of four." or "A tie: the garden is full." It keeps the height of its longest sentence at the sheet's width, so the garden never changes size during a game. A hidden polite live region reads each line out.
+- **Controls** under the garden, ghost buttons on paper: Pause / Play and Next move; at the end they give way to Play again (vermilion), a fresh deal. On a phone held sideways the garden takes the sheet's height at the left, the line and the controls beside it.
+- **Time:** timers only, one at a time; nothing while the tab is hidden, nothing at all once the sheet is closed. Under reduced motion it waits for Next (Play stays offered) and no tile flies.
+
+**The New game sheet** asks only what every game needs in view: who to play (the computer or a friend) and then the level or the two names. The kind of match waits behind a Match row, closed each time the sheet opens, which names the current choice ("Single game", "First to 20 points"), so a remembered match is never hidden. One press anywhere on the row opens it, even straight from typing a name (the name is saved as the field loses focus, and the row's word is rewritten only when the match changes: rewritten under the finger, it cost WebKit the press). Opened, it scrolls the sheet only as far as its choices need to come into view, never past the row, and not at all when they are in view already, as on most phones held sideways. Who opens is said once, in the footer just above Start, so it is in view without scrolling on every phone; it says only what applies (the colour against the computer; the loser's turn to open only when there is a next game). On a phone held sideways, where Start sits on the band, the Match row and the note take the right-hand column. On short portrait phones the form draws closer so the three levels show whole above the footer.
+
+### Rules sheet
+How to play reads top to bottom as the rules run, each rule beside its diagram, and names a thing where a newcomer first needs its name.
+- **Names key:** right after the matching rule's example (a tile must share the plant or the symbol of the one just taken), the eight pictures as the tiles draw them, each over its name in caption type, plants on one line and symbols on the next. It sits in a paper-tray well (paper-2 with the paper grain, 12px radius, pressed in by a soft inset shadow, never raised: a reference, not a control). Its line labels (bold, ink 2) sit above the pictures in a narrow sheet and to their left once the well is 27rem wide.
+- **Full key:** the sixteen tiles close the sheet as a reference, at most 22rem wide.
+- **Folded note:** fine print under a rule (whose ruling a tie is, who opens after one) is a `<details>` note, the rule itself left in sight. The summary is a 44px row in ink 2, 600 weight, faintly underlined, led by a drawn chevron (24px grid, 1.8 stroke) that turns down when the note opens; the note hangs from a warm hairline under the chevron; focus is the vermilion ring of paper.
 
 ### Inputs / Fields
 - **Segmented control:** paper-tray with 4px padding and 12px radius; options 44px tall, bold, ink-2; the selected option becomes paper with a sunk-vermilion label, a small shadow and a 2px vermilion underline inset.
-- **Choice card:** paper, 12px radius, warm hairline inset; a 26px circular mark on the right fills vermilion with a cream check when selected, and the card gains a 2px vermilion inset ring.
+- **Disclosure row:** a section heading (display face, indigo) that opens what is behind it: at the right, the current choice in a paper-tray chip (44px tall, bold ink, a faint warm edge) with a sunk-vermilion chevron that turns over when open (0.24s); the whole row, at least 48px tall, is one button with aria-expanded. What it opens fades and drops 6px into place.
+- **Choice card:** a raised tile on the paper (tile face with paper grain, the garden tile's shadow), 12px radius; on the right a 30px pressed token well edged 1.5px ink-3, empty when unselected and holding the vermilion token when selected, when the card also gains a 2px vermilion inset ring. Fieldset labels are the display face in indigo.
 - **Name field:** paper, 12px radius, warm hairline inset; the player's token chip at the left, the ink-3 colour label above the input, so the input has the field's whole width (16px text, which iOS does not zoom); focus thickens the inset ring to 2px vermilion.
-- **Switch:** 50 x 30px pill, warm tan off, vermilion on, white 24px knob sliding 20px.
+- **Toggle row:** each setting is a raised tile like a choice card, at least 64px tall; hover lightens it only where a pointer can hover.
+- **Switch:** a 64 x 34px strip of two pressed garden cells (8px radius, token-well paper, 1.5px ink-3 edge, a faint seam between the cells). Off: a plain 24px tile waits in the near cell. On: the tile is taken and the vermilion token is set down in the far cell.
 - **Menu item:** 52px row, 600 weight, ink text, vermilion icon, warm hairline between rows; disabled at 40% ink.
 
 ### Focus
 Keyboard focus on the dyes is a 3px gold outline, offset 2px (drawn tight, offset -1px, on the top bar's buttons so the screen edge never cuts it); on the garden it is a 3px ink outline, offset 3px; on paper (sheets and their controls) it is a 3px vermilion outline. Every focus mark reaches 3:1 against what it sits on; gold on paper would not (1.6:1), so it is never used there. When a game starts, continues or moves on, focus goes into the garden for a player using the keyboard; after a touch it is left alone, as WebKit would draw a ring on the tile.
 
 ### Forced colours
-Under Windows High Contrast the interface takes the system's colours, but the garden, the order card's tile, the token chips and pips keep their own: they are a picture, and the gold ring and shade that tell which tiles may be taken would otherwise vanish.
+Under Windows High Contrast the interface takes the system's colours, but the garden, the order card's tile, the token chips and pips, the sheets' switches and choice wells and the rules' diagrams keep their own: they are a picture, and the gold ring and shade that tell which tiles may be taken would otherwise vanish.
 
 ### Motion
-One exponential ease-out (cubic-bezier(0.16, 1, 0.3, 1)) for the turn light (opacity only, 0.45s), tile lift (0.22s), token set-down (0.42s, drops from above with a small settle) and sheets (0.32s). The taken tile flies to the mover's card over 520ms (360ms when there is no target slot); the winning brush stroke draws over 650ms after a 180ms pause. Under reduced motion (system setting or the in-app setting) every animation and transition collapses to instant; every state change still happens.
+One exponential ease-out (cubic-bezier(0.16, 1, 0.3, 1)) for the turn light (opacity only, 0.45s), tile lift (0.22s), token set-down (0.42s, drops from above with a small settle) and sheets (0.32s). The taken tile flies to the mover's card over 520ms (360ms when there is no target slot). Both end on their own clock as well, so a browser that paints no frames for a while still shows the move: the flying tile is gone after 900ms and the token is at rest after 700ms at the latest, whether or not its drop ran. The winning brush stroke draws over 650ms after a 180ms pause. The end card folds away over 0.4s (its tab rising in just after) and comes back the same way. Under reduced motion (system setting or the in-app setting) every animation and transition collapses to instant; every state change still happens.
+
+### Sound
+The sounds are a game of flower cards on tatami, as the tiles' motifs are hanafuda's, synthesised at run time (src/ui/sound.ts; no audio files): a move is a thick card snapped down onto the mat, a crisp "pachi" (a 22ms swish of air as it falls, then a band-passed snap with a brighter edge, the stiff card's flex damped at once, the mat's soft low give and a faint crackle of its woven rush, about 50ms), landing 90ms after the tap as the token drops in; there is no sound for the tile being taken, as any lighter tick was lost under the snap; a refused tap is a soft, muted knock, low-passed, like a finger on wood (about 80ms); a game ends on a small struck bell, a rin, its four partials inharmonic (1 : 2.71 : 5.36 : 8.86) and each a slightly split pair so it shimmers as it rings away. A win is two strikes rising a fourth, a tie one strike, a loss one strike a fourth lower, darker and softer. Nothing lasts longer than 1.2s above -60dBFS; peaks sit at about -10dBFS for the snap, -14 to -18dBFS for the bell and -20dBFS for the knock. The snap's pitch and its noise vary by a hair each time, so no two moves sound stamped. With Sound off nothing is built; every node is disconnected when its sound ends.
 
 ## Do's and Don'ts
 
@@ -354,7 +381,7 @@ One exponential ease-out (cubic-bezier(0.16, 1, 0.3, 1)) for the turn light (opa
 - **Do** put cream type on the dyes and ink type on paper, and swap a control's material when it moves from cloth to paper.
 - **Do** size the garden first; let short screens turn the pips into a count before the garden gives room, and move a note to the waiting seat before leaving it out.
 - **Do** keep every touch target at least 44px.
-- **Do** blend the cloth and paper texture tiles (256px, soft-light) under any new cloth or paper surface.
+- **Do** blend the cloth and paper texture tiles (256px, soft-light) under any new cloth or paper surface; the rush belongs to the home's tatami only.
 - **Do** draw new icons as SVG on the 24px grid with a 1.8 stroke, round caps and joins, in currentColor.
 - **Do** keep the display face to 18px and above and set everything smaller in Source Sans 3.
 

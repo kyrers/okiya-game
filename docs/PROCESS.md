@@ -324,6 +324,78 @@ Everything else (engine, AI, UI, tests, scripts, docs) was written in the main s
   the setup sheet, the rules sheet (captured by `scripts/capture.ts` from the production build).
 - `test-screens/` (not committed): every layout state on every profile, written by each e2e run.
 
+## After the merge: the client's changes
+
+Asked on 2026-10-13 and 14, after pull request #1 was merged, in rounds: each change built,
+checked, shown to the client (stills, then live builds served on their own machine), and kept or
+redone. Where a design had several good answers, three were designed with the impeccable skill and
+the client chose.
+
+- **The home.** "The new game button does not call enough attention." New game (and Continue,
+  above it, when a match can be resumed) now comes first, as wide as the garden, on every screen.
+  The garden on the home looked playable and the home empty: of three treatments (the garden
+  playing itself, dealt from the button, a picture of a game) the client chose **a game on the
+  table**: the board seen at an angle, a game begun in its wells, each player's taken tiles and
+  spare tokens beside it. "The background is very bland": of three (lit cloth, stencilled motifs,
+  brush and crests) the client first chose the lit cloth, then, once the board lay on a table, of
+  three tables (wooden runners, tatami, cloth on a table) **tatami**: two mats meeting under the
+  garden, their borders in the two dyes, one lamp, seen through the board's own camera.
+- **Watch a game.** A demonstration in a sheet, opened from a third pill on the home and from How
+  to play: the engine plays both sides, the tiles the player to move may take lifted as in play,
+  one line saying what happened and what the other may now take; Pause, Next move, Play again.
+- **A game's end in the middle.** "When a game is over, the Play Again and Home should show on top
+  of the board, in the middle [...] like a small modal." Of three designed options the client chose
+  the **paper slip**: sealed with the winner's token, saying who won and how, the buttons stacked.
+  "The reason a player won should always be there": the slip keeps it at every size, and the
+  losing half says it too. "Any button [...] shouldn't change based on the winner": the buttons are
+  neutral ink. It comes in once the win is drawn and cannot be pressed before it is seen.
+- **Sheets that belong to the game.** "The how to play and settings are also very 'Claude'
+  looking": every sheet now has a cloth head, garden-tile rows and token switches.
+- **No credit line.** The client removed "Game design by Bruno Cathala" from the product, since
+  none of the published game's assets are used; the sources of the rules still cite where each
+  rule comes from.
+- **A playtest by another model (Codex),** asked by the client to play and give design input, not
+  to review code; all of its suggestions were taken: "See the board" folds the end slip away to
+  show the whole garden, and the win is a thin loop around the tokens rather than a stroke through
+  them; the New game sheet keeps the match format behind one row, with who opens by Start; How to
+  play names the eight motifs right where the matching rule needs them.
+- **Sounds**, still synthesised: a soft knock for a refused tile and a small struck bell at a game's
+  end. Each move went from a go stone on a goban to a hanafuda card snapped down onto tatami, since
+  the tiles' motifs are hanafuda's. The client picked it by ear on their phone and laptop from a
+  page of variations at matched loudness. The tick for a tile being taken was dropped: it could not
+  be heard under the snap.
+- **Play by play**, asked for "only if fast": the order of a game's moves. Of three ways to show it
+  (numbers on the tokens, a written list, a replay on the garden) the client chose the written
+  list, after a game, and named it. It opens from the end slip, as a second quiet link beside See
+  the board, and from the Menu once a game is over. The saved match already kept every move, so
+  nothing new is stored. It reuses the sheet, its rows, the tile thumbnails and the reason a game
+  ended. The end-slip size walk now checks the new link stays inside the garden too.
+- **Bugs found on the way,** each reproduced and fixed at its cause: words broken inside in narrow
+  seats; desktop seats too narrow for long names, and a garden stuck at 760px on large screens;
+  "Start a new game?" stacked on the New game sheet; the home running off short screens with long
+  names, and with three links on short sideways phones; the slip pushing the garden or See the
+  board off sideways phones; in WebKit, sheets and a just-placed token drawn invisible when a frame
+  came late, the game screen drawn once before its seats were fitted, and the Match row needing two
+  presses after typing a name. Several of these passed the existing tests (toBeVisible passes at
+  opacity 0): the tests now check what is painted.
+
+The first version of the home and end card reached production before its checks had finished
+(the branch had been created tracking master); since then every change has gone through pull
+request #2.
+
+**Checks** on the final build (2026-10-14): unit tests (69 passed); the whole end-to-end suite on
+all 11 device profiles (564 passed, 0 failed) with the full size sweep (94 passed, 0 failed) and
+the performance tests (11 passed); after the last fix, the game, layout and demo specs again on all
+11 profiles (450 passed, 0 failed), and the end slip's walk through every sideways height, now
+run with the size sweep (11 passed). 324 captures (18 states at 9 sizes, in Chromium and WebKit) went to a
+finish reviewer three times: its findings (sheets slicing the home's wordmark, the Match row under
+the sheet's foot at 320x568, the folded tab over the garden's top row, the win loop round the slip
+and then missing after a fold) were fixed, and the three WebKit captures it doubted were retaken
+once their motion had settled and are right. The playtest (Codex) found four WebKit bugs; all four
+are fixed, and its last playtest of the final build, on phones, a tablet and desktops in WebKit,
+Chromium and Firefox, found no problem ("I would ship this build"). Not checked: a real iPhone or
+iPad; the client's phone check on the preview is next.
+
 ## Outside this build
 
 Nothing known is open in the build itself. These are steps only the client can take; none of them
@@ -338,10 +410,9 @@ changes the code:
   to rewrite history, is the client's call. An install made from the preview keeps its old name on
   the home screen until the browser refreshes it from the new manifest, or it is reinstalled; a
   match saved there is not carried over.
-- **Deployment.** This build is not in production, by the client's choice (asked: "Don't
-  deploy"). The repository is already connected to a Vercel project: production serves `master`,
-  the earlier attempt, and the client checked this branch on the preview of pull request #1. This
-  build goes live when that pull request is merged (or its preview is promoted). Deployability is
+- **Deployment.** Production serves `master` from the Vercel project; pull request #1 (this
+  build) was merged on 2026-10-13, and later changes come through pull requests, each with a
+  preview. Deployability is
   demonstrated on the final commit: Vercel's own build (`vercel build`, CLI 44.7.3, run locally with no account)
   completes and emits Build Output v3 whose static files are identical to the tested `dist/` and
   whose routes carry the cache rules, security headers and CSP of `vercel.json`. `vercel.json`

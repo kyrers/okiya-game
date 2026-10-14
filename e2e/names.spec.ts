@@ -50,10 +50,12 @@ test('with reduced motion, a change of style applies at once and starts no trans
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await openHome(page);
   const result = await page.evaluate(() => {
+    // The layout width, not the drawn one: the home's garden is a picture seen at an angle, so its
+    // box on screen is not its size.
     const board = document.querySelector<HTMLElement>('.board')!;
-    const before = board.getBoundingClientRect().width;
+    const before = board.offsetWidth;
     board.style.width = `${Math.round(before / 2)}px`;
-    const after = board.getBoundingClientRect().width;
+    const after = board.offsetWidth;
     return { before, after, animations: document.getAnimations().length };
   });
   expect(result.after).toBe(Math.round(result.before / 2));

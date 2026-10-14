@@ -1,6 +1,10 @@
 /**
  * Game sounds, synthesised at run time with the Web Audio API (no audio files, nothing licensed).
- * The audio context is created on the first user gesture, as browsers require.
+ * They are voiced as a game of flower cards played on tatami, as the tiles' motifs are hanafuda's:
+ * a move is a card snapped down onto the mat, a refused tap a finger's knock on wood, and the end
+ * of a game a small struck bell (a rin).
+ * The audio context is created on the first user gesture, as browsers require. While sound is off
+ * nothing is built; every node lets go of the graph as soon as its sound has finished.
  */
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
@@ -48,99 +52,151 @@ function noise(c: AudioContext): AudioBuffer {
   return buf;
 }
 
-function envelope(g: GainNode, t: number, peak: number, attack: number, decay: number): void {
-  g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(peak, t + attack);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + attack + decay);
+/**
+ * A struck envelope: up to `peak` in `attack`, then an exponential fall of 50 dB over `decay`
+ * (a natural ring, not a fade), then to silence in a few milliseconds. Returns the end time.
+ */
+function strike(g: GainNode, t: number, peak: number, attack: number, decay: number): number {
+  const p = g.gain;
+  // Silent until the strike: a source may sound a fraction of a sample before its start time.
+  p.value = 0;
+  p.setValueAtTime(0.0001, t);
+  p.exponentialRampToValueAtTime(peak, t + attack);
+  p.exponentialRampToValueAtTime(peak * 0.003, t + attack + decay);
+  p.linearRampToValueAtTime(0, t + attack + decay + 0.02);
+  return t + attack + decay + 0.025;
 }
 
-/** A wooden token set down on the board. */
+/** Disconnect a sound's nodes once its source has stopped. */
+function release(src: AudioScheduledSourceNode, ...nodes: AudioNode[]): void {
+  src.onended = () => {
+    src.disconnect();
+    for (const n of nodes) n.disconnect();
+  };
+}
+
+/** One resonance: a sine at `freq`, optionally sinking a little in pitch as it rings. */
+function tone(c: AudioContext, out: AudioNode, t: number, freq: number, peak: number, decay: number, attack = 0.0015, sinkTo?: number): void {
+  const o = c.createOscillator();
+  o.frequency.setValueAtTime(freq, t);
+  if (sinkTo) o.frequency.exponentialRampToValueAtTime(sinkTo, t + decay);
+  const g = c.createGain();
+  const end = strike(g, t, peak, attack, decay);
+  o.connect(g).connect(out);
+  release(o, g);
+  o.start(t);
+  o.stop(end);
+}
+
+/** A burst of filtered noise: the contact itself (a card on the mat, a finger, a striker). */
+function burst(c: AudioContext, out: AudioNode, t: number, type: BiquadFilterType, freq: number, q: number, peak: number, decay: number): void {
+  const n = c.createBufferSource();
+  n.buffer = noise(c);
+  const f = c.createBiquadFilter();
+  f.type = type;
+  f.frequency.value = freq;
+  f.Q.value = q;
+  const g = c.createGain();
+  const end = strike(g, t, peak, 0.0008, decay);
+  n.connect(f).connect(g).connect(out);
+  release(n, f, g);
+  // A different stretch of the noise each time, so no two contacts are quite alike.
+  n.start(t, Math.random() * 0.3);
+  n.stop(end);
+}
+
+/** Air pushed ahead of a falling card: band-passed noise swelling until it lands at `t + dur`. */
+function swish(c: AudioContext, out: AudioNode, t: number, dur: number, freq: number, q: number, peak: number): void {
+  const n = c.createBufferSource();
+  n.buffer = noise(c);
+  const f = c.createBiquadFilter();
+  f.type = 'bandpass';
+  f.frequency.setValueAtTime(freq * 0.7, t);
+  f.frequency.exponentialRampToValueAtTime(freq, t + dur);
+  f.Q.value = q;
+  const g = c.createGain();
+  const p = g.gain;
+  p.value = 0;
+  p.setValueAtTime(0.0001, t);
+  p.exponentialRampToValueAtTime(peak, t + dur);
+  p.linearRampToValueAtTime(0, t + dur + 0.006);
+  n.connect(f).connect(g).connect(out);
+  release(n, f, g);
+  n.start(t, Math.random() * 0.3);
+  n.stop(t + dur + 0.01);
+}
+
+/** A small random spread (±2%), as no two cards land quite alike. */
+const vary = (): number => 1 + (Math.random() - 0.5) * 0.04;
+
+/** How long the card is heard falling before it lands, so a caller can time the landing. */
+export const PLACE_LEAD_MS = 22;
+
+/** A move: a thick hanafuda card snapped down onto tatami, "pachi", landing PLACE_LEAD_MS after the call. */
 export function soundPlace(): void {
   const a = ready();
   if (!a) return;
   const { c, out } = a;
   const t = c.currentTime + 0.005;
-  // Knock: a short, pitched body.
-  const o = c.createOscillator();
-  o.type = 'sine';
-  o.frequency.setValueAtTime(210, t);
-  o.frequency.exponentialRampToValueAtTime(120, t + 0.12);
-  const og = c.createGain();
-  envelope(og, t, 0.5, 0.004, 0.14);
-  o.connect(og).connect(out);
-  o.start(t);
-  o.stop(t + 0.2);
-  // Click: the contact, as band-passed noise.
-  const n = c.createBufferSource();
-  n.buffer = noise(c);
-  const bp = c.createBiquadFilter();
-  bp.type = 'bandpass';
-  bp.frequency.value = 2400;
-  bp.Q.value = 1.4;
-  const ng = c.createGain();
-  envelope(ng, t, 0.35, 0.002, 0.045);
-  n.connect(bp).connect(ng).connect(out);
-  n.start(t);
-  n.stop(t + 0.08);
+  const v = vary();
+  const hit = t + PLACE_LEAD_MS / 1000;
+  swish(c, out, t, PLACE_LEAD_MS / 1000, 3200 * v, 0.8, 0.05);
+  // The snap: the card meeting the mat and the air pressed out from under it, and its edge.
+  burst(c, out, hit, 'bandpass', 2300 * v, 0.8, 1.4, 0.008);
+  burst(c, out, hit, 'highpass', 4200, 0.7, 0.14, 0.004);
+  // The stiff card's flex, damped at once.
+  tone(c, out, hit, 1350 * v, 0.15, 0.014);
+  // The tatami giving under it, and its woven rush answering faintly.
+  burst(c, out, hit, 'lowpass', 520, 0.7, 0.75, 0.03);
+  burst(c, out, hit + 0.002, 'bandpass', 5200, 1.5, 0.06, 0.02);
+  tone(c, out, hit, 170 * v, 0.08, 0.04, 0.003);
 }
 
-/** A tile lifted out of the garden: a soft paper slide. */
-export function soundLift(): void {
-  const a = ready();
-  if (!a) return;
-  const { c, out } = a;
-  const t = c.currentTime + 0.005;
-  const n = c.createBufferSource();
-  n.buffer = noise(c);
-  const f = c.createBiquadFilter();
-  f.type = 'bandpass';
-  f.Q.value = 0.8;
-  f.frequency.setValueAtTime(900, t);
-  f.frequency.exponentialRampToValueAtTime(3200, t + 0.16);
-  const g = c.createGain();
-  envelope(g, t, 0.12, 0.03, 0.15);
-  n.connect(f).connect(g).connect(out);
-  n.start(t);
-  n.stop(t + 0.22);
-}
-
-function bell(c: AudioContext, out: GainNode, freq: number, t: number, peak: number, decay: number): void {
-  for (const [mult, amp] of [[1, 1], [2.01, 0.28], [3.98, 0.08]] as const) {
-    const o = c.createOscillator();
-    o.type = 'sine';
-    o.frequency.value = freq * mult;
-    const g = c.createGain();
-    envelope(g, t, peak * amp, 0.006, decay / mult);
-    o.connect(g).connect(out);
-    o.start(t);
-    o.stop(t + decay + 0.05);
-  }
-}
-
-/** The end of a game: a rising phrase for a win, a falling one for a loss, level for a tie. */
-export function soundEnd(kind: 'win' | 'loss' | 'tie'): void {
-  const a = ready();
-  if (!a) return;
-  const { c, out } = a;
-  const t = c.currentTime + 0.02;
-  // D minor pentatonic, which suits the paper-and-wood world without quoting any real melody.
-  const notes = kind === 'win' ? [587.33, 698.46, 880, 1174.66] : kind === 'loss' ? [698.46, 587.33, 440] : [587.33, 587.33];
-  notes.forEach((f, i) => bell(c, out, f, t + i * 0.13, kind === 'win' ? 0.22 : 0.16, 1.4));
-}
-
-/** A tap on something that cannot be taken. */
+/** A tap on something that cannot be taken: a soft, muted knock, like a finger on wood. */
 export function soundDenied(): void {
   const a = ready();
   if (!a) return;
   const { c, out } = a;
   const t = c.currentTime + 0.005;
-  const o = c.createOscillator();
-  o.type = 'triangle';
-  o.frequency.setValueAtTime(140, t);
-  o.frequency.exponentialRampToValueAtTime(90, t + 0.1);
-  const g = c.createGain();
-  envelope(g, t, 0.18, 0.004, 0.1);
-  o.connect(g).connect(out);
-  o.start(t);
-  o.stop(t + 0.15);
+  burst(c, out, t, 'lowpass', 750, 0.7, 0.35, 0.014);
+  tone(c, out, t, 155, 0.17, 0.09, 0.003, 120);
+  tone(c, out, t, 360, 0.05, 0.04, 0.003);
+}
+
+/**
+ * The partials of a small rin (a struck bowl bell): inharmonic, each one fainter and shorter than
+ * the one below. As [ratio to the fundamental, level, share of the ring].
+ */
+const RIN: ReadonlyArray<readonly [number, number, number]> = [
+  [1, 1, 1],
+  [2.71, 0.42, 0.55],
+  [5.36, 0.17, 0.32],
+  [8.86, 0.07, 0.18],
+];
+
+/** One strike of the rin. `bright` scales the upper partials and the striker's tap. */
+function rin(c: AudioContext, out: AudioNode, t: number, freq: number, peak: number, ring: number, bright: number): void {
+  burst(c, out, t, 'bandpass', Math.min(freq * 4.5, 6000), 1.2, peak * 0.9 * bright, 0.008);
+  for (const [ratio, level, share] of RIN) {
+    const p = peak * level * (ratio > 1 ? bright : 1);
+    // Each partial as a slightly split pair, as in a real bowl: their slow beat is the rin's shimmer.
+    tone(c, out, t, freq * ratio, p * 0.6, ring * share, 0.002);
+    tone(c, out, t, freq * ratio * 1.0028, p * 0.4, ring * share, 0.002);
+  }
+}
+
+/** The end of a game: two rising strikes of the bell for a win, one lower and softer for a loss, one level for a tie. */
+export function soundEnd(kind: 'win' | 'loss' | 'tie'): void {
+  const a = ready();
+  if (!a) return;
+  const { c, out } = a;
+  const t = c.currentTime + 0.02;
+  if (kind === 'win') {
+    rin(c, out, t, 659.25, 0.16, 1.15, 0.85);
+    rin(c, out, t + 0.2, 880, 0.22, 1.25, 1);
+  } else if (kind === 'loss') {
+    rin(c, out, t, 493.88, 0.17, 1.45, 0.55);
+  } else {
+    rin(c, out, t, 659.25, 0.18, 1.45, 0.8);
+  }
 }

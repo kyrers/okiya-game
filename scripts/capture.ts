@@ -115,6 +115,9 @@ for (const d of DEVICES) {
   await page.getByRole('button', { name: /Continue/ }).click();
   await page.locator(`.cell[data-index="${win.moves[win.moves.length - 1]}"]`).click();
   await page.locator('.game.is-over').waitFor();
+  // The end card comes in after the brush stroke: wait until it can be pressed, and its fade is over.
+  await page.locator('.end-card:not([hidden]):not(.arriving)').waitFor();
+  await page.waitForTimeout(300);
   await shot('3-game-won');
 
   await open(page, null);

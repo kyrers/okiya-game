@@ -59,14 +59,30 @@ const ICONS = {
   home: '<path d="M4 11l8-6.5 8 6.5"/><path d="M6.5 9.5V19h11V9.5"/><path d="M10 19v-5h4v5"/>',
   restart: '<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4.2h4.2"/>',
   play: '<path d="M8 5.5v13l10-6.5z"/>',
+  /** A game to watch: the play mark inside a ring, so it is not taken for Continue or New game. */
+  watch: '<circle cx="12" cy="12" r="8.6"/><path d="M10.2 8.6v6.8l5.3-3.4z"/>',
+  pause: '<path d="M9 6v12M15 6v12"/>',
+  next: '<path d="M6 6v12l8.5-6z"/><path d="M18 6v12"/>',
   arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  record: '<path d="M9.5 7h10M9.5 12h10M9.5 17h10"/><path d="M4.5 7h.01M4.5 12h.01M4.5 17h.01"/>',
 } as const;
 
 export type IconName = keyof typeof ICONS;
 
 export function icon(name: IconName, extraClass = ''): string {
   return `<svg class="icon ${extraClass}" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>`;
+}
+
+/** The opening order's picture: a 4x4 garden whose outer ring is gold, the middle four open. */
+export function ringDiagram(): string {
+  const cells = Array.from({ length: 16 }, (_, i) => {
+    const r = Math.floor(i / 4);
+    const c = i % 4;
+    const ring = r === 0 || r === 3 || c === 0 || c === 3;
+    return `<rect x="${3 + c * 11}" y="${3 + r * 11}" width="9" height="9" rx="2" class="${ring ? 'ring-on' : 'ring-off'}"/>`;
+  }).join('');
+  return `<svg viewBox="0 0 48 48" aria-hidden="true">${cells}</svg>`;
 }
 
 /* ---------- rules diagrams: a 4x4 garden in miniature ---------- */
@@ -91,13 +107,18 @@ export function miniGarden(cells: string, label: string, stroke?: number[]): str
   });
   if (stroke && stroke.length) {
     const pt = (i: number) => [4 + (i % 4) * size + (size - 3) / 2, 4 + Math.floor(i / 4) * size + (size - 3) / 2];
+    // As the game draws a win: a thin loop around the winning tokens, never a stroke through them.
     if (stroke.length === 4 && isSquare(stroke)) {
       const [x0, y0] = pt(Math.min(...stroke));
-      parts.push(`<rect class="mg-brush" x="${x0 - 9}" y="${y0 - 9}" width="${size + 18}" height="${size + 18}" rx="14"/>`);
+      const r = size * 0.44;
+      parts.push(`<rect class="mg-brush" x="${x0 - r}" y="${y0 - r}" width="${size + 2 * r}" height="${size + 2 * r}" rx="${r}"/>`);
     } else {
       const [x1, y1] = pt(stroke[0]);
       const [x2, y2] = pt(stroke[stroke.length - 1]);
-      parts.push(`<line class="mg-brush" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`);
+      const r = size * 0.47;
+      const len = Math.hypot(x2 - x1, y2 - y1);
+      const angle = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI;
+      parts.push(`<rect class="mg-brush" x="${-r}" y="${-r}" width="${len + 2 * r}" height="${2 * r}" rx="${r}" transform="translate(${x1} ${y1}) rotate(${angle})"/>`);
     }
   }
   return `<svg class="mini-garden" viewBox="0 0 105 105" role="img" aria-label="${label}">${parts.join('')}</svg>`;

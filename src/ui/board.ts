@@ -2,7 +2,7 @@
  * The garden: 16 buttons that keep their DOM nodes across renders, so moves can animate and keyboard
  * focus survives. Only cells whose content changed are rewritten.
  */
-import { CELL_COUNT, colOf, rowOf, tileCode, type GameState, type Player } from '../engine/garden';
+import { CELL_COUNT, colOf, rowOf, tileCode, type GameState, type Player, type Tile } from '../engine/garden';
 import { tokenSvg } from './art';
 import { tileLabel, tileSvg } from './tileArt';
 import { possessive } from './words';
@@ -27,6 +27,15 @@ export interface BoardHandlers {
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
+/**
+ * A token's drop (`.cell.placed .token`, 0.42s in styles.css) starts from nothing, so the token is
+ * only seen once the drop has run. The drop is undone when it ends, and at the latest after this
+ * long: a browser that runs no frames for a while (headless WebKit under load ran none for
+ * seconds) never starts it, and would leave the token at its first, invisible frame until the next
+ * move, as the flying tile has its own guard for.
+ */
+const SET_DOWN_MS = 700;
+
 /** Whether the player's last input was a key press, rather than a touch or a click. */
 let keyboardLast = false;
 window.addEventListener('keydown', () => (keyboardLast = true), true);
@@ -38,6 +47,8 @@ export class BoardView {
   private readonly brush: SVGSVGElement;
   private readonly cells: HTMLButtonElement[] = [];
   private readonly keys: string[] = [];
+  /** Per cell, the timer that ends its token's drop if the drop never ends by itself. */
+  private readonly setDown: number[] = [];
   private focusIndex = 0;
   private last: BoardRender | null = null;
   private readonly resize: ResizeObserver | null;
@@ -69,6 +80,10 @@ export class BoardView {
       if (cell) this.activate(Number(cell.dataset.index));
     });
     this.grid.addEventListener('keydown', (ev) => this.onKey(ev));
+    this.grid.addEventListener('animationend', (ev) => {
+      const cell = ev.animationName === 'set-down' ? (ev.target as Element).closest<HTMLButtonElement>('.cell') : null;
+      if (cell) this.settle(Number(cell.dataset.index));
+    });
     this.grid.addEventListener('focusin', (ev) => {
       const cell = (ev.target as Element).closest<HTMLButtonElement>('.cell');
       if (cell) this.setFocusIndex(Number(cell.dataset.index));
@@ -79,6 +94,12 @@ export class BoardView {
 
   cell(index: number): HTMLButtonElement {
     return this.cells[index];
+  }
+
+  /** Lets go of what the garden watches (its size, for the brush stroke). */
+  destroy(): void {
+    this.resize?.disconnect();
+    this.setDown.forEach((t) => window.clearTimeout(t));
   }
 
   render(r: BoardRender): void {
@@ -108,7 +129,9 @@ export class BoardView {
         b.classList.remove('placed');
         void b.offsetWidth; // restart the drop animation
         b.classList.add('placed');
-      } else b.classList.remove('placed');
+        window.clearTimeout(this.setDown[i]);
+        this.setDown[i] = window.setTimeout(() => this.settle(i), SET_DOWN_MS);
+      } else this.settle(i);
       b.setAttribute('aria-label', this.label(i, r));
       if (c.kind === 'tile' && !legal) b.setAttribute('aria-disabled', 'true');
       else if (c.kind === 'token') b.setAttribute('aria-disabled', 'true');
@@ -127,6 +150,12 @@ export class BoardView {
 
   focus(): void {
     this.cells[this.focusIndex].focus();
+  }
+
+  /** The token in cell `i` is at rest: its drop is over, whether or not it ever ran. */
+  private settle(i: number): void {
+    window.clearTimeout(this.setDown[i]);
+    this.cells[i].classList.remove('placed');
   }
 
   /** Moves the garden's tab stop to the first tile that may be taken (or leaves it where focus last
@@ -184,7 +213,7 @@ export class BoardView {
     this.cells[next].focus();
   }
 
-  /** The brush stroke through a winning formation, in board coordinates measured from the cells. */
+  /** The brush stroke round a winning formation, in board coordinates measured from the cells. */
   private drawBrush(animate: boolean): void {
     const win = this.last?.state.result;
     if (!win || win.cells.length === 0) {
@@ -201,32 +230,35 @@ export class BoardView {
     const pts = win.cells.map(centre);
     const s = pts[0].s;
     const player = win.winner as Player;
-    let shape: SVGElement;
+    // Drawn round the formation, not through it: a thin loop of ink that leaves every token clear.
+    let d: string;
     if (win.reason === 'square') {
+      // A rounded square round the four, its sides between the tokens and the cells' edges (a
+      // circle cannot pass between four discs), so it stays inside the 2x2 block even in a corner.
       const xs = pts.map((p) => p.x);
       const ys = pts.map((p) => p.y);
-      const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
-      const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
-      const rad = s * 1.02;
-      shape = document.createElementNS(SVG_NS, 'path');
-      // A brush circle that overshoots its start, as a hand would draw it.
-      shape.setAttribute(
-        'd',
-        `M ${cx - rad * 0.2} ${cy - rad} A ${rad} ${rad} 0 1 1 ${cx - rad * 0.98} ${cy + rad * 0.12} A ${rad} ${rad} 0 0 1 ${cx + rad * 0.12} ${cy - rad * 0.99}`,
-      );
+      const [l, rt, t, b] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+      const r = s * 0.44;
+      // Closing past its start, as a hand would draw it.
+      d = `M ${l + s * 0.12} ${t - r} L ${rt} ${t - r} A ${r} ${r} 0 0 1 ${rt + r} ${t} L ${rt + r} ${b} A ${r} ${r} 0 0 1 ${rt} ${b + r} L ${l} ${b + r} A ${r} ${r} 0 0 1 ${l - r} ${b} L ${l - r} ${t} A ${r} ${r} 0 0 1 ${l} ${t - r} L ${l + s * 0.45} ${t - r * 0.94}`;
     } else {
+      // A long loop round the line of four, closing past its start as a hand would draw it. Its
+      // sides run between the tokens and the cells' edges, so it stays inside the row.
       const a = pts[0];
       const b = pts[pts.length - 1];
-      const dx = b.x - a.x;
-      const dy = b.y - a.y;
-      const len = Math.hypot(dx, dy);
-      const ex = (dx / len) * s * 0.42;
-      const ey = (dy / len) * s * 0.42;
-      shape = document.createElementNS(SVG_NS, 'path');
-      shape.setAttribute('d', `M ${a.x - ex} ${a.y - ey} L ${b.x + ex} ${b.y + ey}`);
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      const ux = (b.x - a.x) / len;
+      const uy = (b.y - a.y) / len;
+      const nx = -uy;
+      const ny = ux;
+      const r = s * 0.44;
+      const at = (p: { x: number; y: number }, along: number, across: number) => `${p.x + ux * along + nx * across} ${p.y + uy * along + ny * across}`;
+      d = `M ${at(a, s * 0.12, -r)} L ${at(b, 0, -r)} A ${r} ${r} 0 0 1 ${at(b, 0, r)} L ${at(a, 0, r)} A ${r} ${r} 0 0 1 ${at(a, 0, -r)} L ${at(a, s * 0.45, -r * 0.94)}`;
     }
+    const shape = document.createElementNS(SVG_NS, 'path');
+    shape.setAttribute('d', d);
     shape.setAttribute('class', `brush-stroke p${player}`);
-    const width = s * 0.26;
+    const width = s * 0.075;
     shape.setAttribute('stroke-width', String(width));
     // The rough edge: a displacement filter whose region is this stroke's own box in user space.
     // (A bounding-box region is empty for a row or column, whose path has zero height; an
@@ -243,18 +275,62 @@ export class BoardView {
       width: Math.max(...xs) - Math.min(...xs) + 2 * pad,
       height: Math.max(...ys) - Math.min(...ys) + 2 * pad,
     })) filter.setAttribute(k, String(v));
-    filter.innerHTML = `<feTurbulence type="fractalNoise" baseFrequency="0.045 0.9" numOctaves="2" seed="7" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="${(s * 0.07).toFixed(1)}" xChannelSelector="R" yChannelSelector="G"/>`;
+    filter.innerHTML = `<feTurbulence type="fractalNoise" baseFrequency="0.35" numOctaves="2" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="${(s * 0.035).toFixed(1)}" xChannelSelector="R" yChannelSelector="G"/>`;
     const defs = document.createElementNS(SVG_NS, 'defs');
     defs.append(filter);
     shape.setAttribute('filter', 'url(#board-brush-edge)');
     this.brush.replaceChildren(defs, shape);
-    const length = (shape as SVGPathElement).getTotalLength?.() ?? 0;
+    const length = shape.getTotalLength?.() ?? 0;
     if (animate && length > 0 && !matchMedia('(prefers-reduced-motion: reduce)').matches && !document.documentElement.classList.contains('reduce-motion')) {
       shape.style.strokeDasharray = `${length}`;
       shape.animate([{ strokeDashoffset: length }, { strokeDashoffset: 0 }], { duration: 650, delay: 180, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' });
     }
   }
+}
+
+/**
+ * The taken tile lifts out of the garden and lands on `target` (where the next player reads it), or
+ * rises and fades when there is none. `host` holds the flying tile: the page, or an open dialog,
+ * which sits in the top layer above anything appended to the page.
+ */
+export function flyTile(from: DOMRect, tile: Tile, target: HTMLElement | null, host: HTMLElement = document.body): Promise<void> {
+  const fly = document.createElement('div');
+  fly.className = 'flyer';
+  fly.innerHTML = tileSvg(tile);
+  Object.assign(fly.style, { left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, height: `${from.height}px` });
+  host.append(fly);
+  let frames: Keyframe[];
+  if (target && target.getBoundingClientRect().width > 0) {
+    const to = target.getBoundingClientRect();
+    const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+    const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+    const sc = to.width / from.width;
+    target.style.visibility = 'hidden';
+    frames = [
+      { transform: 'translate(0,0) scale(1) rotate(0deg)', boxShadow: '0 2px 4px rgba(0,0,0,.2)' },
+      { transform: 'translate(0,-8px) scale(1.08) rotate(-2deg)', boxShadow: '0 18px 30px rgba(0,0,0,.35)', offset: 0.22 },
+      { transform: `translate(${dx}px,${dy}px) scale(${sc}) rotate(0deg)`, boxShadow: '0 2px 4px rgba(0,0,0,.25)' },
+    ];
+  } else {
+    frames = [
+      { transform: 'translate(0,0) scale(1)', opacity: 1 },
+      { transform: 'translate(0,-14px) scale(1.08)', opacity: 0 },
+    ];
+  }
+  const anim = fly.animate(frames, { duration: target ? 520 : 360, easing: 'cubic-bezier(.22,.8,.24,1)', fill: 'forwards' });
+  return new Promise((resolve) => {
+    let guard = 0;
+    const done = () => {
+      window.clearTimeout(guard);
+      fly.remove();
+      if (target) target.style.visibility = '';
+      resolve();
+    };
+    anim.onfinish = done;
+    anim.oncancel = done;
+    guard = window.setTimeout(done, 900); // never leave the board locked
+  });
 }
 
 /** A static garden (home screen): every tile face up, nothing to take. */

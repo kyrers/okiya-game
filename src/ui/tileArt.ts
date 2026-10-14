@@ -143,8 +143,16 @@ export function petalIcon(): string {
     .join('')}</g><circle cx="12" cy="12" r="2.6" fill="#fff3cf"/></svg>`;
 }
 
-/** 4x4 key of every tile: rows are vegetations, columns are symbols. */
-export function gardenKeyHtml(): string {
+/**
+ * The key to the tiles. 'tiles': the sixteen tiles, rows are vegetations, columns are symbols.
+ * 'names': only the eight pictures and their names, the plants on one line and the symbols on
+ * the next, small enough to sit beside the rule that matches tiles by plant or symbol.
+ */
+export function gardenKeyHtml(kind: 'tiles' | 'names' = 'tiles'): string {
+  if (kind === 'names') {
+    const row = (label: string, items: string[]) => `<div class="key-names-row"><span class="key-names-label">${label}</span><ul role="list">${items.join('')}</ul></div>`;
+    return `<div class="key-names">${row('Plants', VEGETATIONS.map((v) => `<li>${vegGlyph(v)}<span>${VEG_LABEL[v]}</span></li>`))}${row('Symbols', SYMBOLS.map((sy) => `<li>${symGlyph(sy)}<span>${SYM_LABEL[sy]}</span></li>`))}</div>`;
+  }
   const cols = SYMBOLS.map((sy) => `<div class="key-head">${symGlyph(sy)}<span>${SYM_LABEL[sy]}</span></div>`).join('');
   const rows = VEGETATIONS.map(
     (v) => `<div class="key-head">${vegGlyph(v)}<span>${VEG_LABEL[v]}</span></div>` + SYMBOLS.map((sy) => `<div class="key-tile" title="${VEG_LABEL[v]} · ${SYM_LABEL[sy]}">${tileSvg({ veg: v, sym: sy })}</div>`).join(''),

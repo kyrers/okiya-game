@@ -1,15 +1,21 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator } from '@playwright/test';
 import { applyMove, newGameFromTiles, tileCode } from '../src/engine/garden';
+import { tileWords } from '../src/ui/words';
 import {
   HOT_SEAT,
   MATCH_KEY,
   VS_EASY,
   boardCodes,
   continueMatch,
+  expectSheetPainted,
+  expectTokenPainted,
   expectedLegal,
   findGame,
+  holdNextDrop,
+  layoutProblems,
   legalIndices,
   openHome,
+  pickMatch,
   saved,
   seedMatch,
   tap,
@@ -18,6 +24,9 @@ import {
 /** The brush must actually paint: the garden looks different with the stroke hidden. */
 async function expectBrushPainted(page: import('@playwright/test').Page): Promise<void> {
   await page.waitForTimeout(1000);
+  // The end card lies over the garden's middle, where a square of four is drawn: set it aside.
+  // (and the loop's stepping back while the slip is up: what is checked here is that it is drawn).
+  await page.addStyleTag({ content: '.end-card { visibility: hidden !important; } .seam .board-brush { opacity: 1 !important; transition: none !important; }' });
   const board = page.locator('.game .board');
   const withBrush = await board.screenshot({ animations: 'disabled' });
   await page.addStyleTag({ content: '.board-brush { visibility: hidden !important; }' });
@@ -33,7 +42,11 @@ test.describe('starting', () => {
     await expect(sheet).toBeVisible();
     await sheet.getByText('The computer').click();
     await sheet.getByText('Easy', { exact: true }).click();
-    await sheet.getByText('Single game').click();
+    // The kind of match waits behind the Match row, which names the current choice; who opens is
+    // said beside Start, in view without scrolling.
+    await expect(sheet.getByRole('button', { name: 'Match: Single game' })).toHaveAttribute('aria-expanded', 'false');
+    await expect(sheet.locator('.setup-note:visible')).toBeInViewport({ ratio: 1 });
+    await pickMatch(sheet, 'Single game');
     await page.getByRole('button', { name: 'Start' }).click();
     await expect(page.locator('.game')).toBeVisible();
     // Either the person opens (12 outer tiles) or the computer opens and then the constraint applies.
@@ -52,7 +65,7 @@ test.describe('the New game sheet', () => {
     await page.getByRole('button', { name: /New game/ }).click();
     const sheet = page.getByRole('dialog', { name: 'New game' });
     await sheet.getByText('A friend, on this device').click();
-    await sheet.getByText('First to 3 wins').click();
+    await pickMatch(sheet, 'First to 3 wins');
     await sheet.locator('input[name="name1"]').fill('Diogo');
     await sheet.locator('input[name="name2"]').fill('Ana');
     await page.keyboard.press('Escape');
@@ -62,6 +75,8 @@ test.describe('the New game sheet', () => {
       await page.getByRole('button', { name: /New game/ }).click();
       await expect(sheet.locator('input[name="opponent"][value="human"]')).toBeChecked();
       await expect(sheet.locator('input[name="match"][value="sets3"]')).toBeChecked();
+      // Closed again, naming the choice remembered.
+      await expect(sheet.getByRole('button', { name: 'Match: First to 3 wins' })).toHaveAttribute('aria-expanded', 'false');
       await expect(sheet.locator('input[name="name1"]')).toHaveValue('Diogo');
       await expect(sheet.locator('input[name="name2"]')).toHaveValue('Ana');
       await page.keyboard.press('Escape');
@@ -69,14 +84,47 @@ test.describe('the New game sheet', () => {
     }
     // A points target picked, then another kind of match looked at: the target is still there.
     await page.getByRole('button', { name: /New game/ }).click();
-    await sheet.getByText('Victory points').click();
-    await sheet.getByText('20 points').click();
-    await sheet.getByText('Single game').click();
+    await pickMatch(sheet, 'Victory points', '20 points');
+    await expect(sheet.getByRole('button', { name: 'Match: First to 20 points' })).toBeVisible();
+    await pickMatch(sheet, 'Single game');
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: /New game/ }).click();
     await expect(sheet.locator('input[name="match"][value="single"]')).toBeChecked();
-    await sheet.getByText('Victory points').click();
+    await pickMatch(sheet, 'Victory points');
     await expect(sheet.locator('input[name="target"][value="points20"]')).toBeChecked();
+  });
+
+  test('one press on the Match row opens it, straight after typing the names', async ({ page, hasTouch }) => {
+    // A name field's change comes on blur, inside the press that moves focus to the Match row. It
+    // once rewrote the row's word under the finger, and WebKit then sent no click: the first press
+    // did nothing. So the press lands on that word, at the device's own size; and, on touch
+    // screens, in the row's middle on the smallest phone held sideways, where the middle is the
+    // word (as it was reported).
+    const press = (l: Locator) => (hasTouch ? l.tap() : l.click());
+    const sizes: ([number, number] | null)[] = hasTouch ? [null, [568, 320]] : [null];
+    for (const size of sizes) {
+      if (size) await page.setViewportSize({ width: size[0], height: size[1] });
+      await openHome(page);
+      await page.evaluate(() => localStorage.clear());
+      await page.reload();
+      await press(page.getByRole('button', { name: /New game/ }));
+      const sheet = page.getByRole('dialog', { name: 'New game' });
+      await press(sheet.getByText('A friend, on this device'));
+      for (const [i, name] of ['Abcdefghijklmnop', 'Pqrstuvwxyzabcde'].entries()) {
+        await press(sheet.locator(`input[name="name${i + 1}"]`));
+        await page.keyboard.type(name);
+      }
+      await expect(sheet.locator('input[name="name2"]')).toBeFocused();
+      const row = sheet.getByRole('button', { name: /^Match/ });
+      await press(size ? row : sheet.locator('.more-current'));
+      await expect(row, `one press opens the Match row${size ? ` at ${size.join('x')}` : ''}`).toHaveAttribute('aria-expanded', 'true');
+      // Seen, not only present: the choices open from transparent, so wait out their animation.
+      const options = sheet.locator('.more-options');
+      await options.evaluate((el) => Promise.all(el.getAnimations().map((a) => a.finished)));
+      expect(await options.evaluate((el) => [getComputedStyle(el).opacity, getComputedStyle(el).transform])).toEqual(['1', 'none']);
+      await expect(options.locator('.choice').first()).toBeInViewport({ ratio: 1 });
+      await expect(sheet.locator('input[name="name2"]')).toHaveValue('Pqrstuvwxyzabcde');
+    }
   });
 });
 
@@ -156,6 +204,33 @@ test.describe('the rules on screen', () => {
   });
 });
 
+test.describe('a move on screen', () => {
+  // Motion on (no reduced-motion emulation): the tile flies and the token drops into its cell.
+  test('the token set down is painted once its drop is over, and so is the one before it', async ({ page, hasTouch }) => {
+    const g = findGame((s) => s.history.length >= 6, 81);
+    await seedMatch(page, saved(HOT_SEAT, [{ tiles: g.tiles, first: g.first, moves: [] }]));
+    await continueMatch(page);
+    const cell = (i: number) => page.locator(`.game .cell[data-index="${i}"]`);
+    await tap(page, 0, hasTouch);
+    await expectTokenPainted(page, cell(0));
+    const next = (await legalIndices(page))[0];
+    await tap(page, next, hasTouch);
+    await expectTokenPainted(page, cell(next));
+    await expectTokenPainted(page, cell(0));
+  });
+
+  test('the token is painted even when the browser runs no frames for its drop', async ({ page, hasTouch }) => {
+    const g = findGame((s) => s.history.length >= 6, 81);
+    await seedMatch(page, saved(HOT_SEAT, [{ tiles: g.tiles, first: g.first, moves: [] }]));
+    await continueMatch(page);
+    await holdNextDrop(page, '.game');
+    await tap(page, 0, hasTouch);
+    // Held at its first frame, the token is not there; it is at rest well before the next move.
+    await expect.poll(() => page.evaluate('window.__heldDrop')).toBe('0');
+    await expectTokenPainted(page, page.locator('.game .cell[data-index="0"]'));
+  });
+});
+
 test.describe('matches', () => {
   test('first to 3: the loser opens the next game, and the score is kept', async ({ page, hasTouch }) => {
     const g = findGame((s) => s.result !== null && s.result.winner !== null && s.result.reason !== 'blocked');
@@ -171,12 +246,121 @@ test.describe('matches', () => {
     const next = page.locator('.seam .end-card [data-action="next"]');
     await expect(next).toBeVisible();
     await expect(page.locator('.end-card [data-action]')).toHaveCount(1);
+    // Hovered, it keeps the winner's dye: its cream text must not vanish into a cream button.
+    await expect(page.locator('.end-card:not(.arriving)')).toBeVisible();
+    await next.hover();
+    await page.waitForTimeout(400); // past the button's colour transition
+    expect(await next.evaluate((b) => getComputedStyle(b).backgroundColor)).not.toBe('rgb(255, 248, 234)');
     await next.click();
     await expect(page.locator('.end-card')).toBeHidden();
     await expect(page.locator('.match-label')).toContainText('Game 2');
     await expect(page.locator(`.seat-${loser}.moving`)).toBeVisible();
     await expect(page.locator(`.seat-${loser} .say-note`)).toHaveText('Opens after losing the last game.');
     expect((await boardCodes(page)).every((c) => /^[MCPI][spbr]$/.test(c))).toBe(true);
+  });
+
+  test('the slip folds away to show the whole garden, and comes back by its tab, the garden or Escape', async ({ page, hasTouch }) => {
+    // A square in the middle of the garden: the one formation the slip lies right over.
+    const g = findGame((s) => s.result?.reason === 'square' && [5, 6, 9, 10].every((c) => s.result!.cells.includes(c)));
+    await seedMatch(page, saved({ ...HOT_SEAT, mode: 'sets3' }, [{ tiles: g.tiles, first: g.first, moves: g.moves }]));
+    await continueMatch(page);
+    const act = (l: import('@playwright/test').Locator) => (hasTouch ? l.tap() : l.click());
+    const card = page.locator('.end-card');
+    const see = card.getByRole('button', { name: 'See the board' });
+    const winner = g.final.result!.winner === 1 ? 'Aki' : 'Ren';
+    const tab = page.getByRole('button', { name: `${winner} wins: show the result` });
+    await expect(page.locator('.end-card:not(.arriving)')).toBeVisible();
+    await expect(tab).toBeHidden();
+    // With the slip over the garden, its loop steps back.
+    await expect.poll(() => page.locator('.game .board-brush').evaluate((b) => getComputedStyle(b).opacity)).toBe('0');
+    // Folded: the slip is gone, its tab is focused, and every token can be seen.
+    await act(see);
+    await expect(card).toBeHidden();
+    await expect(tab).toBeVisible();
+    await expect(tab).toBeFocused();
+    const covered = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('.game .cell.is-token')].filter((c) => {
+        const r = c.getBoundingClientRect();
+        const hits = [[0.5, 0.5], [0.5, 0.25], [0.5, 0.72], [0.25, 0.5], [0.75, 0.5]].map(([x, y]) => document.elementFromPoint(r.left + r.width * x, r.top + r.height * y));
+        return hits.some((h) => !h || !c.contains(h));
+      }).map((c) => c.dataset.index),
+    );
+    expect(covered).toEqual([]);
+    // The win's loop, stepped back while the slip lay over it, is back with the garden.
+    await expect.poll(() => page.locator('.game .board-brush').evaluate((b) => getComputedStyle(b).opacity)).toBe('1');
+    // The tab still offers the main button, as tall as a finger.
+    const tabNext = page.locator('.end-tab [data-card="next"]');
+    await expect(tabNext).toBeVisible();
+    expect((await tabNext.boundingBox())!.height).toBeGreaterThanOrEqual(43.5);
+    expect((await tab.boundingBox())!.height).toBeGreaterThanOrEqual(43.5);
+    // Back by the tab: focus on the slip's first button.
+    await act(tab);
+    await expect(card).toBeVisible();
+    await expect(tab).toBeHidden();
+    await expect(card.locator('[data-action="next"]')).toBeFocused();
+    // Back by a tap on the garden.
+    await act(see);
+    await expect(card).toBeHidden();
+    await tap(page, 0, hasTouch);
+    await expect(card).toBeVisible();
+    // Escape folds it and brings it back.
+    await page.keyboard.press('Escape');
+    await expect(card).toBeHidden();
+    await expect(tab).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(card).toBeVisible();
+    await expect(card.locator('[data-action="next"]')).toBeFocused();
+    // Next game straight from the tab.
+    await act(see);
+    await act(tabNext);
+    await expect(page.locator('.match-label')).toContainText('Game 2');
+    await expect(page.locator('.end-card')).toBeHidden();
+    await expect(page.locator('.end-tab')).toBeHidden();
+  });
+
+  test('the play by play lists every move of the finished game, from the slip and from the menu', async ({ page, hasTouch }) => {
+    const g = findGame((s) => s.result?.reason === 'blocked');
+    await seedMatch(page, saved({ ...HOT_SEAT, mode: 'sets3' }, [{ tiles: g.tiles, first: g.first, moves: g.moves }]));
+    await continueMatch(page);
+    const act = (l: Locator) => (hasTouch ? l.tap() : l.click());
+    const names = HOT_SEAT.names;
+    const loser = names[(g.final.result!.winner === 1 ? 2 : 1) - 1];
+    const sheet = page.getByRole('dialog', { name: 'Play by play' });
+    const rows = sheet.locator('.record-move');
+    const expectRecord = async () => {
+      await expectSheetPainted(page);
+      await expect(rows).toHaveCount(g.moves.length);
+      // Each row is the move's number, who made it and the tile taken; turns alternate from the opener.
+      for (const [i, m] of g.moves.entries()) {
+        const who = names[(i % 2 === 0 ? g.first : 3 - g.first) - 1];
+        await expect(rows.nth(i)).toContainText(`${i + 1}`);
+        await expect(rows.nth(i)).toContainText(`${who}: ${tileWords(g.tiles[m])}`);
+      }
+      // Only the last move says how the game ended.
+      await expect(sheet.locator('.record-note')).toHaveCount(1);
+      await expect(rows.last().locator('.record-note')).toHaveText(`${loser} has no tile to take`);
+      expect(await layoutProblems(page)).toEqual([]);
+    };
+    await expect(page.locator('.end-card:not(.arriving)')).toBeVisible();
+    await act(page.locator('.end-card').getByRole('button', { name: 'Play by play' }));
+    await expectRecord();
+    await page.keyboard.press('Escape');
+    await expect(sheet).toBeHidden();
+    // Escape closed the sheet only; the slip is still up.
+    await expect(page.locator('.end-card')).toBeVisible();
+    await act(page.getByRole('button', { name: 'Menu' }));
+    await act(page.getByRole('dialog', { name: 'Menu' }).getByRole('button', { name: 'Play by play' }));
+    await expectRecord();
+  });
+
+  test('the menu offers the play by play only once a game is over', async ({ page, hasTouch }) => {
+    const g = findGame((s) => s.result?.reason === 'row');
+    await seedMatch(page, saved(HOT_SEAT, [{ tiles: g.tiles, first: g.first, moves: g.moves.slice(0, 3) }]));
+    await continueMatch(page);
+    await (hasTouch ? page.getByRole('button', { name: 'Menu' }).tap() : page.getByRole('button', { name: 'Menu' }).click());
+    const menu = page.getByRole('dialog', { name: 'Menu' });
+    await expect(menu.getByRole('button', { name: 'How to play' })).toBeVisible();
+    await expect(menu.getByRole('button', { name: 'Play by play' })).toHaveCount(0);
   });
 
   test('victory points: a win scores the tiles left in the garden', async ({ page, hasTouch }) => {
@@ -334,7 +518,15 @@ test.describe('sheets and keys', () => {
     await page.getByRole('button', { name: 'How to play' }).click();
     const sheet = page.getByRole('dialog', { name: 'How to play' });
     await expect(sheet.getByRole('heading', { name: 'A full garden' })).toBeAttached();
-    await expect(sheet.getByText('this is the ruling of the designer')).toBeAttached();
+    // The plants and symbols are named beside the matching rule, not only in the key at the end.
+    await expect(sheet.locator('.key-names li')).toHaveText(['Maple', 'Cherry', 'Pine', 'Iris', 'Rising sun', 'Poem', 'Bird', 'Rain']);
+    // The tie's fine print is folded under its one-line rule, one press away.
+    const ruling = sheet.getByText('this is the ruling of the designer');
+    await expect(ruling).toBeAttached();
+    await expect(ruling).toBeHidden();
+    await sheet.locator('summary', { hasText: 'Whose rule this is, and who opens next' }).click();
+    await expect(ruling).toBeVisible();
+    await expect(sheet.getByText('the player who did not open the tied game opens the next')).toBeVisible();
     await sheet.locator('.garden-key').scrollIntoViewIfNeeded();
     await expect(sheet.locator('.garden-key .key-tile')).toHaveCount(16);
     await page.keyboard.press('Escape');

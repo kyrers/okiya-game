@@ -305,29 +305,202 @@ button:disabled { cursor: default; }
   60% { translate: 3% 0; }
 }
 
-/* The end of a game: its buttons in a card over the middle of the garden, dyed in the winner's
-   colour (ink for a tie), coming in once the brush stroke is drawn. */
-.seam > .board, .seam > .end-card { grid-area: 1 / 1; }
+/* The end of a game: a paper slip over the middle of the garden, sealed with the winner's token,
+   saying who won and how, its buttons in neutral ink; it comes in once the brush stroke is drawn. */
+/* Laid over the garden, never part of the layout: however tall it is, the garden keeps its place. */
+.seam { position: relative; }
 .end-card {
   --card-dye: var(--ink);
-  position: relative;
+  /* A small garden (under 360px: a phone held sideways, a small phone upright, a short window)
+     takes the compact slip: it still says who won and how, in less room. It takes more of the
+     garden's width, its seal and headline step down and its buttons share one row (without their
+     icons), so even the longest names and the two buttons at a match's end stay inside the garden.
+     Decided by the garden's own size, which the seats' room changes too, not by the screen's:
+     --big is a huge length on a large garden and a huge negative one on a small garden, so
+     clamp(compact, var(--big), full) is one value or the other. */
+  /* 320px: the full slip (stacked buttons, as the client prefers) fits from there, so phones from
+     360px wide keep it; only 320px-wide phones and short sideways screens get the compact one. */
+  --big: calc((var(--board) - 320px) * 1000);
+  --small: calc(var(--big) * -1);
+  /* How far the seal stands above the slip's top edge: half the seal. */
+  --seal-over: clamp(1em, var(--big), 1.5em);
+  position: absolute;
+  /* The slip and its seal are centred together, so a tall slip (long names, two buttons) never
+     pushes its seal out of the garden onto the half above, where the reason is written. */
+  inset: var(--seal-over) 0 0;
+  height: fit-content;
+  margin: auto;
   z-index: 5;
-  max-width: calc(100% - 2 * var(--gutter));
-  padding: 0.75em;
-  border-radius: 0.9em;
-  font-size: clamp(0.9375rem, 0.8rem + 0.4vw, 1.125rem);
-  color: var(--cream);
-  background: var(--cloth) 0 0 / 256px 256px, var(--card-dye);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0em, var(--big), 0.25em);
+  /* Always inside the garden, never a band across it; the seal stands above its top edge. Sized
+     from the garden, so it reads the same on a phone and on a large desktop garden. */
+  width: min(clamp(15em, var(--small), 17em), calc(var(--board) - clamp(1.5em, var(--big), 2.5em)));
+  max-height: calc(var(--board) - var(--seal-over));
+  padding: clamp(1.15em, var(--big), 1.75em) clamp(0.75em, var(--big), 1em) clamp(0.75em, var(--big), 1em);
+  border-radius: calc(var(--radius) + 0.5em);
+  font-size: clamp(0.8125rem, calc(var(--board) * 0.042), 1.375rem);
+  color: var(--ink);
+  text-align: center;
+  background: var(--paper-grain) 0 0 / 256px 256px, #fff8ea;
   background-blend-mode: soft-light, normal;
-  box-shadow: 0 0 0 1px rgba(251, 243, 228, 0.18) inset, 0 22px 48px -16px rgba(0, 0, 0, 0.75), 0 4px 12px rgba(0, 0, 0, 0.3);
-  animation: card-in 0.32s cubic-bezier(0.2, 0.7, 0.2, 1) 0.85s both;
+  box-shadow: 0 0 0 1px rgba(138, 106, 31, 0.28) inset, 0 22px 48px -16px rgba(8, 6, 14, 0.7), 0 4px 12px rgba(40, 25, 5, 0.3);
+  /* Backwards only: once in, the slip's own opacity and place are free to fold it away. */
+  animation: card-in 0.32s cubic-bezier(0.2, 0.7, 0.2, 1) 0.85s backwards;
+  transition: opacity 0.3s var(--ease-out), translate 0.42s var(--ease-out), scale 0.42s var(--ease-out), visibility 0s;
 }
 .end-card[hidden] { display: none; }
 .end-card.arriving { pointer-events: none; }
-.game[data-turn='1'] .end-card { --card-dye: var(--verm); }
-.game[data-turn='2'] .end-card { --card-dye: var(--indi); }
-.end-card .say-actions { justify-content: center; }
-.end-card .btn { font-size: 1em; min-height: max(44px, 3em); }
+/* The buttons are the same whoever won: an action is neutral, in ink; only the seal says who. */
+.end-card .card-seal { position: absolute; top: 0; left: 50%; display: flex; transform: translate(-50%, -50%); }
+.end-card .card-seal .token-svg { width: clamp(2em, var(--big), 3em); height: clamp(2em, var(--big), 3em); filter: drop-shadow(0 4px 5px rgba(40, 25, 5, 0.45)); }
+.end-card .card-seal .token-svg + .token-svg { margin-left: -1em; }
+.end-card .card-head {
+  margin: 0 0 clamp(0em, var(--small), 0.2em);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(1.125em, var(--big), 1.5em);
+  line-height: 1.15;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.game.names-ui .end-card .card-head { font-family: var(--font-ui); font-weight: 700; }
+.end-card .card-why { margin: 0 0 clamp(0.5em, var(--big), 0.75em); color: var(--ink-2); font-size: 0.9375em; line-height: 1.3; text-wrap: balance; overflow-wrap: anywhere; }
+/* Stacked at full width on a large garden; side by side on a small one, each its own line's width
+   or half a line, never wrapping between the two. */
+.end-card .say-actions { flex-flow: row wrap; gap: 0.5em; }
+.end-card .btn {
+  flex: 1 1 clamp(0%, var(--big), 100%);
+  min-width: 0;
+  gap: clamp(0px, var(--big), 10px);
+  font-size: 1em;
+  min-height: max(44px, clamp(0em, var(--big), 3em));
+  padding-inline: clamp(0.5em, var(--big), 0.875em);
+}
+.end-card .say-actions .btn .icon { width: clamp(0em, var(--big), 1.25em); }
+.end-card .btn.primary, .end-tab .btn.primary {
+  color: var(--cream);
+  background: var(--cloth) 0 0 / 256px 256px, var(--card-dye);
+  background-blend-mode: soft-light, normal;
+  box-shadow: 0 1px 0 rgba(251, 243, 228, 0.22) inset, 0 8px 16px -10px rgba(8, 6, 14, 0.7);
+}
+/* Its own hover: the general .btn.primary:hover (later in this file) would turn it cream, the
+   colour of its text, and a pointer still resting on the winning tile is often right there. */
+.end-card .btn.primary:hover, .end-tab .btn.primary:hover { background: var(--cloth) 0 0 / 256px 256px, var(--card-dye); filter: brightness(1.1); }
+.end-card .btn.ghost { color: var(--ink); background: transparent; border-color: rgba(31, 27, 24, 0.3); }
+.end-card .btn.ghost:hover { background: rgba(31, 27, 24, 0.06); }
+.end-card :focus-visible { outline-color: var(--card-dye); }
+/* See the board and Play by play: quiet ink links side by side under the buttons, each as tall as
+   any target. One line, as See the board alone was, so the slip is no taller for the second. */
+.end-card .card-links {
+  align-self: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: clamp(0.1em, var(--big), 0.25em) 0 clamp(-0.6em, var(--small), -0.45em);
+}
+.end-card .card-fold, .end-card .card-record {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.4em;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 0.9375em;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: rgba(31, 27, 24, 0.3);
+  text-underline-offset: 0.22em;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+.end-card .card-fold:hover, .end-card .card-record:hover { color: var(--ink); background: rgba(31, 27, 24, 0.06); }
+
+/* Folded: the slip slides off towards the garden's edge and a tab is left there, saying who won,
+   bringing the slip back, and still offering the main button; the whole garden shows. The tab sits
+   on the bottom edge on an upright screen (the edge the slip slides to), on the top edge on a wide
+   one, where the garden reaches the bottom of the screen and the top bar leaves room above it. */
+.seam { --fold-dir: 1; }
+.card-folded .end-card {
+  opacity: 0;
+  translate: 0 calc(var(--fold-dir) * var(--board) * 0.38);
+  scale: 0.55;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.26s ease-in, translate 0.4s var(--ease-out), scale 0.4s var(--ease-out), visibility 0s 0.4s;
+}
+.end-tab {
+  position: absolute;
+  z-index: 6;
+  left: 50%;
+  top: calc(50% + var(--fold-dir) * var(--board) / 2);
+  translate: -50% -50%;
+  display: flex;
+  align-items: stretch;
+  width: max-content;
+  max-width: calc(var(--board) - 1em);
+  border-radius: 999px;
+  font-size: clamp(0.8125rem, calc(var(--board) * 0.04), 1.25rem);
+  color: var(--ink);
+  background: var(--paper-grain) 0 0 / 256px 256px, #fff8ea;
+  background-blend-mode: soft-light, normal;
+  box-shadow: 0 0 0 1px rgba(138, 106, 31, 0.28) inset, 0 10px 22px -10px rgba(8, 6, 14, 0.7), 0 2px 6px rgba(40, 25, 5, 0.3);
+  --card-dye: var(--ink);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(calc(var(--fold-dir) * -0.75rem)) scale(0.92);
+  transition: opacity 0.18s, transform 0.18s, visibility 0s 0.18s;
+}
+.end-tab[hidden] { display: none; }
+.card-folded .end-tab {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 0.3s 0.12s, transform 0.42s var(--ease-out) 0.1s, visibility 0s;
+}
+.end-tab .tab-show {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: max(44px, 2.75em);
+  padding: 0 0.55em 0 0.3em;
+  border: 0;
+  border-radius: 999px 0 0 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.end-tab .tab-show:hover { background: rgba(31, 27, 24, 0.06); }
+.end-tab .tab-seal { display: flex; flex: none; }
+.end-tab .tab-seal .token-svg { width: 2em; height: 2em; filter: drop-shadow(0 2px 2px rgba(40, 25, 5, 0.35)); }
+.end-tab .tab-seal .token-svg + .token-svg { margin-left: -0.75em; }
+.end-tab .tab-head { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.end-tab .tab-show .icon { width: 1.2em; height: 1.2em; flex: none; color: var(--ink-2); }
+.end-tab .btn { flex: none; min-height: max(44px, 2.75em); font-size: 1em; padding-inline: 1em; border-radius: 0 999px 999px 0; }
+/* Drawn inside each half of the tab, so the ring always lies on the tab's own paper or ink. */
+.end-tab .tab-show:focus-visible { outline: 3px solid var(--ink); outline-offset: -4px; }
+.end-tab .btn:focus-visible { outline: 3px solid var(--cream); outline-offset: -5px; }
+@media (min-aspect-ratio: 5/4) {
+  .seam { --fold-dir: -1; }
+  /* On the top edge there is room above the garden: the tab sits wholly outside it, so folding
+     the slip uncovers the whole garden, the top row included. */
+  .end-tab { translate: -50% calc(-100% - 4px); }
+}
+/* While the slip lies over the garden its loop, partly under the slip, would read as a scorched
+   frame around it: the loop is drawn first, then steps back as the slip comes in, and comes back
+   with the garden when the slip is folded away. */
+.seam:not(.card-folded):has(> .end-card:not([hidden])) .board-brush { opacity: 0; transition: opacity 0.35s 1.05s; }
+.seam.card-folded .board-brush { opacity: 1; transition: opacity 0.3s; }
 @keyframes card-in {
   from { opacity: 0; transform: translateY(12px) scale(0.96); }
   to { opacity: 1; transform: none; }
@@ -345,7 +518,7 @@ button:disabled { cursor: default; }
 .brush-stroke {
   fill: none;
   stroke: var(--brush-ink);
-  stroke-opacity: 0.72;
+  stroke-opacity: 0.82;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -418,13 +591,11 @@ button:disabled { cursor: default; }
 .pip { width: 0.95em; height: 0.95em; flex: none; display: block; overflow: visible; }
 .pip.used { border-radius: 50%; width: 0.7em; height: 0.7em; margin: 0 0.125em; box-shadow: inset 0 0 0 1.5px rgba(251, 243, 228, 0.35); }
 
-.seat-say { display: flex; flex-direction: column; gap: 0.4em; min-height: 0; container-type: inline-size; overflow-wrap: anywhere; }
-/* A narrow seat keeps the card in one row with a smaller tile. */
-@container (max-width: 250px) {
-  .say-order { gap: 0.55em; padding: 0.4em 0.65em 0.4em 0.4em; }
-  .say-tile { width: 2.6em; height: 2.6em; }
-  .say-what { font-size: 0.9375em; }
-}
+/* Words never break inside: only a player's name (a <bdi>, up to 16 letters with no space) may
+   break where it must. On the whole seat, overflow-wrap: anywhere let the order's text column
+   shrink below a word in a narrow seat and split it ("compute / r"). */
+.seat-say { display: flex; flex-direction: column; gap: 0.4em; min-height: 0; container-type: inline-size; }
+.seat-say bdi { overflow-wrap: anywhere; }
 /* The thinking ellipsis breathes by opacity alone, which the compositor runs without repainting. */
 .say-what .dots::after { content: '…'; display: inline-block; animation: breathe 1.2s ease-in-out infinite; }
 @keyframes breathe { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
@@ -440,7 +611,8 @@ button:disabled { cursor: default; }
   box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.55);
   min-width: 0;
 }
-.say-text { display: flex; flex-direction: column; gap: 0.1em; min-width: 0; }
+/* Never narrower than its longest word. */
+.say-text { display: flex; flex-direction: column; gap: 0.1em; }
 .say-what { font-size: 1.0625em; line-height: 1.3; text-wrap: balance; }
 .say-what b { font-weight: 700; }
 .say-tile {
@@ -455,6 +627,19 @@ button:disabled { cursor: default; }
 .say-tile .tile-art { width: 100%; height: 100%; display: block; }
 .say-tile.ring { display: grid; place-items: center; background: var(--paper-2); }
 .say-tile.ring svg { width: 78%; height: 78%; }
+/* A narrow seat keeps the card in one row with a smaller tile. (After the card's own rules, so
+   these win.) */
+@container (max-width: 250px) {
+  .say-order { gap: 0.55em; padding: 0.4em 0.65em 0.4em 0.4em; }
+  .say-tile { width: 2.6em; height: 2.6em; }
+  .say-what { font-size: 0.9375em; }
+}
+/* A seat too narrow for the tile and a readable line side by side (a side seat on a phone held
+   sideways, or on a desktop window): the tile stands above the order, which takes the card's
+   whole width, so it reads in two or three lines instead of a word or two per line. */
+@container (max-width: 15em) {
+  .say-order { flex-direction: column; align-items: flex-start; gap: 0.45em; padding: 0.55em 0.75em 0.6em; }
+}
 .ring-on { fill: var(--gold); stroke: var(--gold-2); stroke-width: 1; }
 .ring-off { fill: none; stroke: rgba(31, 27, 24, 0.35); stroke-width: 1; stroke-dasharray: 2 2; }
 .w { white-space: nowrap; font-weight: 700; }
@@ -548,61 +733,248 @@ button:disabled { cursor: default; }
    ========================================================================== */
 
 .home {
+  /* The picture of the garden (below): the board's share of the scene, and where the tilted board
+     falls in it, as fractions of the scene's size (measured once from the transform; they change
+     only if the angle or the share does). Portrait: */
+  --home-table: 0.76;
+  /* The mat above the board's far edge that the scene gives up, so the buttons sit on that edge. */
+  --home-pull: 0.17;
+  /* The board's drawn width, and how far right of the scene's centre its centre falls. */
+  --home-span: 0.86;
+  --home-shift: 0.028;
+  /* From the scene's (pulled) top to the board's middle, where the dyes meet. */
+  --home-mid: 0.36;
+  /* The way into a game grows with the screen. */
+  --act-fs: clamp(1rem, 0.75rem + 0.6vw, 1.25rem);
+  /* The wordmark on one line ("Paper Garden" is about 7.6em wide), at most a tenth of the height. */
+  --wm: min(6rem, calc((100vw - 2 * var(--gutter) - var(--sal) - var(--sar)) / 7.6), calc((var(--vh) - var(--sat) - var(--sab)) * 0.1));
+  /* The buttons' height: one New game; or Continue over New game. */
+  --act-h: calc(4.4 * var(--act-fs));
+  /* The garden takes what the title, the buttons and the links leave. */
   --home-board: min(
     calc(100vw - 2 * var(--gutter) - var(--sal) - var(--sar)),
-    calc((var(--vh) - var(--sat) - var(--sab)) * 0.42),
-    max(96px, calc(var(--vh) - var(--sat) - var(--sab) - 27rem)),
-    520px
+    calc((var(--vh) - var(--sat) - var(--sab) - 1.3 * var(--wm) - var(--act-h) - 7.5rem) / (1 - var(--home-pull))),
+    680px,
+    var(--home-board-fit, 680px)
   );
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: var(--sat) minmax(min-content, 1fr) auto auto minmax(min-content, 1fr) var(--sab);
-  grid-template-areas: 'st' 'top' 'actions' 'board' 'links' 'sb';
-  /* The halves may differ in height; the dyes meet at the garden's centre, which home.ts measures
-     into --home-seam. One background, so the weave runs unbroken across the screen. */
+  grid-template-rows: var(--sat) minmax(0, 1fr) auto auto auto auto minmax(0, 1fr) var(--sab);
+  grid-template-areas: '.' '.' 'top' 'actions' 'board' 'links' '.' '.';
+  /* The picture's one camera, shared by the garden (.home-garden, .home-table) and the mats under
+     it (.home::before), so the two always lie in one plane: the table tilted back, the eye's
+     distance as a multiple of the garden size, and the eye's height above the garden's centre as
+     a share of it. home.ts reads them too, to size the mats. */
+  --home-tilt: 40deg;
+  --home-depth: 3.2;
+  --home-eye: 0.1;
+  /* The garden's centre (its scene's, where the board turns), which home.ts measures. */
   --home-seam: 50%;
-  background:
-    var(--cloth) 0 0 / 256px 256px,
-    linear-gradient(to bottom, var(--indi) 0, var(--indi) var(--home-seam), var(--verm) var(--home-seam), var(--verm) 100%);
-  background-blend-mode: soft-light, normal;
+  /* The room beyond the lamp's reach: what lies past the mats. */
+  background: #120d08;
+  perspective: calc(var(--home-board) * var(--home-depth));
+  perspective-origin: var(--home-seam-x, 50%) calc(var(--home-seam, 50%) - var(--home-board) * var(--home-eye));
+  /* A tatami's short side, about four boards; its cloth border (heri), about three centimetres. */
+  --mat: calc(var(--home-board) * 2.5);
+  --heri: calc(var(--mat) * 0.027);
   color: var(--cream);
+  font-size: var(--act-fs);
 }
-.home .seam { grid-area: board; padding: 14px 0; }
-/* Portrait: the way into a game above the garden, the other links below it. */
+.home:has([data-go="continue"]) { --act-h: calc(8.8 * var(--act-fs) + 10px); }
+@media (min-aspect-ratio: 5/4) and (min-height: 501px) {
+  /* The board is a larger share of the garden's box here (see .home-table). */
+  .home { --mat: calc(var(--home-board) * 2.9); }
+}
+/* Tatami under the game, as a picture of an evening's game in a Japanese room. The mats lie in the
+   garden's plane (the same tilt, the same eye), so the rush recedes as the board does; they sit
+   square to the viewer, the board laid on them at its slight angle. Two mats meet under the
+   garden's centre, long sides together, so their cloth borders run side by side across the table
+   there: indigo on the far mat, vermilion on the near one, as the game's halves are. The rush runs
+   across each mat (towards the eye, so its lines converge), the warp threads along it (so their
+   spacing closes with distance), and the cloth's own weave lies over both. One lamp hangs over the
+   garden a little beyond its centre, as the board's shadow says: its pool is a circle on the mats
+   and falls off quickly, so the wordmark, the buttons and the links sit in the room's shade. */
+.home::before,
+.home::after {
+  content: '';
+  position: absolute;
+  /* Under everything: the buttons and links sit in display: contents wrappers, out of .screen > *. */
+  z-index: -1;
+  pointer-events: none;
+}
+.home::before {
+  /* The floor, cut to what the screen shows of it: how far it runs beyond the garden's centre and
+     towards the eye, and its width (home.ts measures these from the screen and the camera; the
+     fallbacks cover any screen up to 2560x1440). It is a large layer drawn in 3D, so no larger. */
+  --far: var(--floor-far, calc(var(--home-board) * 5));
+  --near: var(--floor-near, calc(var(--home-board) * 2));
+  --mid: calc(var(--floor-w, calc(var(--home-board) * 7)) / 2);
+  /* Where the lamp's light falls: a little beyond the garden's centre. */
+  --lamp: 50% calc(var(--far) - var(--home-board) * 0.03);
+  /* The two borders where the mats meet, each running away from that line. */
+  --to-far: to top;
+  --to-near: to bottom;
+  /* Each border is cloth folded over the mat's edge: darker where it turns down, a sheen along its
+     crown. The dyes' fold and sheen, worked out for an engine without color-mix() (below, from the
+     dyes themselves): a property that cannot be computed would lose the whole floor. */
+  --indi-fold: #222e5f;
+  --indi-sheen: #3f4d86;
+  --verm-fold: #8c2c17;
+  --verm-sheen: #bb4a32;
+  --heri-far: linear-gradient(var(--to-far), rgba(8, 6, 10, 0.7) 0 1px, var(--indi-fold) 1px, var(--indi) calc(var(--heri) * 0.3), var(--indi-sheen) calc(var(--heri) * 0.5), var(--indi) calc(var(--heri) * 0.7), var(--indi-fold) var(--heri), rgba(30, 20, 8, 0.45) var(--heri) calc(var(--heri) + 1.5px), rgba(30, 20, 8, 0) calc(var(--heri) + 1.5px));
+  --heri-near: linear-gradient(var(--to-near), rgba(8, 6, 10, 0.7) 0 1px, var(--verm-fold) 1px, var(--verm) calc(var(--heri) * 0.3), var(--verm-sheen) calc(var(--heri) * 0.5), var(--verm) calc(var(--heri) * 0.7), var(--verm-fold) var(--heri), rgba(30, 20, 8, 0.45) var(--heri) calc(var(--heri) + 1.5px), rgba(30, 20, 8, 0) calc(var(--heri) + 1.5px));
+  --heri-band: calc(var(--heri) + 2px);
+  /* The rush: stalks laid side by side, each its own shade (noise drawn long along the stalk). */
+  --rush: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='r' x='0' y='0' width='1' height='1' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.4 .005' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1.6 0 0 0 -.3 1.6 0 0 0 -.3 1.6 0 0 0 -.3 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23r)'/%3E%3C/svg%3E");
+  width: calc(var(--mid) * 2);
+  height: calc(var(--far) + var(--near));
+  left: calc(var(--home-seam-x, 50%) - var(--mid));
+  top: calc(var(--home-seam, 50%) - var(--far));
+  /* Turned about the garden's centre, seen from the garden's eye (.home's perspective). */
+  transform-origin: 50% var(--far);
+  transform: rotateX(var(--home-tilt));
+  background:
+    /* The lamp's pool, and the room beyond it. */
+    radial-gradient(calc(var(--home-board) * 1.2) calc(var(--home-board) * 0.62) at var(--lamp), rgba(14, 9, 4, 0) 30%, rgba(14, 9, 4, 0.2) 45%, rgba(14, 9, 4, 0.45) 60%, rgba(14, 9, 4, 0.62) 78%, rgba(14, 9, 4, 0.7) 100%),
+    radial-gradient(calc(var(--home-board) * 3.6) calc(var(--home-board) * 3) at var(--lamp), rgba(10, 8, 9, 0) 25%, rgba(10, 8, 9, 0.5) 70%, rgba(10, 8, 9, 0.75) 100%),
+    var(--cloth) var(--mid) var(--far) / 256px 256px,
+    var(--heri-far) 0 calc(var(--far) - var(--heri-band)) / 100% var(--heri-band) no-repeat,
+    var(--heri-near) 0 var(--far) / 100% var(--heri-band) no-repeat,
+    /* The rush runs across the mats, towards the eye; the warp threads along them. */
+    repeating-linear-gradient(to right, rgba(60, 40, 12, 0.16) 0 1px, rgba(60, 40, 12, 0) 1px calc(var(--mat) * 0.0065)) var(--mid) 0 / 100% 100%,
+    var(--rush) var(--mid) var(--far) / calc(var(--mat) * 0.3) calc(var(--mat) * 0.3),
+    repeating-linear-gradient(to bottom, rgba(70, 48, 18, 0.2) 0 1px, rgba(70, 48, 18, 0) 1px calc(var(--mat) / 36)) 0 var(--far) / 100% 100%,
+    #bd9d5f;
+  background-blend-mode: normal, normal, soft-light, normal, normal, normal, soft-light, normal;
+}
+@supports (color: color-mix(in srgb, red, blue)) {
+  .home::before {
+    --indi-fold: color-mix(in srgb, var(--indi), #000 22%);
+    --indi-sheen: color-mix(in srgb, var(--indi), #fff 9%);
+    --verm-fold: color-mix(in srgb, var(--verm), #000 22%);
+    --verm-sheen: color-mix(in srgb, var(--verm), #fff 9%);
+  }
+}
+/* The room's shade at the screen's edges, about the lamp. */
+.home::after {
+  inset: 0;
+  background: radial-gradient(farthest-corner at var(--home-seam-x, 50%) calc(var(--home-seam, 50%) - var(--home-board) * 0.1), rgba(10, 7, 6, 0) 40%, rgba(10, 7, 6, 0.36) 75%, rgba(10, 7, 6, 0.68) 100%);
+}
+.home .seam { grid-area: board; padding: 12px 0; }
+/* One column: the title, the way into a game on the garden's top edge, the garden, the links. */
 .home-actions-wrap, .home-actions { display: contents; }
-.home .board { --board: var(--home-board); }
-.home-title {
-  grid-area: top;
-  /* The wordmark is sized from the width the title has (cqi), so it always fits its column. */
-  container-type: inline-size;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  text-align: center;
-  gap: 6px;
-  padding: 16px var(--gutter) 6px;
+/* The garden as a picture of the game, not a board to play on: it lies on the table, seen at an
+   angle as from a chair, a few moves into a game, with the taken tiles and some spare tokens resting
+   on the mats beside it. Every piece lies in one plane, the mats', so they share one perspective
+   (the camera on .home); the board's shadow and edge are drawn in that plane too. Nothing in it
+   answers the pointer (home.ts also makes it inert). */
+.home-garden {
+  position: relative;
+  width: var(--home-board);
+  height: var(--home-board);
+  display: grid;
+  place-items: center;
+  perspective: calc(var(--home-board) * var(--home-depth));
+  perspective-origin: 50% calc(50% - 100% * var(--home-eye));
+  /* Up to the buttons, so they sit on the board's far edge rather than above a picture, and over a
+     little, so the board, not the scene's square, is centred under them. */
+  margin-top: calc(var(--home-board) * -1 * var(--home-pull));
+  left: calc(var(--home-board) * -1 * var(--home-shift));
+  pointer-events: none;
+  cursor: default;
 }
+.home-table {
+  /* The board inside the scene: the rest is mat for the loose pieces. */
+  --b: calc(var(--home-board) * var(--home-table));
+  position: relative;
+  width: var(--b);
+  height: var(--b);
+  transform: rotateX(var(--home-tilt)) rotateZ(-8deg);
+}
+.home .board { --board: var(--b); }
+/* The board's edge, a few millimetres of card, and its shadow on the mats, both in the table's plane. */
+.home .board-grid {
+  box-shadow:
+    0 calc(var(--b) * 0.016) 0 #b19566,
+    0 calc(var(--b) * 0.016 + 1px) 0 #8d7247,
+    0 calc(var(--b) * 0.05) calc(var(--b) * 0.06) calc(var(--b) * -0.01) rgba(8, 6, 14, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -2px 0 rgba(90, 64, 30, 0.25);
+}
+.home .cell { transition: none; }
+.home-piece {
+  position: absolute;
+  left: calc(var(--b) * var(--x));
+  top: calc(var(--b) * var(--y));
+  transform: rotate(var(--r, 0deg));
+}
+/* A taken tile: the garden's own cell, with its thickness and its shadow on the mats. */
+.home-tile {
+  width: calc(var(--b) * 0.2215);
+  height: calc(var(--b) * 0.2215);
+  border-radius: calc(var(--b) * 0.024);
+  background: var(--tile-face);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.7) inset,
+    0 0 0 1px rgba(80, 60, 30, 0.14) inset,
+    0 calc(var(--b) * 0.008) 0 #cdb88f,
+    0 calc(var(--b) * 0.02) calc(var(--b) * 0.03) rgba(8, 6, 14, 0.5);
+}
+.home-tile .tile-art { width: 100%; height: 100%; display: block; border-radius: inherit; overflow: hidden; }
+.home-token { width: calc(var(--b) * 0.18); height: calc(var(--b) * 0.18); }
+.home-token .token-svg { width: 100%; height: 100%; display: block; overflow: visible; }
+/* Each player's pieces on their own half, beside the board (the buttons have the mat beyond its
+   far edge): indigo's by the far right corner, above the seam, where the turned board leaves the
+   most cloth; vermilion's tokens by the near left corner and its tiles under the near edge, below
+   it. The later tile lies over the earlier, as it was put down last. */
+.home-tile.p1.n0 { --x: 0.46; --y: 1.02; --r: -11deg; }
+.home-tile.p1.n1 { --x: 0.66; --y: 1.01; --r: 6deg; }
+.home-token.p1.n0 { --x: -0.17; --y: 0.6; }
+.home-token.p1.n1 { --x: -0.15; --y: 0.76; }
+.home-token.p1.n2 { --x: -0.06; --y: 1.0; }
+.home-tile.p2.n0 { --x: 1.03; --y: -0.04; --r: 8deg; }
+.home-tile.p2.n1 { --x: 1.05; --y: 0.07; --r: -6deg; }
+.home-token.p2.n0 { --x: 1.03; --y: 0.4; }
+.home-token.p2.n1 { --x: 1.05; --y: 0.29; }
+/* Wide screens have cloth to spare beside the garden: a larger board, the pieces at its sides,
+   each on its own half (indigo above the seam, vermilion below). */
+@media (min-aspect-ratio: 5/4) and (min-height: 501px) {
+  .home { --home-table: 0.8; --home-pull: 0.15; --home-span: 0.91; --home-shift: 0.031; --home-mid: 0.38; }
+  .home-tile.p2.n0 { --x: 1.09; --y: 0.02; --r: 8deg; }
+  .home-tile.p2.n1 { --x: 1.15; --y: 0.15; --r: -6deg; }
+  .home-token.p2.n0 { --x: -0.25; --y: 0.08; }
+  .home-token.p2.n1 { --x: -0.19; --y: 0.2; }
+  .home-tile.p1.n0 { --x: -0.36; --y: 0.66; --r: -9deg; }
+  .home-tile.p1.n1 { --x: -0.27; --y: 0.79; --r: 5deg; }
+  .home-token.p1.n0 { --x: 1.08; --y: 0.68; }
+  .home-token.p1.n1 { --x: 1.21; --y: 0.74; }
+  .home-token.p1.n2 { --x: 1.12; --y: 0.82; }
+}
+.home-title { grid-area: top; display: flex; justify-content: center; text-align: center; padding: 12px var(--gutter) 0; }
 .wordmark {
   font-family: var(--font-display);
-  /* One line, "Paper Garden" being about 7.6em wide. */
-  font-size: min(6rem, 100cqi / 7.6);
-  line-height: 0.95;
+  font-size: var(--wm);
+  line-height: 1.1;
+  /* Room for the face's ascenders and the descenders of "p": at its metrics both overhang the line box. */
+  padding-block: 0.18em 0.22em;
   letter-spacing: 0.04em;
+  white-space: nowrap;
   text-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
 }
-.home-sub { font-size: 0.9375rem; color: var(--cream-2); max-width: 30ch; text-wrap: balance; margin-top: 0.5em; }
+/* As wide as the board is drawn (its tilted outline, not the scene's square), so the buttons read as
+   its far edge; never narrower than a phone's width (or 420px), so a garden that gives way to a long
+   Continue summary does not squeeze them taller. On a phone in portrait that floor is the wider,
+   and the buttons overhang the board a little either side. */
 .home-buttons {
   grid-area: actions;
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 10px;
-  width: min(100% - 2 * var(--gutter), 420px);
+  width: max(var(--home-board) * var(--home-span), min(100% - 2 * var(--gutter), 420px));
   margin-inline: auto;
-  padding-top: 6px;
 }
-.home-links { grid-area: links; align-self: start; display: flex; justify-content: center; gap: 4px; flex-wrap: wrap; padding: 2px var(--gutter) 16px; }
-.home-links .link-btn { font-size: inherit; }
+.home-buttons .btn.big { min-height: 4.4em; }
+.home-links { grid-area: links; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; padding: 6px var(--gutter) 12px; }
+.home-links .link-btn { font-size: 1em; min-height: 48px; padding: 0 1.1em; background: rgba(251, 243, 228, 0.1); }
 .link-btn {
   display: inline-flex;
   align-items: center;
@@ -626,12 +998,19 @@ button:disabled { cursor: default; }
   :root { --gutter: clamp(12px, 1.6vw, 28px); }
   .game {
     --seat-w: calc(clamp(9.5rem, 22vw, 23.75rem) + var(--seat-room, 0px));
+    /* As tall as the screen allows on a large desktop too: the garden, not the cloth, fills it. */
     --board: min(
       calc(var(--vh) - var(--topbar) - var(--sat) - var(--sab) - 2 * var(--board-gap)),
       calc(100vw - 2 * var(--seat-w) - var(--sal) - var(--sar) - 4 * var(--board-gap)),
-      760px
+      1120px
     );
-    grid-template-columns: var(--sal) minmax(0, 1fr) auto minmax(0, 1fr) var(--sar);
+    /* The seats and the garden are one group, centred: on a very wide screen the seats keep to the
+       garden's sides and the top bar spans the group, not the far corners. */
+    grid-template-columns: var(--sal) minmax(0, 44rem) auto minmax(0, 44rem) var(--sar);
+    justify-content: center;
+    /* A seat's content width with no room borrowed (the seat type is sized from it, so borrowing
+       never changes the type): what the garden leaves, less the outer gutter and the inner gap. */
+    --seat-span: calc((100vw - min(var(--vh) - var(--topbar) - var(--sat) - var(--sab) - 2 * var(--board-gap), 100vw - 2 * clamp(9.5rem, 22vw, 23.75rem) - var(--sal) - var(--sar) - 4 * var(--board-gap), 1120px) - var(--sal) - var(--sar) - 4 * var(--board-gap)) / 2 - var(--gutter) - var(--board-gap));
     grid-template-rows: calc(var(--topbar) + var(--sat)) minmax(0, 1fr) var(--sab);
     grid-template-areas: '. top top top .' '. s1 board s2 .' '. . . . .';
     background:
@@ -643,42 +1022,24 @@ button:disabled { cursor: default; }
   .glow-1 { top: 0; bottom: 0; left: 0; right: 50%; height: auto; background: var(--cloth) 0 0 / 256px 256px, radial-gradient(80% 90% at 100% 50%, rgba(255, 180, 125, 0.38), transparent 72%), var(--verm); }
   .glow-2 { top: 0; bottom: 0; left: 50%; right: 0; height: auto; background: var(--cloth) -50vw 0 / 256px 256px, radial-gradient(80% 90% at 0% 50%, rgba(150, 170, 255, 0.36), transparent 72%), var(--indi); }
   .seat {
-    --seat-fs: clamp(0.875rem, 0.25rem + 1.2vw, 1.5rem);
+    /* Sized to the seat's width, so a 16-letter name in wide letters stays on one line at its
+       smallest step (fitNames: 58% of the name size): about 13.8em across while that step is set in
+       Source Sans 3 (seat type under 22.5px, see the Eighteen Pixel Rule), 17em once it is set in
+       the wider display face. Larger on large desktops, with the garden. */
+    --seat-fs: clamp(0.875rem, min(1.34vw, max(min(22.5px, var(--seat-span) / 13.8), var(--seat-span) / 17)), 2rem);
     /* Both seats start on the garden's top edge, so the two names share one line. */
     justify-content: flex-start;
     padding: calc((var(--vh) - var(--topbar) - var(--sat) - var(--sab) - var(--board)) / 2) var(--gutter) 12px;
   }
+  /* The seat's content keeps close to the garden: the seam already holds a gap on each side. */
+  .seat-1 { padding-right: var(--board-gap); }
+  .seat-2 { padding-left: var(--board-gap); }
   .seat > * { width: min(100%, calc(20em + var(--seat-room, 0px))); }
   .seat-name { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-wrap: balance; }
   .seat-1, .seat-2 { justify-content: flex-start; }
   .match-label { font-size: clamp(0.875rem, 0.55rem + 0.5vw, 1.125rem); }
 
-  .home {
-    /* What the two side columns need (8.5rem + 13.5rem) and the gutters beside the garden. */
-    --home-board: min(calc((var(--vh) - var(--sat) - var(--sab)) * 0.8), calc(100vw * 0.42), calc(100vw - 22rem - 2 * clamp(16px, 3vw, 40px) - var(--sal) - var(--sar)), 600px);
-    --seam: 50%;
-    grid-template-columns: var(--sal) minmax(8.5rem, 1fr) auto minmax(13.5rem, 1fr) var(--sar);
-    grid-template-rows: var(--sat) minmax(0, 1fr) var(--sab);
-    grid-template-areas: '. . . . .' '. top board bottom .' '. . . . .';
-    background:
-      var(--cloth) 0 0 / 256px 256px,
-      linear-gradient(to right, var(--verm) 50%, var(--indi) 50%);
-  }
-  .home .seam { padding: 0 clamp(16px, 3vw, 40px); }
-  /* The way into a game starts level with the garden's top edge. */
-  .home-actions-wrap { grid-area: bottom; display: flex; align-items: flex-start; padding-top: max(0px, calc((var(--vh) - var(--sat) - var(--sab) - var(--home-board)) / 2)); }
-  .home-actions { display: flex; flex-direction: column; gap: 10px; margin-inline: auto; }
-  .home-buttons { display: contents; }
-  .home-links { padding: 0; align-self: auto; }
-  .home-title { justify-content: center; padding: 16px var(--gutter); gap: 14px; }
-  /* Landscape: "Paper" over "Garden" (about 4.1em wide), as large as the column allows. */
-  .wordmark { font-size: min(5.5rem, 100cqi / 4.1); }
-  .wordmark span { display: block; }
-  .home-sub { font-size: clamp(0.9375rem, 0.6rem + 0.5vw, 1.25rem); }
-  /* Two lines, like the wordmark above it: a narrow column cannot be trusted to wrap one line that
-     only just fits (WebKit kept it whole, 2 px too wide, at 812 x 414). */
-  .home-sub .credit-name { display: block; }
-  .home-actions { width: min(100% - 2 * var(--gutter), 24em); padding: 0 0 16px; font-size: clamp(1rem, 0.7rem + 0.45vw, 1.25rem); }
+
 }
 
 /* Short screens: tighten the seats so the garden keeps its size. */
@@ -691,29 +1052,97 @@ button:disabled { cursor: default; }
   :root { --topbar: 3rem; --seat-min: 6.875rem; }
   .seat { --seat-fs: 0.875rem; }
   .say-result { font-size: 1.35em; }
-  .home-actions { font-size: 0.9375rem; }
-  .home-buttons { gap: 8px; }
   .btn.big { min-height: 3.5em; }
-  .wordmark { font-size: min(3rem, 100cqi / 7.6); }
 }
 @media (max-height: 500px) and (min-aspect-ratio: 5/4) {
   :root { --topbar: 3rem; --board-gap: 6px; }
   .seat { --seat-fs: 0.875rem; gap: 0.4em; padding-bottom: 8px; }
   .say-tile { width: 3em; height: 3em; }
-  .wordmark { font-size: min(9vh, 4rem, 100cqi / 4.1); }
   .btn.big { min-height: 54px; padding: 0.45em 1em; }
-  .home-actions { gap: 6px; padding: 0 0 8px; font-size: 1rem; }
-  .home-title { gap: 6px; }
   /* Room for a long Continue summary: New game's hint repeats what its sheet shows. */
   .btn.big .btn-sub { font-size: 0.8125em; }
   .btn.big.secondary .btn-sub { display: none; }
 }
-@media (max-height: 340px) and (min-aspect-ratio: 5/4) {
-  .home-actions { padding: 0 0 2px; }
-}
 @media (min-width: 1100px) and (min-height: 760px) {
   :root { --topbar: 4.25rem; }
-  .home-actions { font-size: 1.125rem; }
+}
+/* Large desktops: the top bar grows with the garden. */
+@media (min-width: 1700px) and (min-height: 1000px) and (min-aspect-ratio: 5/4) {
+  :root { --topbar: 5.25rem; }
+  .topbar .icon-btn { width: 56px; height: 56px; }
+  .topbar .icon-btn .icon { width: 28px; height: 28px; }
+  .match-label { font-size: clamp(1.125rem, 0.4rem + 0.6vw, 1.5rem); }
+}
+
+/* Home: option A, one column on every screen */
+/* Wider screens: Continue and New game side by side, one row on the garden's edge. */
+@media (min-width: 600px) and (min-height: 501px) {
+  /* New game alone. With a match to resume, Continue stays above New game, as on phones: its
+     summary (names, format, game) needs the whole width, and side by side a long one wrapped to
+     nine lines and squeezed New game's line a word at a time. */
+  .home-buttons { grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+  .home:has([data-go="continue"]) .home-buttons { grid-auto-flow: row; }
+}
+/* A phone held sideways: the garden on the right, everything else beside it. */
+@media (max-height: 500px) and (min-aspect-ratio: 5/4) {
+  .home {
+    --act-fs: 1rem;
+    --home-board: min(calc(var(--vh) - var(--sat) - var(--sab) - 20px), 46vw, 560px);
+    --wm: min(3.5rem, calc((100vw - var(--home-board) - 3 * var(--gutter) - var(--sal) - var(--sar)) / 7.6), 13vh);
+    grid-template-columns: var(--sal) minmax(0, 1fr) auto var(--sar);
+    grid-template-rows: var(--sat) minmax(0, 1fr) auto auto auto minmax(0, 1fr) var(--sab);
+    grid-template-areas: '. . . .' '. . board .' '. top board .' '. actions board .' '. links board .' '. . board .' '. . . .';
+    /* The board is a smaller share of the garden's box here (see .home-table). */
+    --mat: calc(var(--home-board) * 2.2);
+  }
+  /* The mats turned a quarter: they meet in a line from the garden's centre to the far wall, the
+     near player's vermilion border on the left, under the wordmark and the buttons, indigo on the
+     right; the rush runs across them, the warp threads towards the far wall. */
+  .home::before {
+    --to-far: to right;
+    --to-near: to left;
+    --rush: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='r' x='0' y='0' width='1' height='1' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.005 .4' numOctaves='2' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1.6 0 0 0 -.3 1.6 0 0 0 -.3 1.6 0 0 0 -.3 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23r)'/%3E%3C/svg%3E");
+    background:
+      radial-gradient(calc(var(--home-board) * 0.9) calc(var(--home-board) * 0.95) at var(--lamp), rgba(14, 9, 4, 0) 30%, rgba(14, 9, 4, 0.2) 45%, rgba(14, 9, 4, 0.45) 60%, rgba(14, 9, 4, 0.62) 78%, rgba(14, 9, 4, 0.7) 100%),
+      radial-gradient(calc(var(--home-board) * 3.6) calc(var(--home-board) * 3) at var(--lamp), rgba(10, 8, 9, 0) 25%, rgba(10, 8, 9, 0.5) 70%, rgba(10, 8, 9, 0.75) 100%),
+      var(--cloth) var(--mid) var(--far) / 256px 256px,
+      var(--heri-far) var(--mid) 0 / var(--heri-band) 100% no-repeat,
+      var(--heri-near) calc(var(--mid) - var(--heri-band)) 0 / var(--heri-band) 100% no-repeat,
+      repeating-linear-gradient(to bottom, rgba(60, 40, 12, 0.16) 0 1px, rgba(60, 40, 12, 0) 1px calc(var(--mat) * 0.0065)) 0 var(--far) / 100% 100%,
+      var(--rush) var(--mid) var(--far) / calc(var(--mat) * 0.3) calc(var(--mat) * 0.3),
+      repeating-linear-gradient(to right, rgba(70, 48, 18, 0.2) 0 1px, rgba(70, 48, 18, 0) 1px calc(var(--mat) / 36)) var(--mid) 0 / 100% 100%,
+      #bd9d5f;
+  }
+  .home .seam { padding: 10px var(--gutter) 10px 0; align-self: center; }
+  /* The garden fills the height: a smaller board leaves the loose pieces room around it. Nothing
+     sits on its far edge here, so the scene keeps its square. */
+  .home { --home-table: 0.62; --home-pull: 0; --home-shift: 0; }
+  /* The halves are left and right here: vermilion's pieces on the left of the seam (its tiles by
+     the near left corner, its tokens beside the left edge), indigo's on the right (its tiles by the
+     far right corner, its tokens beside the right edge). */
+  .home-tile.p1.n0 { --x: -0.02; --y: 1.03; --r: -11deg; }
+  .home-tile.p1.n1 { --x: 0.16; --y: 1.06; --r: 6deg; }
+  .home-token.p1.n0 { --x: -0.25; --y: 0.52; }
+  .home-token.p1.n1 { --x: -0.22; --y: 0.68; }
+  .home-token.p1.n2 { --x: -0.29; --y: 0.79; }
+  .home-tile.p2.n0 { --x: 0.68; --y: -0.3; --r: 9deg; }
+  .home-tile.p2.n1 { --x: 0.86; --y: -0.26; --r: -5deg; }
+  .home-token.p2.n0 { --x: 1.06; --y: 0.14; }
+  .home-token.p2.n1 { --x: 1.1; --y: 0.3; }
+  .home-title { padding: 0 var(--gutter); }
+  .home-buttons { width: min(100% - 2 * var(--gutter), 26em); gap: 6px; }
+  .home-buttons .btn.big { min-height: 52px; padding: 0.4em 1em; }
+  .home-links { padding: 4px var(--gutter) 0; gap: 4px; }
+  .home-links .link-btn { min-height: 44px; }
+}
+/* A phone held sideways and short (360px or less): three labelled links took two rows and pushed
+   the column off the screen. They become one row of round icon buttons; their names stay for
+   screen readers (and for the label a pointer's tooltip would need, there is none on touch). */
+@media (max-height: 360px) and (min-aspect-ratio: 5/4) {
+  .home-links { flex-wrap: nowrap; gap: 10px; }
+  .home-links .link-btn { width: 44px; min-height: 44px; padding: 0; justify-content: center; }
+  .home-links .link-btn .icon { width: 22px; height: 22px; }
+  .home-links .link-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
 
 /* ==========================================================================
@@ -735,9 +1164,24 @@ dialog.sheet {
 }
 /* The rules sheet is as wide as a comfortable line of text, so its title and text share one edge. */
 dialog.sheet.sheet-rules { width: min(100%, 38rem); }
-dialog.sheet::backdrop { background: rgba(12, 10, 22, 0.6); }
-dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
-@keyframes sheet-up { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+dialog.sheet::backdrop { background: rgba(12, 10, 22, 0.7); }
+/* A sheet over the home: the home's own title, buttons and links step out of sight, so the sheet
+   never slices the wordmark or shows the buttons' edges at its sides; the picture stays under it. */
+.home .home-title, .home .home-buttons, .home .home-links { transition: opacity 0.2s; }
+body:has(dialog.sheet[open]) .home .home-title,
+body:has(dialog.sheet[open]) .home .home-buttons,
+body:has(dialog.sheet[open]) .home .home-links { opacity: 0; }
+/* A sheet waiting under a confirmation it asked for: out of sight (the question takes its place),
+   still focusable, so focus can return to it on Cancel. */
+dialog.sheet.is-behind, dialog.sheet.is-behind::backdrop { opacity: 0; }
+/* The entrance rises without fading, and on the panel, not on the dialog in the top layer: if the
+   engine is slow to draw the next frame (WebKit then holds the animation's first frame, or a stale
+   one after it has finished, for as long as the next rendering update takes), the sheet is still
+   there to read, a few pixels low, never an invisible sheet over a dimmed screen. */
+dialog.sheet[open] > .sheet-panel { animation: sheet-up 0.32s var(--ease-out); }
+/* Arrived (sheet.ts): no animation left on it, so nothing can hold it short of its place. */
+dialog.sheet[open].arrived > .sheet-panel { animation: none; }
+@keyframes sheet-up { from { transform: translateY(24px); } to { transform: none; } }
 .sheet-panel {
   display: flex;
   flex-direction: column;
@@ -749,21 +1193,27 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
   user-select: text;
   -webkit-user-select: text;
 }
+/* The head is a band of the table's own cloth, as the game's top bar is: cream title, the dye
+   icon button, gold focus. The paper below it is the sheet's page. */
 .sheet-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px calc(var(--gutter) + var(--sar)) 12px calc(var(--gutter) + var(--sal));
-  border-bottom: 1px solid rgba(80, 60, 30, 0.14);
+  padding: 14px calc(var(--gutter) + var(--sar)) 14px calc(var(--gutter) + var(--sal));
+  border-radius: 20px 20px 0 0;
+  background: var(--cloth) 0 0 / 256px 256px, var(--indi-dim);
+  background-blend-mode: soft-light, normal;
+  color: var(--cream);
+  box-shadow: inset 0 1px 0 rgba(251, 243, 228, 0.16), inset 0 -1px 0 rgba(8, 6, 14, 0.35);
 }
-.sheet-title { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.2; }
-.sheet .icon-btn { color: var(--ink); background: rgba(31, 27, 24, 0.05); border-color: rgba(31, 27, 24, 0.18); }
-.sheet .icon-btn:hover { background: rgba(31, 27, 24, 0.1); }
+.sheet-title { font-family: var(--font-display); font-size: 1.5rem; line-height: 1.2; color: var(--cream); }
 .sheet-panel:focus { outline: none; }
 .sheet-body:focus-visible { outline: 3px solid var(--verm); outline-offset: -3px; }
-/* On paper the focus mark is vermilion (gold reads 1.6:1 there; vermilion over 5:1). */
+/* On paper the focus mark is vermilion (gold reads 1.6:1 there; vermilion over 5:1). On the
+   cloth band it is gold, as everywhere on the dyes. */
 .sheet :focus-visible { outline-color: var(--verm); }
+.sheet .sheet-head :focus-visible { outline-color: var(--gold); }
 .sheet-foot {
   padding: 12px calc(var(--gutter) + var(--sar)) calc(12px + var(--sab)) calc(var(--gutter) + var(--sal));
   border-top: 1px solid rgba(80, 60, 30, 0.14);
@@ -778,15 +1228,147 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 }
 @media (min-width: 640px) and (min-height: 560px) {
   dialog.sheet { margin: auto; width: min(560px, 100vw - 48px); }
-  .sheet-panel { border-radius: 20px; max-height: min(calc(var(--vh) - 64px), 860px); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45); }
+  .sheet-panel { border-radius: 20px; max-height: min(calc(var(--vh) - 64px), 980px); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45); }
   .sheet-body { padding-bottom: 24px; }
 }
 
 /* Sheet controls are on paper: ink buttons. */
 .sheet .btn.primary { background: var(--verm); color: var(--cream); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) inset, 0 8px 18px -10px rgba(90, 20, 5, 0.7); }
 .sheet .btn.primary:hover { background: #9e3019; }
+/* In the demonstration the players are Vermilion and Indigo: its Play again is neutral ink, as on
+   the end slip, so it is no one's button. */
+.sheet-demo .btn.primary, .sheet-demo .btn.primary:hover { background: var(--cloth) 0 0 / 256px 256px, var(--ink); background-blend-mode: soft-light, normal; box-shadow: 0 1px 0 rgba(251, 243, 228, 0.22) inset, 0 8px 16px -10px rgba(8, 6, 14, 0.7); }
+.sheet-demo .btn.primary:hover { filter: brightness(1.15); }
 .sheet .btn.ghost { color: var(--ink); background: transparent; border-color: rgba(31, 27, 24, 0.3); }
 .sheet .btn.ghost:hover { background: rgba(31, 27, 24, 0.06); }
+
+/* ---------- Watch a game ----------
+   The game's own garden on a piece of the table's cloth (indigo above, vermilion below; the half of
+   the player to move lit), a line above it saying what just happened and what may be taken now, and
+   the controls under it. demo.ts sizes the garden from the room the sheet leaves (--demo-board). */
+dialog.sheet.sheet-demo { width: min(100%, 40rem); }
+@media (min-width: 640px) and (min-height: 560px) {
+  dialog.sheet.sheet-demo { width: min(600px, 100vw - 48px); }
+}
+.demo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'say' 'stage' 'controls';
+  gap: 14px;
+  justify-items: center;
+}
+.demo-say {
+  grid-area: say;
+  justify-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 1rem;
+}
+.demo-tile { flex: none; }
+.demo-tile .say-tile { display: block; width: 3.2em; height: 3.2em; }
+.demo-tile .say-tile.ring { display: grid; }
+.demo-lines { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.demo-what { color: var(--ink-2); line-height: 1.35; }
+.demo-next { color: var(--ink); line-height: 1.35; text-wrap: pretty; }
+.demo-who { font-weight: 700; white-space: nowrap; }
+.demo-who .inline-chip { width: 1.25em; height: 1.25em; margin-right: 0.25em; vertical-align: -0.28em; }
+.demo-end { font-weight: 700; }
+.demo-say .w .glyph { height: 1.3em; vertical-align: -0.32em; margin-right: 0.15em; }
+
+.demo-stage {
+  grid-area: stage;
+  --board: var(--demo-board, 280px);
+  --pad: clamp(10px, calc(var(--board) * 0.045), 22px);
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  padding: var(--pad);
+  border-radius: calc(var(--radius) + 2px);
+  /* The sunk dyes, woven; the lit half is laid over them. */
+  background: var(--cloth) 0 0 / 256px 256px, linear-gradient(180deg, var(--indi-dim) 50%, var(--verm-dim) 50%);
+  background-blend-mode: soft-light, normal;
+  box-shadow: inset 0 1px 0 rgba(251, 243, 228, 0.14), inset 0 -1px 0 rgba(8, 6, 14, 0.35), 0 10px 22px -14px rgba(20, 12, 4, 0.7);
+}
+.demo-stage::before, .demo-stage::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.45s var(--ease-out);
+  background-blend-mode: soft-light, normal, normal;
+}
+/* Indigo above the seam, vermilion below; each lit from the seam, where the garden lies. */
+.demo-stage::before {
+  top: 0;
+  bottom: 50%;
+  border-radius: inherit;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  background: var(--cloth) 0 0 / 256px 256px, radial-gradient(90% 120% at 50% 100%, rgba(150, 170, 255, 0.32), rgba(150, 170, 255, 0) 70%), var(--indi);
+}
+.demo-stage::after {
+  top: 50%;
+  bottom: 0;
+  border-radius: inherit;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  background: var(--cloth) 0 0 / 256px 256px, radial-gradient(90% 120% at 50% 0, rgba(255, 180, 125, 0.32), rgba(255, 180, 125, 0) 70%), var(--verm);
+}
+.demo-stage[data-turn="2"]::before, .demo-stage[data-turn="1"]::after { opacity: 1; }
+.demo-stage[data-turn="tie"]::before, .demo-stage[data-turn="tie"]::after { opacity: 0.5; }
+.demo-stage .board .cell { cursor: default; }
+
+.demo-controls {
+  grid-area: controls;
+  display: flex;
+  justify-self: stretch;
+  justify-content: center;
+  gap: 10px;
+}
+/* The narrowest phones: the line a step smaller, so the garden keeps more of the height. */
+@media (max-width: 360px) {
+  .demo-say { font-size: 0.9375rem; gap: 10px; }
+}
+.demo-controls .btn { flex: 0 1 11rem; min-width: 0; padding-inline: 14px; }
+.demo-controls .btn .icon { width: 20px; height: 20px; }
+
+/* A phone held sideways: the garden at the left, as tall as the sheet allows; the line and the
+   controls beside it, the line at the garden's top edge, the controls at its foot. */
+@media (max-height: 520px) and (min-aspect-ratio: 5/4) {
+  .demo {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'stage say' 'stage .' 'stage controls';
+    gap: 10px 18px;
+    align-items: start;
+  }
+  .demo-stage { grid-row: 1 / -1; }
+  .demo-say { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .demo-controls { justify-content: flex-start; justify-self: stretch; }
+  .demo-controls .btn { min-width: 0; flex: 1 1 auto; min-height: 44px; }
+  /* Vermilion at the left, indigo at the right, as in the game held sideways. */
+  .demo-stage { background: var(--cloth) 0 0 / 256px 256px, linear-gradient(90deg, var(--verm-dim) 50%, var(--indi-dim) 50%); background-blend-mode: soft-light, normal; }
+  .demo-stage::before {
+    top: 0; bottom: 0; left: 50%; right: 0;
+    border-radius: inherit; border-top-left-radius: 0; border-bottom-left-radius: 0;
+    background: var(--cloth) 0 0 / 256px 256px, radial-gradient(120% 90% at 0 50%, rgba(150, 170, 255, 0.32), rgba(150, 170, 255, 0) 70%), var(--indi);
+  }
+  .demo-stage::after {
+    top: 0; bottom: 0; left: 0; right: 50%;
+    border-radius: inherit; border-top-right-radius: 0; border-bottom-right-radius: 0;
+    background: var(--cloth) 0 0 / 256px 256px, radial-gradient(120% 90% at 100% 50%, rgba(255, 180, 125, 0.32), rgba(255, 180, 125, 0) 70%), var(--verm);
+  }
+}
+
+/* The way to the demonstration at the top of How to play: a small ghost button and what it shows. */
+.rules-watch { display: flex; align-items: center; gap: 8px 14px; flex-wrap: wrap; margin-bottom: 18px; padding-bottom: 16px; border-bottom: 1px solid rgba(80, 60, 30, 0.14); }
+.rules-watch .btn { min-height: 44px; padding: 0 16px; font-size: 0.9375rem; gap: 8px; }
+.rules-watch .btn .icon { width: 20px; height: 20px; }
+.rules-watch span { flex: 1 1 14em; font-size: 0.875rem; color: var(--ink-3); line-height: 1.3; }
 
 .confirm p { font-size: 1.0625rem; margin-bottom: 20px; }
 .confirm-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
@@ -816,7 +1398,7 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 
 .setup { display: flex; flex-direction: column; gap: 22px; }
 .setup fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
-.setup legend { font-weight: 700; font-size: 0.9375rem; margin-bottom: 8px; padding: 0; color: var(--ink-2); }
+.setup legend { font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; line-height: 1.25; margin-bottom: 8px; padding: 0; color: var(--indi); }
 .seg { display: flex; gap: 4px; border-radius: var(--radius); background: var(--paper-2); padding: 4px; }
 .seg-opt { flex: 1 1 0; min-width: 0; position: relative; }
 .seg-opt input, .choice input { position: absolute; opacity: 0; inset: 0; margin: 0; pointer-events: none; }
@@ -841,15 +1423,46 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 .seg.small .seg-opt span { min-height: 40px; font-size: 0.875rem; }
 
 .choices { display: flex; flex-direction: column; gap: 8px; }
-.choice { position: relative; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--radius); background: var(--paper); box-shadow: inset 0 0 0 1px rgba(80, 60, 30, 0.22); cursor: pointer; transition: box-shadow 0.15s, background-color 0.15s; }
-.choice:hover { background: #fbf5ea; }
+/* Each choice is a tile raised on the paper, as a setting is; its mark is a pressed token well,
+   empty until the choice is made, then holding the vermilion token. */
+.choice {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--paper-grain) 0 0 / 256px 256px, var(--tile-face);
+  background-blend-mode: soft-light, normal;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 0 0 1px rgba(80, 60, 30, 0.16) inset, 0 2px 3px rgba(60, 40, 15, 0.22);
+  cursor: pointer;
+  transition: box-shadow 0.15s, background-color 0.15s;
+}
+@media (hover: hover) { .choice:hover { background-color: #fffaf0; } }
 .choice-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .choice-title { font-weight: 700; }
 .choice-detail { font-size: 0.875rem; color: var(--ink-3); }
-.choice-mark { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; flex: none; box-shadow: inset 0 0 0 1.5px rgba(80, 60, 30, 0.35); color: transparent; }
-.choice-mark .icon { width: 16px; height: 16px; stroke-width: 2.6; }
-.choice:has(input:checked) { box-shadow: inset 0 0 0 2px var(--verm); background: #fbf3e6; }
-.choice input:checked ~ .choice-mark { background: var(--verm); color: var(--cream); box-shadow: none; }
+.choice-mark {
+  position: relative;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--paper-grain) 0 0 / 256px 256px, var(--token-well);
+  background-blend-mode: soft-light, normal;
+  box-shadow: inset 0 0 0 1.5px var(--ink-3), inset 0 2px 4px rgba(70, 50, 20, 0.32);
+}
+.choice-mark .token-svg {
+  position: absolute;
+  inset: 1px;
+  width: 28px;
+  height: 28px;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.86);
+  transition: transform 0.3s var(--ease-out), opacity 0.16s;
+}
+.choice:has(input:checked) { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, inset 0 0 0 2px var(--verm), 0 2px 3px rgba(60, 40, 15, 0.22); }
+.choice input:checked ~ .choice-mark .token-svg { opacity: 1; transform: none; }
 .choice:has(input:focus-visible) { outline: 3px solid var(--verm); outline-offset: 2px; }
 
 .names { display: flex; flex-direction: column; gap: 8px; }
@@ -862,8 +1475,81 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 .name-label { grid-area: label; font-size: 0.8125rem; font-weight: 700; line-height: 1.2; color: var(--ink-3); padding-left: 6px; }
 .name-field input { grid-area: input; width: 100%; min-width: 0; min-height: 40px; border: 0; background: transparent; font-size: 1rem; padding: 0 6px; outline: none; color: var(--ink); }
 .name-field input::placeholder { color: var(--ink-3); }
-.setup-note { font-size: 0.875rem; color: var(--ink-3); }
+/* The kind of match waits behind a row headed like the sections above it, its current choice in a
+   tray at the right (the segmented control's paper), with a chevron that turns over when open. The
+   whole row is the target. */
+.setup-side { display: contents; }
+.more-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+}
+.more-label { font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; line-height: 1.25; color: var(--indi); }
+.more-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 4px 10px 4px 14px;
+  border-radius: var(--radius);
+  background: var(--paper-2);
+  box-shadow: inset 0 0 0 1px rgba(80, 60, 30, 0.12);
+  font-weight: 700;
+  font-size: 0.9375rem;
+  line-height: 1.2;
+  color: var(--ink);
+  transition: background-color 0.15s;
+}
+.more-chevron { width: 20px; height: 20px; color: var(--verm-dim); transition: transform 0.24s var(--ease-out); }
+.more-toggle[aria-expanded='true'] .more-chevron { transform: rotate(180deg); }
+@media (hover: hover) { .more-toggle:hover .more-value { background-color: var(--token-well); } }
+.more-options { margin-top: 10px; }
+.more-options:not([hidden]) { animation: more-open 0.24s var(--ease-out); }
+@keyframes more-open { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+/* Who opens: beside Start in the sheet's footer, always in view; in the form only on a phone held
+   sideways, where Start moves onto the title band. Its parts follow the choices. */
+.setup-note { font-size: 0.875rem; line-height: 1.35; color: var(--ink-3); text-wrap: pretty; }
+.setup-side .setup-note { display: none; }
+.sheet-setup:has(input[name='opponent'][value='human']:checked) .note-cpu,
+.sheet-setup:has(input[name='match'][value='single']:checked) .note-match,
+.sheet-setup:not(:has(input[name='match'][value='single']:checked)) .note-single { display: none; }
+.setup-foot { display: flex; flex-direction: column; gap: 10px; }
 .start-btn { justify-content: center; width: 100%; min-height: 56px; }
+/* Short phones in portrait: a little closer together, so the three levels show whole above the
+   note and Start, with the Match row just under them. */
+@media (max-height: 620px) and (max-aspect-ratio: 5/4) {
+  .sheet-setup .sheet-body { padding-top: 12px; }
+  .setup { gap: 12px; }
+  .setup legend { margin-bottom: 4px; }
+  .choices { gap: 6px; }
+  .choice { padding: 8px 14px; }
+  .choice-detail { line-height: 1.3; }
+}
+/* The smallest phones (568px tall): tighter still, so the Match row naming the remembered match
+   shows above the fold, as it must. */
+@media (max-height: 580px) and (max-aspect-ratio: 5/4) {
+  .sheet-setup .sheet-body { padding-top: 8px; }
+  .setup { gap: 8px; }
+  .setup legend { margin-bottom: 2px; }
+  .choices { gap: 4px; }
+  .choice { padding: 6px 12px; }
+  .choice-detail { line-height: 1.25; }
+  .sheet-setup .sheet-head { padding-block: 10px; }
+  .sheet-setup .sheet-foot { padding-top: 8px; padding-bottom: calc(8px + var(--sab)); }
+  .sheet-setup .setup-foot { gap: 6px; }
+  .sheet-setup .start-btn { min-height: 48px; }
+}
 
 /* Short, wide screens (a phone held sideways): every row of height counts. The sheet takes nearly
    the whole height, its action moves into the title row, and the setup form uses two columns.
@@ -875,15 +1561,25 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
   .sheet-panel:has(.sheet-foot) .sheet-close { position: absolute; top: 6px; right: calc(var(--gutter) + var(--sar)); }
   .sheet-title { font-size: 1.25rem; }
   .sheet-body { grid-column: 1 / -1; grid-row: 2; padding-top: 10px; }
-  .sheet-foot { grid-column: 2; grid-row: 1; border-top: 0; border-bottom: 1px solid rgba(80, 60, 30, 0.14); display: flex; align-items: center; padding: 6px calc(var(--gutter) + var(--sar) + 56px) 6px 8px; }
+  .sheet-panel:has(.sheet-foot) .sheet-head { border-top-right-radius: 0; }
+  /* The action shares the head's row, so it sits on the same cloth, and takes the paper button
+     there (a button takes the material opposite to its ground). */
+  .sheet-foot { grid-column: 2; grid-row: 1; border-top: 0; border-radius: 0 20px 0 0; background: var(--cloth) 0 0 / 256px 256px, var(--indi-dim); background-blend-mode: soft-light, normal; box-shadow: inset 0 1px 0 rgba(251, 243, 228, 0.16), inset 0 -1px 0 rgba(8, 6, 14, 0.35); display: flex; align-items: center; padding: 6px calc(var(--gutter) + var(--sar) + 56px) 6px 8px; }
   .sheet-foot .start-btn { width: auto; min-height: 44px; padding: 0 22px; }
-  .setup { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: 'opp match' 'level match' 'names match' 'note match'; gap: 12px 20px; align-items: start; }
+  .sheet .sheet-foot .btn.primary { background: var(--paper); color: var(--ink); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 2px 4px -1px rgba(8, 6, 14, 0.45); }
+  .sheet .sheet-foot .btn.primary:hover { background: #fff8ea; }
+  .sheet .sheet-foot :focus-visible { outline-color: var(--gold); }
+  .setup { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: 'opp side' 'level side' 'names side' '. side'; grid-template-rows: auto auto auto 1fr; gap: 12px 20px; align-items: start; }
   .setup .f-opp { grid-area: opp; }
   .setup .f-level { grid-area: level; }
   .setup .f-names { grid-area: names; }
-  .setup .f-match { grid-area: match; }
-  .setup .setup-note { grid-area: note; }
-  .setup legend { margin-bottom: 6px; }
+  /* The Match row and, under it, who opens: the right-hand column. */
+  .setup .setup-side { grid-area: side; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .setup-side .setup-note { display: block; }
+  .setup-foot .setup-note { display: none; }
+  .setup legend, .more-label { font-size: 1.125rem; line-height: 1.2; margin-bottom: 6px; }
+  .more-label { margin-bottom: 0; }
+  .more-options { margin-top: 6px; }
   .choice { padding: 7px 12px; gap: 10px; }
   .choice-detail { font-size: 0.8125rem; line-height: 1.3; }
   .choices { gap: 6px; }
@@ -896,66 +1592,217 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 
 /* ---------- settings ---------- */
 
-.settings { display: flex; flex-direction: column; gap: 6px; }
-.toggle-row { position: relative; display: flex; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid rgba(80, 60, 30, 0.12); cursor: pointer; }
+/* Each setting is a tile, raised on the paper as the garden's tiles are; its switch is a pressed
+   well in which the player's own token is set down (on) or a plain tile waits (off). */
+.settings { display: flex; flex-direction: column; gap: 10px; }
+.toggle-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 64px;
+  padding: 12px 14px 12px 16px;
+  border-radius: var(--radius);
+  background: var(--paper-grain) 0 0 / 256px 256px, var(--tile-face);
+  background-blend-mode: soft-light, normal;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 0 0 1px rgba(80, 60, 30, 0.16) inset, 0 2px 3px rgba(60, 40, 15, 0.22);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+@media (hover: hover) { .toggle-row:hover { background-color: #fffaf0; } }
 .toggle-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
 .toggle-title { font-weight: 700; }
-.toggle-detail { font-size: 0.875rem; color: var(--ink-3); }
+.toggle-detail { font-size: 0.875rem; line-height: 1.35; color: var(--ink-3); }
 .toggle-row input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.switch { width: 50px; height: 30px; border-radius: 999px; background: #cbbb9c; position: relative; flex: none; transition: background-color 0.2s; }
-.switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); transition: transform 0.2s var(--ease-out); }
-.toggle-row input:checked + .switch { background: var(--verm); }
-.toggle-row input:checked + .switch::after { transform: translateX(20px); }
-.toggle-row input:focus-visible + .switch { outline: 3px solid var(--verm); outline-offset: 2px; }
-.about { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; font-size: 0.9375rem; color: var(--ink-2); }
-.about h3 { font-family: var(--font-display); font-size: 1.2rem; color: var(--ink); }
+/* The switch is a strip of two garden cells, pressed in and edged in ink-3 (5:1 on the tile) so it
+   reads in both states: off, a plain tile waits in the near cell; on, the vermilion token is set
+   down in the far one. */
+.switch {
+  position: relative;
+  flex: none;
+  width: 64px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--paper-grain) 0 0 / 256px 256px, var(--token-well);
+  background-blend-mode: soft-light, normal;
+  box-shadow: inset 0 0 0 1.5px var(--ink-3), inset 0 3px 5px rgba(70, 50, 20, 0.32);
+}
+/* The seam between the two cells. */
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 50%;
+  width: 1px;
+  margin-left: -0.5px;
+  background: rgba(80, 60, 30, 0.18);
+}
+/* Off: a plain tile in the near cell, edged in ink-3. */
+.switch::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: 5px;
+  left: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--tile-face);
+  box-shadow: inset 0 0 0 1.5px var(--ink-3), 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 2px 3px rgba(60, 40, 15, 0.3);
+  transition: transform 0.22s var(--ease-out), opacity 0.16s;
+}
+/* On: the vermilion token, set down in the far cell. */
+.switch .token-svg {
+  position: absolute;
+  z-index: 1;
+  top: 3px;
+  right: 2px;
+  width: 28px;
+  height: 28px;
+  opacity: 0;
+  transform: translateY(-4px) scale(0.86);
+  transition: transform 0.3s var(--ease-out), opacity 0.16s;
+}
+.toggle-row input:checked + .switch::before { opacity: 0; transform: translateX(32px); }
+.toggle-row input:checked + .switch .token-svg { opacity: 1; transform: none; }
+.toggle-row input:focus-visible + .switch { outline: 3px solid var(--verm); outline-offset: 3px; }
+.about { margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(80, 60, 30, 0.18); display: flex; flex-direction: column; gap: 8px; font-size: 0.9375rem; color: var(--ink-2); }
+.about h3 { font-family: var(--font-display); font-size: 1.2rem; line-height: 1.25; color: var(--indi); }
 .about a { color: var(--ink); text-decoration-thickness: 1px; text-underline-offset: 0.15em; }
 .about a:hover { color: var(--verm); }
 
 /* ---------- rules ---------- */
 
 .rules { display: flex; flex-direction: column; gap: 12px; font-size: 1rem; line-height: 1.55; }
-.rules h3 { font-family: var(--font-display); font-size: 1.3rem; margin-top: 14px; line-height: 1.2; }
+.rules h3 { font-family: var(--font-display); font-size: 1.3rem; margin-top: 14px; line-height: 1.2; color: var(--indi); }
 .rules-lede { font-size: 1.0625rem; }
 .rules-figs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 @media (min-width: 640px) { .rules-figs { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .rules figure { margin: 0; display: flex; flex-direction: column; gap: 6px; align-items: center; text-align: center; }
 .rules figcaption { font-size: 0.875rem; color: var(--ink-2); line-height: 1.3; }
-.mini-garden { width: 100%; max-width: 132px; height: auto; display: block; }
-.mg-cell { fill: var(--tile-face); stroke: rgba(80, 60, 30, 0.3); stroke-width: 0.8; }
+/* Every diagram is a small garden board: the board's paper and grain, its edge and cast shadow. */
+.mini-garden {
+  width: 100%;
+  max-width: 132px;
+  height: auto;
+  display: block;
+  padding: 3%;
+  border-radius: 7px;
+  background: var(--paper-grain) 0 0 / 128px 128px, var(--paper-3);
+  background-blend-mode: soft-light, normal;
+  box-shadow: 0 5px 9px -4px rgba(40, 25, 5, 0.45), 0 1px 2px rgba(40, 25, 5, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(90, 64, 30, 0.25);
+}
+.mg-cell { fill: var(--tile-face); stroke: rgba(80, 60, 30, 0.28); stroke-width: 0.8; }
 .mg-open { fill: #fbe7b0; stroke: var(--gold-2); stroke-width: 1.4; }
-.mg-closed { fill: #ddd0b6; stroke: rgba(80, 60, 30, 0.25); }
+.mg-closed { fill: #c6baa6; stroke: rgba(80, 60, 30, 0.3); }
 .mg-taken { fill: var(--gold); }
-.mg-brush { fill: none; stroke: var(--brush-ink); stroke-opacity: 0.7; stroke-width: 7; stroke-linecap: round; }
+.mg-brush { fill: none; stroke: var(--brush-ink); stroke-opacity: 0.85; stroke-width: 1.9; stroke-linecap: round; }
 .rules-row { display: flex; gap: 16px; align-items: center; }
 .rules-row > svg, .rules-row > .eg { flex: none; }
 .rules-row .mini-garden { width: 112px; }
 @media (max-width: 420px) { .rules-row { flex-direction: column; align-items: flex-start; } }
 .inline-chip { display: inline-block; width: 1.3em; height: 1.3em; vertical-align: -0.3em; }
 .inline-chip .token-svg { width: 100%; height: 100%; display: block; }
+
+/* The play by play: a row per move, numbered, with the player's token, the tile taken and its words;
+   the last row says how the game ended. */
+dialog.sheet.sheet-record { width: min(100%, 30rem); }
+.record { display: flex; flex-direction: column; gap: 10px; }
+.record-who { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; color: var(--ink-2); font-weight: 600; }
+.record-player { display: inline-flex; align-items: center; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+.record-list { list-style: none; margin: 0; padding: 0; }
+.record-move {
+  display: grid;
+  grid-template-columns: 1.5em 1.5em 2.5em minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 4px;
+  border-bottom: 1px solid rgba(80, 60, 30, 0.12);
+}
+.record-move:last-child { border-bottom: 0; }
+.record-n { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--ink-3); }
+.record-token .token-svg { width: 1.5em; height: 1.5em; display: block; }
+.record-tile { width: 2.5em; height: 2.5em; border-radius: 6px; overflow: hidden; background: var(--tile-face); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 0 0 1px rgba(80, 60, 30, 0.14) inset, 0 1px 2px rgba(60, 40, 15, 0.22); }
+.record-tile .tile-art { width: 100%; height: 100%; display: block; }
+.record-words { min-width: 0; font-weight: 600; line-height: 1.3; }
+.record-note { display: block; font-size: 0.875rem; font-weight: 700; color: var(--verm); }
 .rules .glyph { width: 1.35em; height: 1.35em; vertical-align: -0.35em; }
 .rules-modes { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; }
 .rules-modes dt { font-weight: 700; }
 .rules-modes dd { margin: 0; color: var(--ink-2); }
 @media (max-width: 420px) { .rules-modes { grid-template-columns: 1fr; } .rules-modes dd { margin-bottom: 6px; } }
-.rules-credit { font-size: 0.875rem; color: var(--ink-3); margin-top: 8px; }
-.rules-aside { font-size: 0.9375rem; color: var(--ink-2); padding-left: 0.9em; box-shadow: inset 1px 0 0 rgba(80, 60, 30, 0.35); }
+/* A note folded under a rule: the rule stays in sight, its fine print one press away. The summary
+   is a 44px row in ink 2 with a drawn chevron that turns down when the note is open; the note
+   hangs from a warm hairline under the chevron. */
+.rules-note { margin-block: -8px -4px; }
+.rules-note summary {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 44px;
+  padding-right: 6px;
+  margin-left: -6px;
+  border-radius: 9px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink-2);
+  list-style: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.rules-note summary::-webkit-details-marker { display: none; }
+.rules-note summary svg { flex: none; width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transition: transform 0.22s var(--ease-out); }
+.rules-note[open] summary svg { transform: rotate(90deg); }
+.rules-note summary span { text-decoration: underline; text-decoration-color: rgba(78, 68, 58, 0.35); text-decoration-thickness: 1px; text-underline-offset: 0.2em; }
+@media (hover: hover) {
+  .rules-note summary:hover { color: var(--ink); }
+  .rules-note summary:hover span { text-decoration-color: currentColor; }
+}
+.rules-note-body { display: flex; flex-direction: column; gap: 8px; margin: 2px 0 4px 4px; padding-left: calc(0.9em + 1px); box-shadow: inset 1px 0 0 rgba(80, 60, 30, 0.35); font-size: 0.9375rem; color: var(--ink-2); }
 
 .eg { display: flex; gap: 10px; align-items: flex-start; }
-.eg-board { display: grid; grid-template-columns: repeat(4, 34px); gap: 3px; padding: 4px; border-radius: 8px; background: var(--paper-3); }
-.eg-cell { width: 34px; height: 34px; border-radius: 5px; background: var(--tile-face); display: block; overflow: hidden; }
+.eg-board { display: grid; grid-template-columns: repeat(4, 34px); gap: 3px; padding: 4px; border-radius: 8px; background: var(--paper-grain) 0 0 / 128px 128px, var(--paper-3); background-blend-mode: soft-light, normal; box-shadow: 0 5px 9px -4px rgba(40, 25, 5, 0.45), 0 1px 2px rgba(40, 25, 5, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.55), inset 0 -1px 0 rgba(90, 64, 30, 0.25); }
+.eg-cell { width: 34px; height: 34px; border-radius: 5px; background: var(--tile-face); display: block; overflow: hidden; box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 0 0 1px rgba(80, 60, 30, 0.14) inset, 0 1px 2px rgba(60, 40, 15, 0.22); }
 .eg-cell .tile-art { width: 100%; height: 100%; display: block; }
-.eg-token { background: var(--token-well); padding: 3px; }
+.eg-token { background: var(--token-well); padding: 3px; box-shadow: inset 0 2px 4px rgba(70, 50, 20, 0.35), inset 0 0 0 1px rgba(80, 60, 30, 0.16); }
 .eg-token .token-svg { width: 100%; height: 100%; display: block; }
 .eg-open { box-shadow: 0 0 0 2px var(--gold); transform: translateY(-2px); }
 .eg-cell { position: relative; }
 .eg-closed::after { content: ''; position: absolute; inset: 0; background: rgba(70, 54, 36, 0.32); }
 .eg-taken { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.75rem; color: var(--ink-3); }
 
-.garden-key { display: grid; grid-template-columns: auto repeat(4, minmax(0, 1fr)); gap: 6px; align-items: center; }
+/* The names key, beside the matching rule: the eight pictures as the tiles draw them, each over its
+   name, plants on one line and symbols on the next, in a tray pressed into the page. Its line
+   labels sit above the pictures in a narrow sheet and to their left in a wide one. */
+.key-names {
+  container-type: inline-size;
+  display: grid;
+  gap: 14px;
+  padding: 10px 12px 12px;
+  border-radius: var(--radius);
+  background: var(--paper-grain) 0 0 / 256px 256px, var(--paper-2);
+  background-blend-mode: soft-light, normal;
+  box-shadow: inset 0 1px 3px rgba(80, 60, 30, 0.18), inset 0 0 0 1px rgba(80, 60, 30, 0.1);
+}
+.key-names-row { display: grid; gap: 4px; }
+.key-names-label { font-size: 0.875rem; font-weight: 700; line-height: 1.2; color: var(--ink-2); }
+.key-names ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.key-names li { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.875rem; line-height: 1.2; text-align: center; color: var(--ink); text-wrap: balance; }
+.key-names .glyph { width: 2.75em; height: 2.75em; vertical-align: top; }
+@container (min-width: 27rem) {
+  .key-names-row { grid-template-columns: 4.5rem minmax(0, 1fr); align-items: center; gap: 12px; }
+}
+
+/* The full key closes the sheet as a reference: tiles about the size of the garden's own on a phone. */
+.garden-key { display: grid; grid-template-columns: auto repeat(4, minmax(0, 1fr)); gap: 6px; align-items: center; max-width: 22rem; }
 .key-head { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 0.75rem; color: var(--ink-2); text-align: center; }
 .key-head .glyph { width: 1.8em; height: 1.8em; }
-.key-tile { aspect-ratio: 1; border-radius: 6px; overflow: hidden; background: var(--tile-face); box-shadow: inset 0 0 0 1px rgba(31, 27, 24, 0.12); }
+.key-tile { aspect-ratio: 1; border-radius: 6px; overflow: hidden; background: var(--tile-face); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 0 0 1px rgba(80, 60, 30, 0.16) inset, 0 2px 3px rgba(60, 40, 15, 0.22); }
 .key-tile .tile-art { width: 100%; height: 100%; display: block; }
 
 /* ==========================================================================
@@ -1026,7 +1873,12 @@ dialog.sheet[open] { animation: sheet-up 0.32s var(--ease-out); }
 /* Forced colours (Windows High Contrast): the garden is a picture, so it keeps its own colours,
    including the gold ring and shade that tell which tiles may be taken. */
 @media (forced-colors: active) {
-  .board, .board *, .say-tile, .say-tile *, .seat-chip, .seat-chip *, .seat-pips, .seat-pips *, .flyer, .flyer *, .glyph, .glyph * {
+  .board, .board *, .say-tile, .say-tile *, .seat-chip, .seat-chip *, .seat-pips, .seat-pips *, .flyer, .flyer *, .glyph, .glyph *,
+  .switch, .switch *, .choice-mark, .choice-mark *, .name-chip, .name-chip *,
+  .mini-garden, .mini-garden *, .eg-board, .eg-board *, .key-tile, .key-tile *, .home-piece, .home-piece * {
     forced-color-adjust: none;
   }
+  .toggle-row input:focus-visible + .switch { outline-color: Highlight; }
+  /* The chosen option keeps a frame when its shadow and fill are taken away. */
+  .seg-opt input:checked + span { outline: 2px solid SelectedItem; outline-offset: -2px; }
 }

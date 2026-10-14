@@ -1,7 +1,7 @@
 {
   "name": "Paper Garden",
   "short_name": "Paper Garden",
-  "description": "The two-player garden game designed by Bruno Cathala. Play a friend on one device or the computer.",
+  "description": "A two-player garden game. Play a friend on one device or the computer.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
