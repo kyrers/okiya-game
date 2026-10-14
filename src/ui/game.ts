@@ -20,7 +20,7 @@ import { COMPUTER_SEAT, HUMAN_SEAT, isComputer, nextGame, play, startMatch, undo
 import { icon, ringDiagram, tokenSvg } from './art';
 import { BoardView, flyTile } from './board';
 import { motionReduced, type Settings } from './prefs';
-import { soundDenied, soundEnd, soundLift, soundPlace } from './sound';
+import { PLACE_LEAD_MS, soundDenied, soundEnd, soundPlace } from './sound';
 import { tileLabel, tileSvg } from './tileArt';
 import { DIFFICULTY_WORD, MODE_SHORT, MODE_WORD, orderHtml, orderText, possessive, reasonWords, tileWords, verb } from './words';
 
@@ -359,9 +359,9 @@ export class GameScreen {
     this.deps.save(this.view);
     this.lastIndex = index;
     this.deniedIndex = null;
-    soundLift();
     this.render(index);
-    window.setTimeout(soundPlace, 90);
+    // The card lands 90ms in, as the token drops into place.
+    window.setTimeout(soundPlace, 90 - PLACE_LEAD_MS);
     const g = this.view.game;
     const name = this.setup.names[mover - 1];
     if (g.result) {

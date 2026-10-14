@@ -174,7 +174,7 @@ export function settingsPanel(settings: Settings, onChange: (s: Settings) => voi
   const el = document.createElement('div');
   el.className = 'settings';
   el.innerHTML = `
-    ${toggle('sound', 'Sound', 'Wooden clicks as tiles are taken, a chime when a game ends.', settings.sound)}
+    ${toggle('sound', 'Sound', 'A card snapped down with each move, a small bell when a game ends.', settings.sound)}
     ${toggle('showPlayable', 'Lift the tiles you may take', 'Turn off to spot them yourself, as at the table.', settings.showPlayable)}
     ${toggle('reduceMotion', 'Reduce motion', 'No flying tiles or sweeping light. Your device setting is always respected.', settings.reduceMotion)}
     <section class="about">

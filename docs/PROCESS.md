@@ -359,8 +359,11 @@ the client chose.
   show the whole garden, and the win is a thin loop around the tokens rather than a stroke through
   them; the New game sheet keeps the match format behind one row, with who opens by Start; How to
   play names the eight motifs right where the matching rule needs them.
-- **Sounds** of a game on a wooden board, still synthesised: a go stone set down, a paper-and-wood
-  tick, a soft knock for a refused tile, a small struck bell at a game's end.
+- **Sounds**, still synthesised: a soft knock for a refused tile and a small struck bell at a game's
+  end. Each move went from a go stone on a goban to a hanafuda card snapped down onto tatami, since
+  the tiles' motifs are hanafuda's. The client picked it by ear on their phone and laptop from a
+  page of variations at matched loudness. The tick for a tile being taken was dropped: it could not
+  be heard under the snap.
 - **Bugs found on the way,** each reproduced and fixed at its cause: words broken inside in narrow
   seats; desktop seats too narrow for long names, and a garden stuck at 760px on large screens;
   "Start a new game?" stacked on the New game sheet; the home running off short screens with long

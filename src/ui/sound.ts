@@ -1,8 +1,8 @@
 /**
  * Game sounds, synthesised at run time with the Web Audio API (no audio files, nothing licensed).
- * They are voiced as a game played on a wooden board: a token set down like a go stone on a
- * goban, a tile lifted as a light paper-and-wood tick, a refused tap as a finger's knock on wood,
- * and the end of a game as a small struck bell (a rin).
+ * They are voiced as a game of flower cards played on tatami, as the tiles' motifs are hanafuda's:
+ * a move is a card snapped down onto the mat, a refused tap a finger's knock on wood, and the end
+ * of a game a small struck bell (a rin).
  * The audio context is created on the first user gesture, as browsers require. While sound is off
  * nothing is built; every node lets go of the graph as soon as its sound has finished.
  */
@@ -88,7 +88,7 @@ function tone(c: AudioContext, out: AudioNode, t: number, freq: number, peak: nu
   o.stop(end);
 }
 
-/** A burst of filtered noise: the contact itself (stone on wood, a finger, a striker). */
+/** A burst of filtered noise: the contact itself (a card on the mat, a finger, a striker). */
 function burst(c: AudioContext, out: AudioNode, t: number, type: BiquadFilterType, freq: number, q: number, peak: number, decay: number): void {
   const n = c.createBufferSource();
   n.buffer = noise(c);
@@ -105,37 +105,51 @@ function burst(c: AudioContext, out: AudioNode, t: number, type: BiquadFilterTyp
   n.stop(end);
 }
 
-/** A small random spread (±2%), as no two stones land quite alike. */
+/** Air pushed ahead of a falling card: band-passed noise swelling until it lands at `t + dur`. */
+function swish(c: AudioContext, out: AudioNode, t: number, dur: number, freq: number, q: number, peak: number): void {
+  const n = c.createBufferSource();
+  n.buffer = noise(c);
+  const f = c.createBiquadFilter();
+  f.type = 'bandpass';
+  f.frequency.setValueAtTime(freq * 0.7, t);
+  f.frequency.exponentialRampToValueAtTime(freq, t + dur);
+  f.Q.value = q;
+  const g = c.createGain();
+  const p = g.gain;
+  p.value = 0;
+  p.setValueAtTime(0.0001, t);
+  p.exponentialRampToValueAtTime(peak, t + dur);
+  p.linearRampToValueAtTime(0, t + dur + 0.006);
+  n.connect(f).connect(g).connect(out);
+  release(n, f, g);
+  n.start(t, Math.random() * 0.3);
+  n.stop(t + dur + 0.01);
+}
+
+/** A small random spread (±2%), as no two cards land quite alike. */
 const vary = (): number => 1 + (Math.random() - 0.5) * 0.04;
 
-/** A token set down on the board: "pachi", a go stone on a wooden goban. */
+/** How long the card is heard falling before it lands, so a caller can time the landing. */
+export const PLACE_LEAD_MS = 22;
+
+/** A move: a thick hanafuda card snapped down onto tatami, "pachi", landing PLACE_LEAD_MS after the call. */
 export function soundPlace(): void {
   const a = ready();
   if (!a) return;
   const { c, out } = a;
   const t = c.currentTime + 0.005;
   const v = vary();
-  // The crack of stone on wood: very short and bright.
-  burst(c, out, t, 'bandpass', 4300 * v, 0.9, 0.48, 0.012);
-  // The stone's own brief ring.
-  tone(c, out, t, 3150 * v, 0.05, 0.022);
-  // The board answering: two dry wood modes and a small, low body under them.
-  tone(c, out, t, 840 * v, 0.24, 0.05);
-  tone(c, out, t, 1570 * v, 0.08, 0.03);
-  tone(c, out, t, 210 * v, 0.2, 0.075, 0.003, 185 * v);
-}
-
-/** A tile lifted out of the garden: a light paper-and-wood tick, done before the token lands. */
-export function soundLift(): void {
-  const a = ready();
-  if (!a) return;
-  const { c, out } = a;
-  const t = c.currentTime + 0.005;
-  const v = vary();
-  burst(c, out, t, 'bandpass', 3000 * v, 1.2, 0.22, 0.014);
-  // The paper's whisper as it leaves its neighbours.
-  burst(c, out, t + 0.004, 'highpass', 5200, 0.7, 0.05, 0.045);
-  tone(c, out, t, 1180 * v, 0.06, 0.025);
+  const hit = t + PLACE_LEAD_MS / 1000;
+  swish(c, out, t, PLACE_LEAD_MS / 1000, 3200 * v, 0.8, 0.05);
+  // The snap: the card meeting the mat and the air pressed out from under it, and its edge.
+  burst(c, out, hit, 'bandpass', 2300 * v, 0.8, 1.4, 0.008);
+  burst(c, out, hit, 'highpass', 4200, 0.7, 0.14, 0.004);
+  // The stiff card's flex, damped at once.
+  tone(c, out, hit, 1350 * v, 0.15, 0.014);
+  // The tatami giving under it, and its woven rush answering faintly.
+  burst(c, out, hit, 'lowpass', 520, 0.7, 0.75, 0.03);
+  burst(c, out, hit + 0.002, 'bandpass', 5200, 1.5, 0.06, 0.02);
+  tone(c, out, hit, 170 * v, 0.08, 0.04, 0.003);
 }
 
 /** A tap on something that cannot be taken: a soft, muted knock, like a finger on wood. */
