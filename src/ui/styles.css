@@ -391,9 +391,8 @@ button:disabled { cursor: default; }
 .end-card .btn.ghost { color: var(--ink); background: transparent; border-color: rgba(31, 27, 24, 0.3); }
 .end-card .btn.ghost:hover { background: rgba(31, 27, 24, 0.06); }
 .end-card :focus-visible { outline-color: var(--card-dye); }
-/* See the board and Play by play: quiet ink links under the buttons, each as tall as any target.
-   Like the buttons, stacked on a large garden and side by side on a small one: the break between
-   them takes a whole line only on a large garden. */
+/* See the board and Play by play: quiet ink links side by side under the buttons, each as tall as
+   any target. One line, as See the board alone was, so the slip is no taller for the second. */
 .end-card .card-links {
   align-self: center;
   display: flex;
@@ -401,13 +400,11 @@ button:disabled { cursor: default; }
   justify-content: center;
   margin: clamp(0.1em, var(--big), 0.25em) 0 clamp(-0.6em, var(--small), -0.45em);
 }
-.end-card .card-links-break { flex: 0 0 clamp(0%, var(--big), 100%); }
 .end-card .card-fold, .end-card .card-record {
   display: inline-flex;
   align-items: center;
-  gap: 0.25em;
   min-height: 44px;
-  padding: 0 clamp(0.4em, var(--big), 0.75em);
+  padding: 0 0.4em;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -422,7 +419,6 @@ button:disabled { cursor: default; }
   cursor: pointer;
   transition: background-color 0.15s, color 0.15s;
 }
-.end-card .card-fold .icon { width: 1.15em; height: 1.15em; flex: none; }
 .end-card .card-fold:hover, .end-card .card-record:hover { color: var(--ink); background: rgba(31, 27, 24, 0.06); }
 
 /* Folded: the slip slides off towards the garden's edge and a tab is left there, saying who won,

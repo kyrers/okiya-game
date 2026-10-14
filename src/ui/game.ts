@@ -855,7 +855,7 @@ export class GameScreen {
     const seal = r.winner === null ? `${tokenSvg(1)}${tokenSvg(2)}` : tokenSvg(r.winner);
     const why = reasonWords(r.reason, r.winner === null ? '' : this.setup.names[opponent(r.winner) - 1], nameHtml);
     const head = `<div class="card-seal">${seal}</div><p class="card-head">${this.endHeadline()}</p><p class="card-why">${why}</p>`;
-    const see = `<div class="card-links"><button type="button" class="card-fold" data-card="fold">See the board${FOLD_ICON}</button><span class="card-links-break"></span><button type="button" class="card-record" data-card="record">Play by play</button></div>`;
+    const see = `<div class="card-links"><button type="button" class="card-fold" data-card="fold">See the board</button><button type="button" class="card-record" data-card="record">Play by play</button></div>`;
     if (!m.over) return `${head}<div class="say-actions"><button type="button" class="btn primary" data-action="next">Next game${icon('arrow')}</button></div>${see}`;
     return `${head}<div class="say-actions">
       <button type="button" class="btn primary" data-action="again">${icon('restart')} Play again</button>
@@ -930,10 +930,8 @@ interface Fit {
 const UNDO_GUARD_MS = 400;
 /** The end card's delay and entrance (styles.css, .end-card), after which it can be pressed. */
 const END_CARD_IN_MS = 1150;
-/** The slip's fold and unfold marks, drawn as the icons are (art.ts: 24px grid, 1.8 stroke). */
-const chevron = (d: string) => `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg>`;
-const FOLD_ICON = chevron('M6 9.5l6 6 6-6');
-const UNFOLD_ICON = chevron('M6 14.5l6-6 6 6');
+/** The folded slip's mark that brings it back, drawn as the icons are (art.ts: 24px grid, 1.8 stroke). */
+const UNFOLD_ICON = '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14.5l6-6 6 6"/></svg>';
 const NOTE_RANDOM = 'Chosen at random to open the&nbsp;match.';
 const NOTE_RANDOM_AWAY = 'was chosen at random to open the&nbsp;match.';
 
