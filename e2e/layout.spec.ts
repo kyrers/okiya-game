@@ -290,7 +290,7 @@ for (const how of ['continue', 'start'] as const) {
 
 /**
  * The end slip at a points match's end with the longest names (its tallest content: a headline of
- * three lines, a reason of two, two buttons and See the board) stays inside the garden and the
+ * three lines, a reason of two, two buttons, See the board and Play by play) stays inside the garden and the
  * screen, open and folded, wherever the garden is small: every phone held sideways from 300 to
  * 520px tall (the slip once ran See the board off a 568x360 screen) and a small phone upright.
  * The compact slip is chosen by the garden's size, not the screen's.
@@ -321,7 +321,7 @@ test('the end slip fits the garden at every sideways height, open and folded @sw
         const card = document.querySelector<HTMLElement>('.end-card')!;
         const parts: [string, Element][] = folded
           ? [...document.querySelectorAll('.end-tab, .end-tab button')].map((el): [string, Element] => [el.className, el])
-          : [['slip', card], ['seal', card.querySelector('.card-seal')!], ['reason', card.querySelector('.card-why')!], ['See the board', card.querySelector('.card-fold')!], ...[...card.querySelectorAll('.btn')].map((el): [string, Element] => [el.textContent!.trim(), el])];
+          : [['slip', card], ['seal', card.querySelector('.card-seal')!], ['reason', card.querySelector('.card-why')!], ['See the board', card.querySelector('.card-fold')!], ['Play by play', card.querySelector('.card-record')!], ...[...card.querySelectorAll('.btn')].map((el): [string, Element] => [el.textContent!.trim(), el])];
         const res: string[] = [];
         for (const [what, el] of parts) {
           const r = el.getBoundingClientRect();

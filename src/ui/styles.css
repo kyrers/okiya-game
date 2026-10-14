@@ -391,15 +391,23 @@ button:disabled { cursor: default; }
 .end-card .btn.ghost { color: var(--ink); background: transparent; border-color: rgba(31, 27, 24, 0.3); }
 .end-card .btn.ghost:hover { background: rgba(31, 27, 24, 0.06); }
 .end-card :focus-visible { outline-color: var(--card-dye); }
-/* See the board: a quiet ink link under the buttons, as tall as any target. */
-.end-card .card-fold {
+/* See the board and Play by play: quiet ink links under the buttons, each as tall as any target.
+   Like the buttons, stacked on a large garden and side by side on a small one: the break between
+   them takes a whole line only on a large garden. */
+.end-card .card-links {
   align-self: center;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: clamp(0.1em, var(--big), 0.25em) 0 clamp(-0.6em, var(--small), -0.45em);
+}
+.end-card .card-links-break { flex: 0 0 clamp(0%, var(--big), 100%); }
+.end-card .card-fold, .end-card .card-record {
   display: inline-flex;
   align-items: center;
   gap: 0.25em;
   min-height: 44px;
-  margin: clamp(0.1em, var(--big), 0.25em) 0 clamp(-0.6em, var(--small), -0.45em);
-  padding: 0 0.75em;
+  padding: 0 clamp(0.4em, var(--big), 0.75em);
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -410,11 +418,12 @@ button:disabled { cursor: default; }
   text-decoration: underline;
   text-decoration-color: rgba(31, 27, 24, 0.3);
   text-underline-offset: 0.22em;
+  white-space: nowrap;
   cursor: pointer;
   transition: background-color 0.15s, color 0.15s;
 }
 .end-card .card-fold .icon { width: 1.15em; height: 1.15em; flex: none; }
-.end-card .card-fold:hover { color: var(--ink); background: rgba(31, 27, 24, 0.06); }
+.end-card .card-fold:hover, .end-card .card-record:hover { color: var(--ink); background: rgba(31, 27, 24, 0.06); }
 
 /* Folded: the slip slides off towards the garden's edge and a tab is left there, saying who won,
    bringing the slip back, and still offering the main button; the whole garden shows. The tab sits
@@ -1699,6 +1708,30 @@ dialog.sheet.sheet-demo { width: min(100%, 40rem); }
 @media (max-width: 420px) { .rules-row { flex-direction: column; align-items: flex-start; } }
 .inline-chip { display: inline-block; width: 1.3em; height: 1.3em; vertical-align: -0.3em; }
 .inline-chip .token-svg { width: 100%; height: 100%; display: block; }
+
+/* The play by play: a row per move, numbered, with the player's token, the tile taken and its words;
+   the last row says how the game ended. */
+dialog.sheet.sheet-record { width: min(100%, 30rem); }
+.record { display: flex; flex-direction: column; gap: 10px; }
+.record-who { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 18px; color: var(--ink-2); font-weight: 600; }
+.record-player { display: inline-flex; align-items: center; gap: 6px; min-width: 0; overflow-wrap: anywhere; }
+.record-list { list-style: none; margin: 0; padding: 0; }
+.record-move {
+  display: grid;
+  grid-template-columns: 1.5em 1.5em 2.5em minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 6px 4px;
+  border-bottom: 1px solid rgba(80, 60, 30, 0.12);
+}
+.record-move:last-child { border-bottom: 0; }
+.record-n { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; color: var(--ink-3); }
+.record-token .token-svg { width: 1.5em; height: 1.5em; display: block; }
+.record-tile { width: 2.5em; height: 2.5em; border-radius: 6px; overflow: hidden; background: var(--tile-face); box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 0 0 1px rgba(80, 60, 30, 0.14) inset, 0 1px 2px rgba(60, 40, 15, 0.22); }
+.record-tile .tile-art { width: 100%; height: 100%; display: block; }
+.record-words { min-width: 0; font-weight: 600; line-height: 1.3; }
+.record-note { display: block; font-size: 0.875rem; font-weight: 700; color: var(--verm); }
 .rules .glyph { width: 1.35em; height: 1.35em; vertical-align: -0.35em; }
 .rules-modes { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; }
 .rules-modes dt { font-weight: 700; }

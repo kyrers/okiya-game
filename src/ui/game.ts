@@ -28,6 +28,8 @@ export interface GameScreenDeps {
   settings(): Settings;
   save(view: MatchView): void;
   openMenu(): void;
+  /** The finished game's play by play, move by move. */
+  openRecord(): void;
   goHome(): void;
   /** Called whenever what the menu shows may have changed (Undo's availability). */
   onChange?(): void;
@@ -133,6 +135,7 @@ export class GameScreen {
       const card = (ev.target as Element).closest<HTMLElement>('[data-card]')?.dataset.card;
       if (card === 'fold') this.fold();
       else if (card === 'unfold') this.unfold();
+      else if (card === 'record') this.deps.openRecord();
       else if (card === 'next') this.next();
       else if (card === 'again') this.again();
     });
@@ -852,7 +855,7 @@ export class GameScreen {
     const seal = r.winner === null ? `${tokenSvg(1)}${tokenSvg(2)}` : tokenSvg(r.winner);
     const why = reasonWords(r.reason, r.winner === null ? '' : this.setup.names[opponent(r.winner) - 1], nameHtml);
     const head = `<div class="card-seal">${seal}</div><p class="card-head">${this.endHeadline()}</p><p class="card-why">${why}</p>`;
-    const see = `<button type="button" class="card-fold" data-card="fold">See the board${FOLD_ICON}</button>`;
+    const see = `<div class="card-links"><button type="button" class="card-fold" data-card="fold">See the board${FOLD_ICON}</button><span class="card-links-break"></span><button type="button" class="card-record" data-card="record">Play by play</button></div>`;
     if (!m.over) return `${head}<div class="say-actions"><button type="button" class="btn primary" data-action="next">Next game${icon('arrow')}</button></div>${see}`;
     return `${head}<div class="say-actions">
       <button type="button" class="btn primary" data-action="again">${icon('restart')} Play again</button>

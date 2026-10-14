@@ -24,6 +24,8 @@ in its place.
 The full rules, their sources and the one interpretation this edition makes are in
 [docs/RULES.md](docs/RULES.md); the game has an illustrated "How to play" sheet too, and "Watch a
 game", a demonstration that plays a whole game and says, move by move, what each player may take.
+When a game ends, "Play by play" lists every move of it in order: who took which tile, and how the
+game was won.
 
 ## Run it
 

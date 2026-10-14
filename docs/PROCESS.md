@@ -364,6 +364,12 @@ the client chose.
   the tiles' motifs are hanafuda's. The client picked it by ear on their phone and laptop from a
   page of variations at matched loudness. The tick for a tile being taken was dropped: it could not
   be heard under the snap.
+- **Play by play**, asked for "only if fast": the order of a game's moves. Of three ways to show it
+  (numbers on the tokens, a written list, a replay on the garden) the client chose the written
+  list, after a game, and named it. It opens from the end slip, as a second quiet link beside See
+  the board, and from the Menu once a game is over. The saved match already kept every move, so
+  nothing new is stored. It reuses the sheet, its rows, the tile thumbnails and the reason a game
+  ended. The end-slip size walk now checks the new link stays inside the garden too.
 - **Bugs found on the way,** each reproduced and fixed at its cause: words broken inside in narrow
   seats; desktop seats too narrow for long names, and a garden stuck at 760px on large screens;
   "Start a new game?" stacked on the New game sheet; the home running off short screens with long

@@ -1,15 +1,18 @@
 import { expect, test, type Locator } from '@playwright/test';
 import { applyMove, newGameFromTiles, tileCode } from '../src/engine/garden';
+import { tileWords } from '../src/ui/words';
 import {
   HOT_SEAT,
   MATCH_KEY,
   VS_EASY,
   boardCodes,
   continueMatch,
+  expectSheetPainted,
   expectTokenPainted,
   expectedLegal,
   findGame,
   holdNextDrop,
+  layoutProblems,
   legalIndices,
   openHome,
   pickMatch,
@@ -313,6 +316,51 @@ test.describe('matches', () => {
     await expect(page.locator('.match-label')).toContainText('Game 2');
     await expect(page.locator('.end-card')).toBeHidden();
     await expect(page.locator('.end-tab')).toBeHidden();
+  });
+
+  test('the play by play lists every move of the finished game, from the slip and from the menu', async ({ page, hasTouch }) => {
+    const g = findGame((s) => s.result?.reason === 'blocked');
+    await seedMatch(page, saved({ ...HOT_SEAT, mode: 'sets3' }, [{ tiles: g.tiles, first: g.first, moves: g.moves }]));
+    await continueMatch(page);
+    const act = (l: Locator) => (hasTouch ? l.tap() : l.click());
+    const names = HOT_SEAT.names;
+    const loser = names[(g.final.result!.winner === 1 ? 2 : 1) - 1];
+    const sheet = page.getByRole('dialog', { name: 'Play by play' });
+    const rows = sheet.locator('.record-move');
+    const expectRecord = async () => {
+      await expectSheetPainted(page);
+      await expect(rows).toHaveCount(g.moves.length);
+      // Each row is the move's number, who made it and the tile taken; turns alternate from the opener.
+      for (const [i, m] of g.moves.entries()) {
+        const who = names[(i % 2 === 0 ? g.first : 3 - g.first) - 1];
+        await expect(rows.nth(i)).toContainText(`${i + 1}`);
+        await expect(rows.nth(i)).toContainText(`${who}: ${tileWords(g.tiles[m])}`);
+      }
+      // Only the last move says how the game ended.
+      await expect(sheet.locator('.record-note')).toHaveCount(1);
+      await expect(rows.last().locator('.record-note')).toHaveText(`${loser} has no tile to take`);
+      expect(await layoutProblems(page)).toEqual([]);
+    };
+    await expect(page.locator('.end-card:not(.arriving)')).toBeVisible();
+    await act(page.locator('.end-card').getByRole('button', { name: 'Play by play' }));
+    await expectRecord();
+    await page.keyboard.press('Escape');
+    await expect(sheet).toBeHidden();
+    // Escape closed the sheet only; the slip is still up.
+    await expect(page.locator('.end-card')).toBeVisible();
+    await act(page.getByRole('button', { name: 'Menu' }));
+    await act(page.getByRole('dialog', { name: 'Menu' }).getByRole('button', { name: 'Play by play' }));
+    await expectRecord();
+  });
+
+  test('the menu offers the play by play only once a game is over', async ({ page, hasTouch }) => {
+    const g = findGame((s) => s.result?.reason === 'row');
+    await seedMatch(page, saved(HOT_SEAT, [{ tiles: g.tiles, first: g.first, moves: g.moves.slice(0, 3) }]));
+    await continueMatch(page);
+    await (hasTouch ? page.getByRole('button', { name: 'Menu' }).tap() : page.getByRole('button', { name: 'Menu' }).click());
+    const menu = page.getByRole('dialog', { name: 'Menu' });
+    await expect(menu.getByRole('button', { name: 'How to play' })).toBeVisible();
+    await expect(menu.getByRole('button', { name: 'Play by play' })).toHaveCount(0);
   });
 
   test('victory points: a win scores the tiles left in the garden', async ({ page, hasTouch }) => {

@@ -6,6 +6,7 @@ import { GameScreen } from './game';
 import { homeScreen } from './home';
 import { menuList, settingsPanel, setupForm, startButton, type MenuItem } from './panels';
 import { MATCH_KEY, loadSettings, loadSetup, saveSettings, saveSetup, type Settings, type SetupDraft } from './prefs';
+import { recordHtml } from './record';
 import { rulesHtml } from './rules';
 import { closeAllSheets, confirmSheet, openSheet, type Sheet } from './sheet';
 import { setSoundEnabled, unlockAudio } from './sound';
@@ -83,6 +84,7 @@ export class App {
       settings: () => this.settings,
       save: (v) => saveRaw(MATCH_KEY, v.saved),
       openMenu: () => this.openMenu(),
+      openRecord: () => this.openRecord(),
       goHome: () => this.showHome(true),
       onChange: () => this.updateMenu(),
     });
@@ -192,6 +194,7 @@ export class App {
     if (!g) return;
     const items: MenuItem[] = [
       { id: 'resume', label: 'Back to the game', icon: 'play' },
+      ...(g.match.game.result ? [{ id: 'record', label: 'Play by play', icon: 'record' } as MenuItem] : []),
       ...(g.hasUndo ? [{ id: 'undo', label: 'Undo', icon: 'undo', disabled: !g.canUndo } as MenuItem] : []),
       { id: 'rules', label: 'How to play', icon: 'book' },
       { id: 'settings', label: 'Settings', icon: 'sliders' },
@@ -205,6 +208,7 @@ export class App {
         this.closeSheet();
         return g.undo();
       }
+      if (id === 'record') return this.openRecord();
       if (id === 'rules') return this.openRules();
       if (id === 'settings') return this.openSettings();
       if (id === 'home') return this.showHome(true);
@@ -215,6 +219,13 @@ export class App {
       }
     });
     this.open('Menu', list, 'sheet-menu');
+  }
+
+  /** The finished game, move by move. */
+  private openRecord(): void {
+    const view = this.game?.match;
+    if (!view?.game.result) return;
+    this.open('Play by play', recordHtml(view.game, view.saved.setup.names), 'sheet-record');
   }
 
   /** The menu's Undo follows the game while the menu is open (a flight landing, the computer's reply). */
